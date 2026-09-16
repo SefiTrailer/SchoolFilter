@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -10,11 +11,19 @@ using Microsoft.Win32;
 
 namespace SchoolFilter.Setup
 {
+    public enum InstallRole
+    {
+        Student,
+        Teacher
+    }
+
     internal static class Program
     {
         private const string AppName = "SchoolFilter";
         private const string AppVersion = "1.0.0";
         private const string Publisher = "School IT Administration";
+        private const string TeacherPortalUrl = "https://sefitrailer.github.io/SchoolFilter/";
+
         private static readonly string TargetDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), 
             AppName
@@ -32,6 +41,8 @@ namespace SchoolFilter.Setup
             bool isSilent = false;
             bool suppressMsgBoxes = false;
             bool isUninstall = false;
+            InstallRole role = InstallRole.Student;
+            bool roleExplicitlySet = false;
 
             foreach (string rawArg in args)
             {
@@ -48,6 +59,16 @@ namespace SchoolFilter.Setup
                 {
                     isUninstall = true;
                 }
+                else if (arg == "/TEACHER" || arg == "/MASTER" || arg == "/ROLE=TEACHER")
+                {
+                    role = InstallRole.Teacher;
+                    roleExplicitlySet = true;
+                }
+                else if (arg == "/STUDENT" || arg == "/CLIENT" || arg == "/ROLE=STUDENT")
+                {
+                    role = InstallRole.Student;
+                    roleExplicitlySet = true;
+                }
             }
 
             if (!IsAdministrator())
@@ -55,8 +76,8 @@ namespace SchoolFilter.Setup
                 if (!suppressMsgBoxes)
                 {
                     MessageBox.Show(
-                        "Administrator privileges are required to run this operation.\nPlease run as Administrator.",
-                        "SchoolFilter Setup - Permission Error",
+                        "נדרשות הרשאות מנהל מערכת (Administrator) להרצת ההתקנה.\nאנא הפעל את הקובץ כמנהל.",
+                        "SchoolFilter Setup - שגיאת הרשאות",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error
                     );
@@ -70,17 +91,28 @@ namespace SchoolFilter.Setup
                 {
                     return PerformUninstall(isSilent, suppressMsgBoxes);
                 }
-                else
+
+                if (!isSilent && !roleExplicitlySet)
                 {
-                    return PerformInstall(isSilent, suppressMsgBoxes);
+                    // Show interactive role selector dialog
+                    using (RoleSelectionForm form = new RoleSelectionForm())
+                    {
+                        if (form.ShowDialog() != DialogResult.OK)
+                        {
+                            return 2; // Cancelled
+                        }
+                        role = form.SelectedRole;
+                    }
                 }
+
+                return PerformInstall(role, isSilent, suppressMsgBoxes);
             }
             catch (Exception ex)
             {
                 if (!suppressMsgBoxes)
                 {
                     MessageBox.Show(
-                        "An error occurred during setup:\n\n" + ex.Message,
+                        "אירעה שגיאה במהלך ההתקנה:\n\n" + ex.Message,
                         "SchoolFilter Error",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error
@@ -97,48 +129,55 @@ namespace SchoolFilter.Setup
             return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
 
-        private static int PerformInstall(bool isSilent, bool suppressMsgBoxes)
+        private static int PerformInstall(InstallRole role, bool isSilent, bool suppressMsgBoxes)
         {
-            if (!isSilent)
-            {
-                DialogResult dr = MessageBox.Show(
-                    "Welcome to the SchoolFilter Setup Wizard.\n\n" +
-                    "This will install SchoolFilter (Whitelist-Only Internet Filter) into:\n" +
-                    TargetDir + "\n\n" +
-                    "Features:\n" +
-                    " - Whitelist-only PAC filter (supports one-class.co.il, edu.gov.il, Google Classroom)\n" +
-                    " - Veyon LAN bypass preservation\n" +
-                    " - NTFS Read/Execute-only lockdown for standard users\n\n" +
-                    "Do you want to proceed with the installation?",
-                    "SchoolFilter Setup",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question
-                );
-
-                if (dr != DialogResult.Yes)
-                {
-                    return 2; // Cancelled
-                }
-            }
-
             // 1. Create target directory
             if (!Directory.Exists(TargetDir))
             {
                 Directory.CreateDirectory(TargetDir);
             }
 
-            // 2. Extract embedded resources
+            // 2. Extract core filtering resources (Needed on both Student and Teacher)
             ExtractResource("filter.pac", Path.Combine(TargetDir, "filter.pac"));
             ExtractResource("BlockGames.bat", Path.Combine(TargetDir, "BlockGames.bat"));
             ExtractResource("AllowAll.bat", Path.Combine(TargetDir, "AllowAll.bat"));
-            ExtractResource("TeacherManager.bat", Path.Combine(TargetDir, "TeacherManager.bat"));
+            
             string configPath = Path.Combine(TargetDir, "config.ini");
             if (!File.Exists(configPath))
             {
                 ExtractResource("config.ini", configPath);
             }
 
-            // 3. Copy running executable as uninstaller
+            // 3. Extract Teacher tools ONLY if Teacher role is selected
+            if (role == InstallRole.Teacher)
+            {
+                ExtractResource("TeacherManager.bat", Path.Combine(TargetDir, "TeacherManager.bat"));
+
+                // Create Desktop Shortcut for Teacher
+                CreateUrlShortcut(
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "SchoolFilter - ממשק ניהול למורה.url"),
+                    TeacherPortalUrl
+                );
+
+                // Create Start Menu Shortcut
+                string startMenuDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "SchoolFilter");
+                if (!Directory.Exists(startMenuDir)) Directory.CreateDirectory(startMenuDir);
+                CreateUrlShortcut(
+                    Path.Combine(startMenuDir, "ניהול רשימה לבנה (ממשק מורה).url"),
+                    TeacherPortalUrl
+                );
+            }
+            else
+            {
+                // In Student Mode: Clean up any teacher management files or shortcuts if they existed
+                string teacherBat = Path.Combine(TargetDir, "TeacherManager.bat");
+                if (File.Exists(teacherBat)) File.Delete(teacherBat);
+
+                string desktopLnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "SchoolFilter - ממשק ניהול למורה.url");
+                if (File.Exists(desktopLnk)) File.Delete(desktopLnk);
+            }
+
+            // 4. Copy running executable as uninstaller
             string currentExePath = Assembly.GetExecutingAssembly().Location;
             string uninstallerPath = Path.Combine(TargetDir, "Uninstall.exe");
             if (!string.Equals(currentExePath, uninstallerPath, StringComparison.OrdinalIgnoreCase))
@@ -146,21 +185,28 @@ namespace SchoolFilter.Setup
                 File.Copy(currentExePath, uninstallerPath, true);
             }
 
-            // 4. Lock down NTFS ACLs:
-            // Standard Users: Read & Execute ONLY (prevent modifying, deleting, bypassing)
+            // 5. Lock down NTFS ACLs:
+            // Standard Users (Students): Read & Execute ONLY (no write, no delete, no modify)
             // Administrators & SYSTEM: Full Control
             ApplyStrictPermissions(TargetDir);
 
-            // 5. Register in Windows Add/Remove Programs (Programs and Features)
-            RegisterUninstallEntry(uninstallerPath);
+            // 6. Register in Windows Add/Remove Programs
+            RegisterUninstallEntry(uninstallerPath, role);
 
             if (!isSilent && !suppressMsgBoxes)
             {
+                string roleName = (role == InstallRole.Teacher) ? "עמדת מורה (Teacher)" : "עמדת תלמיד (Student)";
+                string roleDetails = (role == InstallRole.Teacher)
+                    ? "הותקנו כלי הניהול ונוצר קיצור דרך בשולחן העבודה לממשק הניהול בענן."
+                    : "הותקן מנוע החסימה בלבד. לתלמידים אין גישה או הרשאות לשינוי הרשימה הלבנה.";
+
                 MessageBox.Show(
-                    "SchoolFilter has been successfully installed into:\n" + TargetDir + "\n\n" +
-                    "Permissions locked: Standard users have Read & Execute access only.\n" +
-                    "Ready for Veyon Master integration.",
-                    "SchoolFilter Setup Complete",
+                    "ההתקנה הושלמה בהצלחה!\n\n" +
+                    "פרופיל הותקן: " + roleName + "\n" +
+                    "תיקיית יעד: " + TargetDir + "\n\n" +
+                    roleDetails + "\n" +
+                    "הרשאות NTFS ננעלו: משתמשי בית הספר במצב Read & Execute בלבד.",
+                    "SchoolFilter Setup",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information
                 );
@@ -174,8 +220,8 @@ namespace SchoolFilter.Setup
             if (!isSilent)
             {
                 DialogResult dr = MessageBox.Show(
-                    "Are you sure you want to completely uninstall SchoolFilter and restore direct internet access?",
-                    "SchoolFilter Uninstall",
+                    "האם אתה בטוח שברצונך להסיר את SchoolFilter ולשחזר גישה ישירה מלאה לאינטרנט?",
+                    "SchoolFilter הסרת התקנה",
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Warning
                 );
@@ -196,20 +242,30 @@ namespace SchoolFilter.Setup
                         key.DeleteValue("AutoConfigURL", false);
                     }
                 }
-                // Refresh WinINet
                 InternetSetOption(IntPtr.Zero, 39, IntPtr.Zero, 0);
                 InternetSetOption(IntPtr.Zero, 37, IntPtr.Zero, 0);
             }
             catch {}
 
-            // 2. Remove registry uninstallation entry
+            // 2. Remove desktop and start menu shortcuts
+            try
+            {
+                string desktopLnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "SchoolFilter - ממשק ניהול למורה.url");
+                if (File.Exists(desktopLnk)) File.Delete(desktopLnk);
+
+                string startMenuDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "SchoolFilter");
+                if (Directory.Exists(startMenuDir)) Directory.Delete(startMenuDir, true);
+            }
+            catch {}
+
+            // 3. Remove registry uninstallation entry
             try
             {
                 Registry.LocalMachine.DeleteSubKeyTree(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\SchoolFilter", false);
             }
             catch {}
 
-            // 3. Clean up directory and self via detached process
+            // 4. Clean up directory and self via detached process
             string batchCleanup = Path.Combine(Path.GetTempPath(), "SchoolFilter_Cleanup.bat");
             string cleanupScript = string.Format(
                 "@echo off\r\n" +
@@ -231,14 +287,28 @@ namespace SchoolFilter.Setup
             if (!isSilent && !suppressMsgBoxes)
             {
                 MessageBox.Show(
-                    "SchoolFilter has been successfully uninstalled.\nDirect internet access has been restored.",
-                    "SchoolFilter Uninstalled",
+                    "SchoolFilter הוסר בהצלחה מהמחשב.\nהגישה המלאה לאינטרנט שוחזרה.",
+                    "SchoolFilter הסרה הושלמה",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information
                 );
             }
 
             return 0;
+        }
+
+        private static void CreateUrlShortcut(string filePath, string targetUrl)
+        {
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(filePath))
+                {
+                    writer.WriteLine("[InternetShortcut]");
+                    writer.WriteLine("URL=" + targetUrl);
+                    writer.WriteLine("IconIndex=0");
+                }
+            }
+            catch {}
         }
 
         private static void ExtractResource(string resourceName, string outputPath)
@@ -264,11 +334,8 @@ namespace SchoolFilter.Setup
             {
                 DirectoryInfo dInfo = new DirectoryInfo(folderPath);
                 DirectorySecurity dSecurity = new DirectorySecurity();
-
-                // Disable inheritance and preserve existing rules (as baseline)
                 dSecurity.SetAccessRuleProtection(true, false);
 
-                // Administrators - Full Control
                 dSecurity.AddAccessRule(new FileSystemAccessRule(
                     new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
                     FileSystemRights.FullControl,
@@ -277,7 +344,6 @@ namespace SchoolFilter.Setup
                     AccessControlType.Allow
                 ));
 
-                // SYSTEM - Full Control
                 dSecurity.AddAccessRule(new FileSystemAccessRule(
                     new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
                     FileSystemRights.FullControl,
@@ -286,7 +352,6 @@ namespace SchoolFilter.Setup
                     AccessControlType.Allow
                 ));
 
-                // Standard Users - Read & Execute ONLY (No Write, Delete, Modify)
                 dSecurity.AddAccessRule(new FileSystemAccessRule(
                     new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null),
                     FileSystemRights.ReadAndExecute,
@@ -297,7 +362,6 @@ namespace SchoolFilter.Setup
 
                 dInfo.SetAccessControl(dSecurity);
 
-                // Also propagate to all existing files
                 foreach (string filePath in Directory.GetFiles(folderPath))
                 {
                     FileInfo fInfo = new FileInfo(filePath);
@@ -325,7 +389,6 @@ namespace SchoolFilter.Setup
             }
             catch
             {
-                // Fallback to icacls if managed ACL fails
                 ProcessStartInfo psi = new ProcessStartInfo("icacls.exe",
                     "\"" + folderPath + "\" /inheritance:r /grant:r \"BUILTIN\\Administrators:(OI)(CI)F\" \"NT AUTHORITY\\SYSTEM:(OI)(CI)F\" \"BUILTIN\\Users:(OI)(CI)RX\"")
                 {
@@ -339,7 +402,7 @@ namespace SchoolFilter.Setup
             }
         }
 
-        private static void RegisterUninstallEntry(string uninstallerPath)
+        private static void RegisterUninstallEntry(string uninstallerPath, InstallRole role)
         {
             try
             {
@@ -347,7 +410,8 @@ namespace SchoolFilter.Setup
                 {
                     if (baseKey != null)
                     {
-                        baseKey.SetValue("DisplayName", "SchoolFilter (Classroom Internet Whitelist Filter)");
+                        string displayName = "SchoolFilter (" + (role == InstallRole.Teacher ? "עמדת מורה" : "עמדת תלמיד") + ")";
+                        baseKey.SetValue("DisplayName", displayName);
                         baseKey.SetValue("DisplayVersion", AppVersion);
                         baseKey.SetValue("Publisher", Publisher);
                         baseKey.SetValue("InstallLocation", TargetDir);
@@ -359,6 +423,127 @@ namespace SchoolFilter.Setup
                 }
             }
             catch {}
+        }
+    }
+
+    /// <summary>
+    /// Interactive dialog for choosing Student vs Teacher installation role
+    /// </summary>
+    internal class RoleSelectionForm : Form
+    {
+        public InstallRole SelectedRole { get; private set; }
+
+        public RoleSelectionForm()
+        {
+            SelectedRole = InstallRole.Student;
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            this.Text = "התקנת SchoolFilter - בחירת סוג עמדה";
+            this.Size = new Size(520, 390);
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.RightToLeft = RightToLeft.Yes;
+            this.RightToLeftLayout = true;
+            this.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
+
+            Label lblHeader = new Label()
+            {
+                Text = "ברוכים הבאים לאשף ההתקנה של SchoolFilter",
+                Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+                Location = new Point(20, 20),
+                AutoSize = true
+            };
+
+            Label lblSub = new Label()
+            {
+                Text = "אנא בחר את ייעוד המחשב שעליו מותקנת התוכנה כעת:",
+                Location = new Point(22, 55),
+                AutoSize = true,
+                ForeColor = Color.DimGray
+            };
+
+            GroupBox grpRole = new GroupBox()
+            {
+                Text = "פרופיל התקנה",
+                Location = new Point(20, 90),
+                Size = new Size(460, 180)
+            };
+
+            RadioButton rbStudent = new RadioButton()
+            {
+                Text = "🎓 עמדת תלמיד (Student Station) - מומלץ למחשבי הכיתה",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Location = new Point(20, 30),
+                Size = new Size(420, 25),
+                Checked = true
+            };
+
+            Label lblStudentDesc = new Label()
+            {
+                Text = "• מנוע חסימה נעול בלבד (נשלט מ-Veyon Master מרחוק).\n• לתלמידים אין שום גישה לממשק הניהול או לעריכת הרשימה.\n• הרשאות קבצים נעולות לחלוטין (Read & Execute בלבד).",
+                Location = new Point(45, 60),
+                Size = new Size(395, 45),
+                ForeColor = Color.DarkSlateGray
+            };
+
+            RadioButton rbTeacher = new RadioButton()
+            {
+                Text = "👨‍🏫 עמדת מורה (Teacher Station) - למחשב המורה בכיתה",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Location = new Point(20, 115),
+                Size = new Size(420, 25)
+            };
+
+            Label lblTeacherDesc = new Label()
+            {
+                Text = "• כולל קיצור דרך לממשק הניהול בענן (הוספת/הסרת אתרים).\n• כלי עזר לשליטה ואינטגרציה עם Veyon Master.",
+                Location = new Point(45, 142),
+                Size = new Size(395, 30),
+                ForeColor = Color.DarkSlateGray
+            };
+
+            grpRole.Controls.Add(rbStudent);
+            grpRole.Controls.Add(lblStudentDesc);
+            grpRole.Controls.Add(rbTeacher);
+            grpRole.Controls.Add(lblTeacherDesc);
+
+            Button btnInstall = new Button()
+            {
+                Text = "התקן כעת ⬅",
+                Location = new Point(360, 290),
+                Size = new Size(120, 38),
+                BackColor = Color.FromArgb(37, 99, 235),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                DialogResult = DialogResult.OK
+            };
+
+            Button btnCancel = new Button()
+            {
+                Text = "ביטול",
+                Location = new Point(230, 290),
+                Size = new Size(110, 38),
+                DialogResult = DialogResult.Cancel
+            };
+
+            btnInstall.Click += (s, e) =>
+            {
+                SelectedRole = rbTeacher.Checked ? InstallRole.Teacher : InstallRole.Student;
+            };
+
+            this.Controls.Add(lblHeader);
+            this.Controls.Add(lblSub);
+            this.Controls.Add(grpRole);
+            this.Controls.Add(btnInstall);
+            this.Controls.Add(btnCancel);
+            this.AcceptButton = btnInstall;
+            this.CancelButton = btnCancel;
         }
     }
 }
