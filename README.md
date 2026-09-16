@@ -2,6 +2,9 @@
 
 Lightweight, high-security Windows IT-admin tool designed for school computer labs managed via **Veyon Classroom Management Software**. Allows teachers to switch student internet access between **"Strict Whitelist Only"** (blocking unapproved sites, games, proxies) and **"Full Internet Access"** with a single click in Veyon Master.
 
+- **GitHub Repository**: [https://github.com/SefiTrailer/SchoolFilter](https://github.com/SefiTrailer/SchoolFilter)
+- **Live Cloud Whitelist (Raw)**: [https://raw.githubusercontent.com/SefiTrailer/SchoolFilter/main/src/filter.pac](https://raw.githubusercontent.com/SefiTrailer/SchoolFilter/main/src/filter.pac)
+
 ---
 
 ## 📁 Project Structure
