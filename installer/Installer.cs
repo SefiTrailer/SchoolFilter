@@ -131,6 +131,7 @@ namespace SchoolFilter.Setup
             ExtractResource("filter.pac", Path.Combine(TargetDir, "filter.pac"));
             ExtractResource("BlockGames.bat", Path.Combine(TargetDir, "BlockGames.bat"));
             ExtractResource("AllowAll.bat", Path.Combine(TargetDir, "AllowAll.bat"));
+            ExtractResource("TeacherManager.bat", Path.Combine(TargetDir, "TeacherManager.bat"));
             string configPath = Path.Combine(TargetDir, "config.ini");
             if (!File.Exists(configPath))
             {

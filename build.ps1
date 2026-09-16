@@ -95,6 +95,7 @@ if ($CompileWithInno) {
     $ConfigRes = (Join-Path $SrcDir "config.ini") + ",config.ini"
     $BlockRes = (Join-Path $SrcDir "BlockGames.bat") + ",BlockGames.bat"
     $AllowRes = (Join-Path $SrcDir "AllowAll.bat") + ",AllowAll.bat"
+    $TeacherRes = (Join-Path $SrcDir "TeacherManager.bat") + ",TeacherManager.bat"
 
     $CscArgs = @(
         "/target:winexe",
@@ -107,6 +108,7 @@ if ($CompileWithInno) {
         "/resource:$ConfigRes",
         "/resource:$BlockRes",
         "/resource:$AllowRes",
+        "/resource:$TeacherRes",
         "$SourceCs"
     )
 

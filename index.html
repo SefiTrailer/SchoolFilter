@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolFilter - ממשק ניהול למורה</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --danger-hover: #b91c1c;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Heebo', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .user-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .badge-online {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-offline {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            margin: 24px auto;
+            padding: 0 16px;
+            flex: 1;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Login Box */
+        .login-box {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .login-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        input[type="text"], input[type="password"] {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        button {
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+            font-size: 16px;
+            padding: 14px 28px;
+            width: 100%;
+        }
+
+        .btn-success:hover {
+            background-color: #15803d;
+        }
+
+        .btn-danger {
+            background-color: transparent;
+            color: var(--danger);
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+
+        .btn-danger:hover {
+            background-color: #fee2e2;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            background: #f1f5f9;
+        }
+
+        /* Sites List */
+        .site-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: #ffffff;
+            transition: background-color 0.15s;
+        }
+
+        .site-item:hover {
+            background: #f8fafc;
+        }
+
+        .site-domain {
+            font-weight: 600;
+            direction: ltr;
+            text-align: right;
+            font-size: 15px;
+        }
+
+        .site-tag {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+            margin-right: 8px;
+        }
+
+        .tag-core {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .tag-custom {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .tag-school {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        /* Tester section */
+        .test-result {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .test-allowed {
+            background: #dcfce7;
+            color: #166534;
+            display: block;
+        }
+
+        .test-blocked {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 9999px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+            font-weight: 500;
+            display: none;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, 10px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        .help-text {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            background: #ffffff;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <div class="logo-icon">🛡️</div>
+            <div>
+                <h1>SchoolFilter - ממשק ניהול למורה</h1>
+                <div class="subtitle">ניהול הרשימה הלבנה בכיתת המחשבים בזמן אמת</div>
+            </div>
+        </div>
+        <div class="user-status" id="statusContainer">
+            <span class="badge badge-offline" id="statusBadge">
+                <span class="status-dot"></span>
+                לא מחובר
+            </span>
+            <button class="btn-outline" id="btnLogout" style="display:none;" onclick="logout()">התנתק</button>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <!-- Auth Card (shown if no token) -->
+        <div class="card login-box" id="authCard">
+            <div class="login-icon">🔐</div>
+            <h2 style="margin-bottom: 8px;">התחברות לממשק מורה</h2>
+            <p class="subtitle" style="max-width: 500px; margin: 0 auto 20px auto;">
+                כדי שרק מורים מורשים יוכלו לשנות את רשימת האתרים המותרים, יש להזין את מפתח הגישה של המורה (GitHub Personal Access Token).
+            </p>
+
+            <div style="max-width: 480px; margin: 0 auto;">
+                <div class="input-group">
+                    <input type="password" id="tokenInput" placeholder="הדבק כאן את מפתח המורה (ghp_... או gho_...)" autocomplete="off">
+                    <button class="btn-primary" onclick="saveToken()">התחבר</button>
+                </div>
+                <div class="help-text" style="text-align: right; margin-top: 14px;">
+                    💡 <strong>אין לך עדיין מפתח מורה?</strong><br>
+                    <a href="https://github.com/settings/tokens/new?scopes=repo&description=SchoolFilter_Teacher" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">
+                        👉 לחץ כאן להפקת מפתח מורה ב-GitHub תוך 10 שניות
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard (shown after auth) -->
+        <div id="dashboard" style="display: none;">
+            
+            <!-- Add Site Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">➕ הוספת אתר חדש לרשימה הלבנה</div>
+                </div>
+                <p class="subtitle" style="margin-bottom: 12px;">
+                    הקלד או הדבק את כתובת האתר שברצונך לאפשר לתלמידים לגלוש אליו (לדוגמה: <code>kahoot.it</code> או <code>matific.com</code>).
+                </p>
+                <div class="input-group">
+                    <input type="text" id="newSiteInput" placeholder="לדוגמה: kahoot.it או https://www.geogebra.org" dir="ltr" onkeypress="if(event.key==='Enter') addSite()">
+                    <button class="btn-primary" onclick="addSite()">הוסף לרשימה</button>
+                </div>
+                <div class="help-text">
+                    המערכת מנקה אוטומטית קידומות כמו <code>https://</code> וכוללת גם תתי-דומיינים (למשל <code>*.kahoot.it</code>).
+                </div>
+            </div>
+
+            <!-- Whitelist Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        📋 רשימת האתרים המאושרים כעת
+                        <span style="font-size: 13px; font-weight: normal; color: var(--text-muted);" id="siteCount"></span>
+                    </div>
+                    <button class="btn-outline" style="padding: 6px 12px; font-size: 13px;" onclick="fetchFromGitHub()">🔄 רענן מהענן</button>
+                </div>
+
+                <div id="sitesList">
+                    <div style="text-align: center; padding: 24px; color: var(--text-muted);">טוען נתונים מענן GitHub...</div>
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <button class="btn-success" id="btnSave" onclick="saveToGitHub()">
+                        💾 שמור ועדכן את כל מחשבי הכיתה עכשיו
+                    </button>
+                </div>
+            </div>
+
+            <!-- Live Site Simulator Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">🔍 בדיקת אתר (סימולטור חסימה בזמן אמת)</div>
+                </div>
+                <p class="subtitle" style="margin-bottom: 12px;">
+                    בדוק האם אתר מסוים ייפתח לתלמיד או ייחסם לפי הרשימה הנוכחית:
+                </p>
+                <div class="input-group">
+                    <input type="text" id="testSiteInput" placeholder="הזן כתובת לבדיקה (למשל: roblox.com או one-class.co.il)" dir="ltr" oninput="testSite()">
+                </div>
+                <div id="testResult" class="test-result"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <footer class="footer">
+        SchoolFilter &copy; 2026 | מערכת ניהול אינטרנט כיתתי עבור Veyon | מחובר ל-GitHub: SefiTrailer/SchoolFilter
+    </footer>
+
+    <script>
+        const REPO_OWNER = 'SefiTrailer';
+        const REPO_NAME = 'SchoolFilter';
+        const PAC_PATH = 'src/filter.pac';
+        const STORAGE_KEY = 'schoolfilter_teacher_token';
+
+        let currentPacSha = null;
+        let whitelistSites = [];
+
+        // Protected core sites that cannot be accidentally deleted
+        const coreSites = [
+            'one-class.co.il',
+            '*.one-class.co.il',
+            'edu.gov.il',
+            '*.edu.gov.il',
+            'education.gov.il',
+            '*.education.gov.il',
+            'classroom.google.com',
+            'accounts.google.com',
+            'accounts.youtube.com',
+            'ssl.gstatic.com',
+            'fonts.gstatic.com',
+            'fonts.googleapis.com',
+            'apis.google.com',
+            'drive.google.com',
+            'docs.google.com',
+            'lh3.googleusercontent.com'
+        ];
+
+        window.onload = function() {
+            const savedToken = localStorage.getItem(STORAGE_KEY);
+            if (savedToken) {
+                initDashboard(savedToken);
+            }
+        };
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3500);
+        }
+
+        function saveToken() {
+            const token = document.getElementById('tokenInput').value.trim();
+            if (!token) {
+                alert('אנא הזן מפתח גישה תקף');
+                return;
+            }
+            localStorage.setItem(STORAGE_KEY, token);
+            initDashboard(token);
+        }
+
+        function logout() {
+            localStorage.removeItem(STORAGE_KEY);
+            document.getElementById('authCard').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('btnLogout').style.display = 'none';
+            const badge = document.getElementById('statusBadge');
+            badge.className = 'badge badge-offline';
+            badge.innerHTML = '<span class="status-dot"></span> לא מחובר';
+        }
+
+        async function initDashboard(token) {
+            document.getElementById('authCard').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('btnLogout').style.display = 'inline-block';
+            
+            const badge = document.getElementById('statusBadge');
+            badge.className = 'badge badge-online';
+            badge.innerHTML = '<span class="status-dot"></span> מחובר כ-מורה מורשה';
+
+            await fetchFromGitHub();
+        }
+
+        async function fetchFromGitHub() {
+            const token = localStorage.getItem(STORAGE_KEY);
+            const listContainer = document.getElementById('sitesList');
+            listContainer.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--text-muted);">טוען רשימה עדכנית מהענן...</div>';
+
+            try {
+                const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${PAC_PATH}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (!res.ok) {
+                    throw new Error(`שגיאה בגישה ל-GitHub (${res.status}): בדוק את תקינות המפתח.`);
+                }
+
+                const data = await res.json();
+                currentPacSha = data.sha;
+                const decodedContent = decodeURIComponent(escape(atob(data.content)));
+
+                parsePacContent(decodedContent);
+                renderSitesList();
+                showToast('רשימת האתרים סונכרנה בהצלחה מהענן');
+            } catch (err) {
+                alert(err.message);
+                logout();
+            }
+        }
+
+        function parsePacContent(content) {
+            // Extract whitelist array from JS code
+            const match = content.match(/var\s+whitelist\s*=\s*\[([\s\S]*?)\];/);
+            if (match && match[1]) {
+                const items = match[1]
+                    .split(',')
+                    .map(s => s.trim().replace(/^["']|["']$/g, ''))
+                    .filter(s => s.length > 0 && !s.startsWith('//'));
+                whitelistSites = [...new Set(items)];
+            } else {
+                whitelistSites = [...coreSites];
+            }
+        }
+
+        function cleanDomain(input) {
+            let domain = input.trim().toLowerCase();
+            domain = domain.replace(/^https?:\/\//i, '');
+            domain = domain.split('/')[0];
+            domain = domain.replace(/^www\./i, '');
+            return domain;
+        }
+
+        function addSite() {
+            const input = document.getElementById('newSiteInput');
+            const rawValue = input.value.trim();
+            if (!rawValue) return;
+
+            const domain = cleanDomain(rawValue);
+            if (!domain) return;
+
+            // Add main domain and wildcard subdomain
+            const mainPattern = domain;
+            const wildPattern = '*.' + domain;
+
+            let added = false;
+            if (!whitelistSites.includes(mainPattern)) {
+                whitelistSites.push(mainPattern);
+                added = true;
+            }
+            if (!whitelistSites.includes(wildPattern)) {
+                whitelistSites.push(wildPattern);
+                added = true;
+            }
+
+            if (added) {
+                input.value = '';
+                renderSitesList();
+                showToast(`האתר ${domain} נוסף לרשימה (לחץ 'שמור' כדי להחיל בכיתה)`);
+            } else {
+                alert('האתר כבר קיים ברשימה הלבנה.');
+            }
+        }
+
+        function removeSite(site) {
+            if (coreSites.includes(site)) {
+                alert('אתר זה הוא אתר ליבה של בית הספר / משרד החינוך ולא ניתן להסירו.');
+                return;
+            }
+
+            const cleanBase = site.replace(/^\*\./, '');
+            whitelistSites = whitelistSites.filter(s => s !== cleanBase && s !== '*.' + cleanBase);
+            renderSitesList();
+            showToast(`האתר ${cleanBase} הוסר (לחץ 'שמור' כדי להחיל בכיתה)`);
+        }
+
+        function renderSitesList() {
+            const listContainer = document.getElementById('sitesList');
+            const countElem = document.getElementById('siteCount');
+
+            // Unique base domains for cleaner display
+            const displayedDomains = [];
+            const processedBases = new Set();
+
+            for (const item of whitelistSites) {
+                const base = item.replace(/^\*\./, '');
+                if (!processedBases.has(base)) {
+                    processedBases.add(base);
+                    displayedDomains.push({
+                        domain: base,
+                        isCore: coreSites.includes(base) || coreSites.includes('*.' + base)
+                    });
+                }
+            }
+
+            countElem.textContent = `(${displayedDomains.length} אתרים מורשים)`;
+
+            if (displayedDomains.length === 0) {
+                listContainer.innerHTML = '<div style="text-align: center; padding: 24px;">אין אתרים ברשימה.</div>';
+                return;
+            }
+
+            let html = '';
+            for (const item of displayedDomains) {
+                let tag = '';
+                if (item.domain.includes('one-class')) {
+                    tag = '<span class="site-tag tag-school">One-Class</span>';
+                } else if (item.isCore) {
+                    tag = '<span class="site-tag tag-core">אתר ליבה מאושר</span>';
+                } else {
+                    tag = '<span class="site-tag tag-custom">הוסף ע"י מורה</span>';
+                }
+
+                const deleteBtn = item.isCore
+                    ? '<span style="color: var(--text-muted); font-size: 13px;">🔒 נעול</span>'
+                    : `<button class="btn-danger" onclick="removeSite('${item.domain}')">🗑️ הסר</button>`;
+
+                html += `
+                    <div class="site-item">
+                        <div>
+                            ${tag}
+                            <span class="site-domain">${item.domain}</span>
+                        </div>
+                        <div>
+                            ${deleteBtn}
+                        </div>
+                    </div>
+                `;
+            }
+
+            listContainer.innerHTML = html;
+        }
+
+        async function saveToGitHub() {
+            const token = localStorage.getItem(STORAGE_KEY);
+            const btnSave = document.getElementById('btnSave');
+            btnSave.disabled = true;
+            btnSave.textContent = '⏳ שומר ומעדכן את הענן...';
+
+            try {
+                // Generate new PAC file content
+                const pacJs = generatePacCode(whitelistSites);
+                const encodedContent = btoa(unescape(encodeURIComponent(pacJs)));
+
+                const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${PAC_PATH}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'עדכון רשימה לבנה ע"י ממשק המורה',
+                        content: encodedContent,
+                        sha: currentPacSha
+                    })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.message || 'שגיאה בעדכון GitHub');
+                }
+
+                const data = await res.json();
+                currentPacSha = data.content.sha;
+                showToast('🎉 הרשימה עודכנה בהצלחה בענן! כל מחשבי הכיתה מעודכנים כעת.');
+                alert('✅ השינויים נשמרו בהצלחה בענן!\nכל מחשבי התלמידים בכיתה מעודכנים כעת מיידית ברשימה החדשה.');
+            } catch (err) {
+                alert('שגיאה בשמירה: ' + err.message);
+            } finally {
+                btnSave.disabled = false;
+                btnSave.textContent = '💾 שמור ועדכן את כל מחשבי הכיתה עכשיו';
+            }
+        }
+
+        function generatePacCode(sites) {
+            const formattedSites = sites.map(s => `        "${s}"`).join(',\n');
+
+            return `/**
+ * SchoolFilter - Proxy Auto-Configuration (PAC) File
+ * Architecture: Whitelist-only filter with sinkhole drop
+ * Managed dynamically via SchoolFilter Teacher Portal
+ * Target: Windows 10/11 - Chrome, Edge, Firefox, WinINet
+ */
+
+function FindProxyForURL(url, host) {
+    // Normalize host to lowercase
+    host = host.toLowerCase();
+
+    // =========================================================================
+    // 1. LOCALHOST & INTRANET / LAN BYPASS
+    // מונע חסימה של Veyon (פורטים 11100/11400) והרשת המקומית הבית-ספרית
+    // =========================================================================
+    if (isPlainHostName(host) ||
+        host === "localhost" ||
+        host === "127.0.0.1" ||
+        host === "::1") {
+        return "DIRECT";
+    }
+
+    // Private IPv4 Subnets (רשת בית ספרית פנימית)
+    if (shExpMatch(host, "10.*") ||
+        shExpMatch(host, "192.168.*") ||
+        shExpMatch(host, "172.1[6-9].*") ||
+        shExpMatch(host, "172.2[0-9].*") ||
+        shExpMatch(host, "172.3[0-1].*") ||
+        shExpMatch(host, "*.local")) {
+        return "DIRECT";
+    }
+
+    // =========================================================================
+    // 2. APPROVED EDUCATIONAL WHITELIST (רשימה לבנה מאושרת)
+    // =========================================================================
+    var whitelist = [
+${formattedSites}
+    ];
+
+    // בדיקה האם הכתובת נמצאת ברשימה הלבנה
+    for (var i = 0; i < whitelist.length; i++) {
+        var pattern = whitelist[i];
+        if (shExpMatch(host, pattern)) {
+            return "DIRECT";
+        }
+    }
+
+    // =========================================================================
+    // 3. SINKHOLE DROP (חסימת כל שאר האתרים והמשחקים)
+    // =========================================================================
+    return "PROXY 127.0.0.1:9999";
+}
+`;
+        }
+
+        function testSite() {
+            const input = document.getElementById('testSiteInput').value.trim();
+            const resultBox = document.getElementById('testResult');
+            if (!input) {
+                resultBox.style.display = 'none';
+                return;
+            }
+
+            const host = cleanDomain(input);
+            let allowed = false;
+
+            // Simple match against current whitelist
+            for (const p of whitelistSites) {
+                const regexPattern = '^' + p.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$';
+                const regex = new RegExp(regexPattern, 'i');
+                if (regex.test(host)) {
+                    allowed = true;
+                    break;
+                }
+            }
+
+            resultBox.style.display = 'block';
+            if (allowed) {
+                resultBox.className = 'test-result test-allowed';
+                resultBox.textContent = `✅ פתוח: האתר ${host} מותר לגלישה לפי הרשימה`;
+            } else {
+                resultBox.className = 'test-result test-blocked';
+                resultBox.textContent = `🚫 חסום: האתר ${host} ייחסם מיד במחשבי התלמידים`;
+            }
+        }
+    </script>
+</body>
+</html>

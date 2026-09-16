@@ -36,6 +36,7 @@ Source: "..\src\filter.pac"; DestDir: "{app}"; Flags: ignoreversion; Permissions
 Source: "..\src\config.ini"; DestDir: "{app}"; Flags: ignoreversion; Permissions: users-rx
 Source: "..\src\BlockGames.bat"; DestDir: "{app}"; Flags: ignoreversion; Permissions: users-rx
 Source: "..\src\AllowAll.bat"; DestDir: "{app}"; Flags: ignoreversion; Permissions: users-rx
+Source: "..\src\TeacherManager.bat"; DestDir: "{app}"; Flags: ignoreversion; Permissions: users-rx
 
 [Run]
 ; Lock down NTFS ACLs explicitly using icacls after installation:
