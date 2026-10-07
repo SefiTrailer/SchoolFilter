@@ -725,6 +725,9 @@
                             <button class="btn btn-lock-action" style="background: #16a34a; color: white;" onclick="setRoomFilterMode(false)">
                                 🔓 פתח אינטרנט מלא בחדר זה
                             </button>
+                            <button class="btn btn-outline btn-lock-action" style="background: #ffffff; color: #1e3a8a; border: 1.5px solid #93c5fd;" onclick="openStudentBlockPreview()">
+                                👁️ תצוגת מסך תלמיד בזמן חסימה
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -828,6 +831,29 @@
     </div>
 
     <div id="toast" class="toast"></div>
+
+    <!-- חלונית תצוגה מקדימה: מה התלמיד רואה בזמן חסימה -->
+    <div id="studentPreviewModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.82); z-index:9999; align-items:center; justify-content:center; padding:16px; overflow-y:auto;" onclick="if(event.target===this) closeStudentBlockPreview()">
+        <div style="background:#ffffff; max-width:620px; width:100%; border-radius:20px; padding:28px 24px; box-shadow:0 20px 50px rgba(0,0,0,0.45); border-top:8px solid #dc2626; text-align:center; position:relative;">
+            <button onclick="closeStudentBlockPreview()" style="position:absolute; top:14px; left:14px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:50%; width:34px; height:34px; font-size:16px; cursor:pointer; font-weight:bold; color:#334155;">✕</button>
+            <div style="font-size:12px; font-weight:700; color:#64748b; margin-bottom:10px;">👁️ תצוגה מקדימה — כך בדיוק נראה מסך התלמיד כשהוא מנסה להיכנס לאתר או משחק חסום:</div>
+            <div style="width:64px; height:64px; background:#fef2f2; color:#dc2626; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:32px; margin-bottom:12px; border:2px solid #fecaca;">🛑</div>
+            <h2 style="color:#dc2626; margin:0 0 10px 0; font-size:23px; font-weight:800;">הגלישה לאתר זה נחסמה</h2>
+            <div id="previewRoomBadge" style="display:inline-block; background:#fef3c7; color:#92400e; font-weight:700; padding:6px 16px; border-radius:999px; font-size:13.5px; margin-bottom:12px; border:1px solid #fde68a;">📚 מצב שיעור פעיל: ישיבת נשמת התורה - חדר מחשבים</div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 14px; margin:6px 0 14px 0; font-family:Consolas,monospace; font-size:14.5px; color:#334155; direction:ltr; font-weight:600;">www.youtube.com / RobloxPlayerBeta.exe</div>
+            <p style="color:#475569; font-size:14.5px; line-height:1.6; margin:0 0 16px 0;">
+                הכניסה לאתר או למשחק זה חסומה כעת מאחר שהמחשב נמצא <strong>במצב שיעור</strong>.<br>
+                להלן <strong>הרשימה הלבנה</strong> של האתרים המותרים כעת בחדר שלך:
+            </p>
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:14px; padding:15px; text-align:center;">
+                <div style="font-size:13.5px; font-weight:800; color:#166534; margin-bottom:10px;">✅ הרשימה הלבנה שלך לשיעור (לחיצה של התלמיד פותחת את האתר):</div>
+                <div id="previewWhitelistLinks" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center;"></div>
+            </div>
+            <div style="margin-top:18px;">
+                <button class="btn btn-primary" onclick="closeStudentBlockPreview()" style="min-width:160px;">סגור תצוגה מקדימה</button>
+            </div>
+        </div>
+    </div>
 
     <footer>
         SchoolFilter Cloud v3.0 &copy; מערכת ניהול סינון אינטרנט לחדרי מחשבים ועגלות ניידים | מופעל על גבי Google Firebase
@@ -1460,6 +1486,44 @@
                 return doc.fields[field].arrayValue.values.map(v => v.stringValue).filter(Boolean);
             }
             return [...defaultArr];
+        }
+
+        function getFriendlyDomainLabel(domain) {
+            if (domain === "one-class.co.il") return "🎓 One-Class (one-class.co.il)";
+            if (domain === "gemini.google.com") return "✨ Google Gemini AI";
+            if (domain === "copilot.microsoft.com") return "🤖 Microsoft Copilot AI";
+            if (domain === "classroom.google.com") return "📖 Google Classroom";
+            if (domain === "docs.google.com") return "📝 Google Docs";
+            if (domain === "drive.google.com") return "📁 Google Drive";
+            if (domain === "edu.gov.il" || domain === "education.gov.il") return "🏫 משרד החינוך (" + domain + ")";
+            return "🌐 " + domain;
+        }
+
+        function openStudentBlockPreview() {
+            const room = allRooms.find(r => r.roomId === selectedRoomId);
+            const roomName = room ? room.name : "ישיבת נשמת התורה - חדר מחשבים";
+            document.getElementById('previewRoomBadge').textContent = "📚 מצב שיעור פעיל: " + roomName;
+
+            const rawList = room && room.whitelist ? room.whitelist : coreSites;
+            const cleanDomains = [];
+            rawList.forEach(item => {
+                let d = (item || '').trim().toLowerCase();
+                if (d.startsWith('*.')) d = d.substring(2);
+                if (d && d !== 'accounts.google.com' && !cleanDomains.includes(d)) {
+                    cleanDomains.push(d);
+                }
+            });
+
+            const container = document.getElementById('previewWhitelistLinks');
+            container.innerHTML = cleanDomains.map(dom =>
+                `<a href="https://${dom}" target="_blank" style="text-decoration:none; background:#ffffff; color:#1d4ed8; border:1px solid #bfdbfe; padding:8px 13px; border-radius:10px; font-weight:700; font-size:13px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">${getFriendlyDomainLabel(dom)}</a>`
+            ).join('');
+
+            document.getElementById('studentPreviewModal').style.display = 'flex';
+        }
+
+        function closeStudentBlockPreview() {
+            document.getElementById('studentPreviewModal').style.display = 'none';
         }
 
         function showToast(msg) {

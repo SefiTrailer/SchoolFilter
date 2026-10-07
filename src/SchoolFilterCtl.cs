@@ -194,7 +194,14 @@ namespace SchoolFilter.Controller
                 }
                 else if (action == "watchdog")
                 {
-                    EnsureSinkholeRunning();
+                    if (ReadLocalOverride() != "allow")
+                    {
+                        EnableFilter();
+                    }
+                    else
+                    {
+                        EnsureSinkholeRunning();
+                    }
                     return 0;
                 }
                 else if (action == "stop-sinkhole")
@@ -606,6 +613,14 @@ namespace SchoolFilter.Controller
                 CurrentPacScript = LoadInitialPacScript();
                 CurrentRoomDisplayLabel = GetConfiguredRoomDisplayLabel();
 
+                long initialCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                if (ReadLocalOverride() != "allow")
+                {
+                    RefreshPacSettings(initialCacheBuster);
+                    ConfigureGameFirewallRules(true);
+                    EnforceInstalledGameBlock();
+                }
+
                 TcpListener listener = null;
                 bool running = true;
 
@@ -613,8 +628,8 @@ namespace SchoolFilter.Controller
                 {
                     string lastGeneratedPac = null;
                     bool lastCloudFilterEnabled = true;
-                    bool lastAppliedFirewallState = false;
-                    long currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                    bool lastAppliedFirewallState = (ReadLocalOverride() != "allow");
+                    long currentCacheBuster = initialCacheBuster;
 
                     ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
 
@@ -625,62 +640,66 @@ namespace SchoolFilter.Controller
                         {
                             if (tickCounter % 2 == 0)
                             {
-                                string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
-                                string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                                long ticks = DateTime.UtcNow.Ticks;
-                                string firestoreUrl = "https://firestore.googleapis.com/v1/projects/" + projectId +
-                                                      "/databases/(default)/documents/rooms/" + Uri.EscapeDataString(roomId) +
-                                                      "?nocache=" + ticks;
-
-                                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(firestoreUrl);
-                                req.Proxy = null;
-                                req.Timeout = 4000;
-                                req.UserAgent = "SchoolFilter-RoomDaemon/3.1";
-
-                                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
-                                using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
+                                try
                                 {
-                                    string json = sr.ReadToEnd();
-                                    bool cloudFilterEnabled;
-                                    List<string> whitelist;
-                                    string roomLabel;
+                                    string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
+                                    string roomId = GetConfigValue("RoomId", DefaultRoomId);
+                                    long ticks = DateTime.UtcNow.Ticks;
+                                    string firestoreUrl = "https://firestore.googleapis.com/v1/projects/" + projectId +
+                                                          "/databases/(default)/documents/rooms/" + Uri.EscapeDataString(roomId) +
+                                                          "?nocache=" + ticks;
 
-                                    if (ParseFirestoreRoomJson(json, out cloudFilterEnabled, out whitelist, out roomLabel))
+                                    HttpWebRequest req = (HttpWebRequest)WebRequest.Create(firestoreUrl);
+                                    req.Proxy = null;
+                                    req.Timeout = 4000;
+                                    req.UserAgent = "SchoolFilter-RoomDaemon/3.1";
+
+                                    using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
+                                    using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
                                     {
-                                        CurrentRoomDisplayLabel = roomLabel;
-                                        CurrentRoomWhitelist = ExtractCleanBaseDomains(whitelist);
-                                        string newPac = GenerateDynamicPacScript(cloudFilterEnabled, whitelist);
-                                        CurrentPacScript = newPac;
+                                        string json = sr.ReadToEnd();
+                                        bool cloudFilterEnabled;
+                                        List<string> whitelist;
+                                        string roomLabel;
 
-                                        bool pacChanged = (lastGeneratedPac != null && lastGeneratedPac != newPac);
-                                        if (pacChanged || lastGeneratedPac == null)
+                                        if (ParseFirestoreRoomJson(json, out cloudFilterEnabled, out whitelist, out roomLabel))
                                         {
-                                            try
+                                            CurrentRoomDisplayLabel = roomLabel;
+                                            CurrentRoomWhitelist = ExtractCleanBaseDomains(whitelist);
+                                            string newPac = GenerateDynamicPacScript(cloudFilterEnabled, whitelist);
+                                            CurrentPacScript = newPac;
+
+                                            bool pacChanged = (lastGeneratedPac != null && lastGeneratedPac != newPac);
+                                            if (pacChanged || lastGeneratedPac == null)
                                             {
-                                                if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
-                                                File.WriteAllText(CachedPacFilePath, newPac, Encoding.ASCII);
+                                                try
+                                                {
+                                                    if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
+                                                    File.WriteAllText(CachedPacFilePath, newPac, Encoding.ASCII);
+                                                }
+                                                catch {}
                                             }
-                                            catch {}
-                                        }
 
-                                        if (pacChanged)
-                                        {
-                                            currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-                                            if (cloudFilterEnabled != lastCloudFilterEnabled)
+                                            if (pacChanged)
                                             {
-                                                SaveLocalOverride("auto");
+                                                currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                                                if (cloudFilterEnabled != lastCloudFilterEnabled)
+                                                {
+                                                    SaveLocalOverride("auto");
+                                                }
                                             }
-                                        }
 
-                                        lastGeneratedPac = newPac;
-                                        lastCloudFilterEnabled = cloudFilterEnabled;
+                                            lastGeneratedPac = newPac;
+                                            lastCloudFilterEnabled = cloudFilterEnabled;
 
-                                        if (pacChanged && cloudFilterEnabled && ReadLocalOverride() != "allow")
-                                        {
-                                            RefreshPacSettings(currentCacheBuster);
+                                            if (pacChanged && cloudFilterEnabled && ReadLocalOverride() != "allow")
+                                            {
+                                                RefreshPacSettings(currentCacheBuster);
+                                            }
                                         }
                                     }
                                 }
+                                catch {}
                             }
 
                             string localOverride = ReadLocalOverride();
@@ -1034,6 +1053,7 @@ namespace SchoolFilter.Controller
                    "<meta charset='utf-8'>" +
                    "<meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
                    "<title>האתר נחסם - כעת מתקיים שיעור | SchoolFilter</title>" +
+                   "<link rel='icon' type='image/svg+xml' href=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4L8 14v18c0 16.5 10.2 31.6 24 36 13.8-4.4 24-19.5 24-36V14L32 4z' fill='%23dc2626' stroke='%23fca5a5' stroke-width='2'/%3E%3Crect x='22' y='29' width='20' height='6' rx='3' fill='%23ffffff'/%3E%3C/svg%3E\">" +
                    "<style>" +
                    "*{box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}" +
                    "body{margin:0;min-height:100vh;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#0f172a;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center}" +
