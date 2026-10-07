@@ -1,6 +1,7 @@
 /**
  * SchoolFilter - Proxy Auto-Configuration (PAC) File
  * Architecture: Whitelist-only filter with sinkhole drop
+ * Managed dynamically via SchoolFilter Teacher Portal
  * Target: Windows 10/11 - Chrome, Edge, Firefox, WinINet
  */
 
@@ -10,8 +11,7 @@ function FindProxyForURL(url, host) {
 
     // =========================================================================
     // 1. LOCALHOST & INTRANET / LAN BYPASS
-    // Crucial: Keeps Veyon Classroom Management (ports 11100/11400) and school LAN
-    // fully functional. Local traffic will NEVER be routed to the sinkhole.
+    // מונע חסימה של Veyon (פורטים 11100/11400) והרשת המקומית הבית-ספרית
     // =========================================================================
     if (isPlainHostName(host) ||
         host === "localhost" ||
@@ -20,7 +20,7 @@ function FindProxyForURL(url, host) {
         return "DIRECT";
     }
 
-    // Private IPv4 Subnets
+    // Private IPv4 Subnets (רשת בית ספרית פנימית)
     if (shExpMatch(host, "10.*") ||
         shExpMatch(host, "192.168.*") ||
         shExpMatch(host, "172.1[6-9].*") ||
@@ -31,22 +31,13 @@ function FindProxyForURL(url, host) {
     }
 
     // =========================================================================
-    // 2. APPROVED EDUCATIONAL WHITELIST
-    // Add any school-approved domains or wildcards here.
+    // 2. APPROVED EDUCATIONAL WHITELIST (רשימה לבנה מאושרת)
     // =========================================================================
     var whitelist = [
-        // One-Class (Requested by User)
-        "one-class.co.il",
         "*.one-class.co.il",
-
-        // Israeli Ministry of Education (Edu/Education)
-        "edu.gov.il",
         "*.edu.gov.il",
         "education.gov.il",
         "*.education.gov.il",
-
-        // Google Classroom & Core Educational Services
-        "classroom.google.com",
         "accounts.google.com",
         "accounts.youtube.com",
         "ssl.gstatic.com",
@@ -58,7 +49,7 @@ function FindProxyForURL(url, host) {
         "lh3.googleusercontent.com"
     ];
 
-    // Evaluate host against whitelist
+    // בדיקה האם הכתובת נמצאת ברשימה הלבנה
     for (var i = 0; i < whitelist.length; i++) {
         var pattern = whitelist[i];
         if (shExpMatch(host, pattern)) {
@@ -67,9 +58,7 @@ function FindProxyForURL(url, host) {
     }
 
     // =========================================================================
-    // 3. SINKHOLE DROP (BLOCK ALL OTHER TRAFFIC)
-    // Routes unapproved websites to a dead local loopback port.
-    // This drops all games, social media, unapproved sites and web proxies instantly.
+    // 3. SINKHOLE DROP (חסימת כל שאר האתרים והמשחקים)
     // =========================================================================
     return "PROXY 127.0.0.1:9999";
 }
