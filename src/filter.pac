@@ -11,8 +11,9 @@ function FindProxyForURL(url, host) {
     host = host.toLowerCase();
 
     // =========================================================================
-    // 1. LOCALHOST & INTRANET / LAN BYPASS
-    // מונע חסימה של Veyon (פורטים 11100/11400) והרשת המקומית הבית-ספרית
+    // 1. LOCALHOST, LAN & PAC HOSTING BYPASS
+    // Keeps Veyon Classroom Management (ports 11100/11400), local LAN,
+    // and the GitHub PAC cloud host itself always accessible.
     // =========================================================================
     if (isPlainHostName(host) ||
         host === "localhost" ||
@@ -23,7 +24,7 @@ function FindProxyForURL(url, host) {
         return "DIRECT";
     }
 
-    // Private IPv4 Subnets (רשת בית ספרית פנימית)
+    // Private IPv4 Subnets (School internal network)
     if (shExpMatch(host, "10.*") ||
         shExpMatch(host, "192.168.*") ||
         shExpMatch(host, "172.1[6-9].*") ||
@@ -34,13 +35,17 @@ function FindProxyForURL(url, host) {
     }
 
     // =========================================================================
-    // 2. APPROVED EDUCATIONAL WHITELIST (רשימה לבנה מאושרת)
+    // 2. APPROVED EDUCATIONAL WHITELIST
     // =========================================================================
     var whitelist = [
+        "one-class.co.il",
         "*.one-class.co.il",
+        "edu.gov.il",
         "*.edu.gov.il",
         "education.gov.il",
         "*.education.gov.il",
+        "classroom.google.com",
+        "*.classroom.google.com",
         "accounts.google.com",
         "*.accounts.google.com",
         "accounts.youtube.com",
@@ -58,7 +63,7 @@ function FindProxyForURL(url, host) {
         "*.googleusercontent.com"
     ];
 
-    // בדיקה האם הכתובת נמצאת ברשימה הלבנה
+    // Evaluate host against whitelist
     for (var i = 0; i < whitelist.length; i++) {
         var pattern = whitelist[i];
         if (shExpMatch(host, pattern) || host === pattern) {
@@ -67,7 +72,7 @@ function FindProxyForURL(url, host) {
     }
 
     // =========================================================================
-    // 3. SINKHOLE DROP (חסימת כל שאר האתרים והמשחקים)
+    // 3. SINKHOLE DROP (BLOCK ALL OTHER TRAFFIC)
     // =========================================================================
     return "PROXY 127.0.0.1:9999";
 }
