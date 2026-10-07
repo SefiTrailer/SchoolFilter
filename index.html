@@ -552,9 +552,27 @@
         async function fetchFromGitHub() {
             const token = localStorage.getItem(STORAGE_KEY);
             const listContainer = document.getElementById('sitesList');
-            listContainer.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--text-muted);">טוען רשימה עדכנית מהענן...</div>';
+            listContainer.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--text-muted);">מאמת הרשאות מורה וטוען רשימה מהענן...</div>';
 
             try {
+                // 1. Verify that this token belongs to SefiTrailer (or an authorized repo admin with push/write access)
+                const repoRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (!repoRes.ok) {
+                    throw new Error(`שגיאה באימות המפתח מול GitHub (${repoRes.status}): המפתח אינו תקף.`);
+                }
+
+                const repoData = await repoRes.json();
+                if (!repoData.permissions || !repoData.permissions.push) {
+                    throw new Error('גישה נדחתה! מפתח זה אינו שייך לחשבון המורה המורשה (SefiTrailer) ואין לו הרשאות ניהול.');
+                }
+
+                // 2. Fetch the current filter.pac file
                 const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${PAC_PATH}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -563,7 +581,7 @@
                 });
 
                 if (!res.ok) {
-                    throw new Error(`שגיאה בגישה ל-GitHub (${res.status}): בדוק את תקינות המפתח.`);
+                    throw new Error(`שגיאה בגישה לקובץ הסינון (${res.status}).`);
                 }
 
                 const data = await res.json();
