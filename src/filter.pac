@@ -6,7 +6,7 @@
  * NOTE: Keep this file strictly ASCII for WinINet/WinHTTP compatibility.
  */
 
-var FILTER_ENABLED = true;
+var FILTER_ENABLED = false;
 
 function FindProxyForURL(url, host) {
     // Master switch: if teacher set classroom to Full Internet mode in Portal
@@ -56,17 +56,26 @@ function FindProxyForURL(url, host) {
         "accounts.google.com",
         "*.accounts.google.com",
         "accounts.youtube.com",
+        "*.accounts.youtube.com",
         "ssl.gstatic.com",
+        "*.ssl.gstatic.com",
+        "gstatic.com",
         "*.gstatic.com",
         "fonts.gstatic.com",
+        "*.fonts.gstatic.com",
         "fonts.googleapis.com",
+        "*.fonts.googleapis.com",
+        "googleapis.com",
         "*.googleapis.com",
         "apis.google.com",
+        "*.apis.google.com",
         "drive.google.com",
         "*.drive.google.com",
         "docs.google.com",
         "*.docs.google.com",
         "lh3.googleusercontent.com",
+        "*.lh3.googleusercontent.com",
+        "googleusercontent.com",
         "*.googleusercontent.com"
     ];
 
