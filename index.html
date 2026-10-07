@@ -352,6 +352,9 @@
             </div>
         </div>
         <div class="user-status" id="statusContainer">
+            <a href="https://raw.githubusercontent.com/SefiTrailer/SchoolFilter/main/dist/SchoolFilter_Setup.exe" download="SchoolFilter_Setup.exe" class="btn-outline" style="padding: 8px 14px; font-size: 13px; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                📥 הורד תוכנת התקנה (v2.0)
+            </a>
             <span class="badge badge-offline" id="statusBadge">
                 <span class="status-dot"></span>
                 לא מחובר
@@ -386,6 +389,25 @@
 
         <!-- Main Dashboard (shown after auth) -->
         <div id="dashboard" style="display: none;">
+
+            <!-- Master Classroom Filter Switch Card -->
+            <div class="card" style="border: 2px solid var(--primary);">
+                <div class="card-header">
+                    <div class="card-title">⚡ מצב הסינון בכיתה (שליטה מרחוק מהענן)</div>
+                    <span id="filterStateBadge" class="badge badge-online">🔒 מצב למידה פעיל (חסימת משחקים)</span>
+                </div>
+                <p class="subtitle" style="margin-bottom: 16px;">
+                    בחר את מצב האינטרנט עבור מחשבי התלמידים בכיתה (ניתן לשלוט גם מכאן וגם מתוך Veyon Master):
+                </p>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button id="btnModeBlock" onclick="setClassroomMode(true)" style="flex: 1; padding: 16px; font-size: 16px; background: #dc2626; color: white;">
+                        🔒 הפעל חסימת משחקים (רשימה לבנה בלבד)
+                    </button>
+                    <button id="btnModeAllow" onclick="setClassroomMode(false)" style="flex: 1; padding: 16px; font-size: 16px; background: #16a34a; color: white;">
+                        🔓 פתח אינטרנט מלא (גלישה חופשית)
+                    </button>
+                </div>
+            </div>
             
             <!-- Add Site Card -->
             <div class="card">
@@ -457,6 +479,7 @@
 
         let currentPacSha = null;
         let whitelistSites = [];
+        let filterEnabled = true;
 
         // Protected core sites that cannot be accidentally deleted
         const coreSites = [
@@ -562,6 +585,15 @@
                 .replace(/\/\*[\s\S]*?\*\//g, '')
                 .replace(/\/\/.*$/gm, '');
 
+            // Check FILTER_ENABLED master switch
+            const modeMatch = cleanContent.match(/var\s+FILTER_ENABLED\s*=\s*(true|false)/i);
+            if (modeMatch && modeMatch[1]) {
+                filterEnabled = (modeMatch[1].toLowerCase() === 'true');
+            } else {
+                filterEnabled = true;
+            }
+            updateFilterStateUI();
+
             // Extract whitelist array from JS code
             const match = cleanContent.match(/var\s+whitelist\s*=\s*\[([\s\S]*?)\];/);
             if (match && match[1]) {
@@ -581,6 +613,24 @@
             } else {
                 whitelistSites = [...coreSites];
             }
+        }
+
+        function updateFilterStateUI() {
+            const badge = document.getElementById('filterStateBadge');
+            if (!badge) return;
+            if (filterEnabled) {
+                badge.className = 'badge badge-offline';
+                badge.textContent = '🔒 מצב למידה פעיל (חסימת משחקים)';
+            } else {
+                badge.className = 'badge badge-online';
+                badge.textContent = '🔓 אינטרנט חופשי פעיל (כל האתרים פתוחים)';
+            }
+        }
+
+        async function setClassroomMode(enableBlock) {
+            filterEnabled = enableBlock;
+            updateFilterStateUI();
+            await saveToGitHub();
         }
 
         function cleanDomain(input) {
@@ -724,7 +774,7 @@
                 const data = await res.json();
                 currentPacSha = data.content.sha;
                 showToast('🎉 הרשימה עודכנה בהצלחה בענן! כל מחשבי הכיתה מעודכנים כעת.');
-                alert('✅ השינויים נשמרו בהצלחה בענן!\nכל מחשבי התלמידים בכיתה מעודכנים כעת מיידית ברשימה החדשה.');
+                alert('✅ השינויים נשמרו בהצלחה בענן!\nכל מחשבי התלמידים בכיתה מעודכנים כעת מיידית.');
             } catch (err) {
                 alert('שגיאה בשמירה: ' + err.message);
             } finally {
@@ -754,7 +804,14 @@
  * NOTE: Keep this file strictly ASCII for WinINet/WinHTTP compatibility.
  */
 
+var FILTER_ENABLED = ${filterEnabled ? 'true' : 'false'};
+
 function FindProxyForURL(url, host) {
+    // Master switch: if teacher set classroom to Full Internet mode in Portal
+    if (!FILTER_ENABLED) {
+        return "DIRECT";
+    }
+
     // Normalize host to lowercase
     host = host.toLowerCase();
 

@@ -6,7 +6,14 @@
  * NOTE: Keep this file strictly ASCII for WinINet/WinHTTP compatibility.
  */
 
+var FILTER_ENABLED = true;
+
 function FindProxyForURL(url, host) {
+    // Master switch: if teacher set classroom to Full Internet mode in Portal
+    if (!FILTER_ENABLED) {
+        return "DIRECT";
+    }
+
     // Normalize host to lowercase
     host = host.toLowerCase();
 

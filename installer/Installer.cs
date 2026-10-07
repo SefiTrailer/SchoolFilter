@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
+using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -20,7 +21,7 @@ namespace SchoolFilter.Setup
     internal static class Program
     {
         private const string AppName = "SchoolFilter";
-        private const string AppVersion = "1.0.0";
+        private const string AppVersion = "2.0.0";
         private const string Publisher = "School IT Administration";
         private const string TeacherPortalUrl = "https://sefitrailer.github.io/SchoolFilter/";
 
@@ -94,7 +95,6 @@ namespace SchoolFilter.Setup
 
                 if (!isSilent && !roleExplicitlySet)
                 {
-                    // Show interactive role selector dialog
                     using (RoleSelectionForm form = new RoleSelectionForm())
                     {
                         if (form.ShowDialog() != DialogResult.OK)
@@ -137,18 +137,26 @@ namespace SchoolFilter.Setup
                 Directory.CreateDirectory(TargetDir);
             }
 
-            // 2. Extract core filtering resources (Needed on both Student and Teacher)
+            // Stop any existing sinkhole process before overwriting SchoolFilterCtl.exe
+            string ctlPath = Path.Combine(TargetDir, "SchoolFilterCtl.exe");
+            if (File.Exists(ctlPath))
+            {
+                RunHiddenProcess(ctlPath, "stop-sinkhole", true);
+                Thread.Sleep(200);
+            }
+            KillExistingControllerProcesses();
+
+            // 2. Extract core filtering resources
+            ExtractResource("SchoolFilterCtl.exe", ctlPath);
             ExtractResource("filter.pac", Path.Combine(TargetDir, "filter.pac"));
             ExtractResource("BlockGames.bat", Path.Combine(TargetDir, "BlockGames.bat"));
             ExtractResource("AllowAll.bat", Path.Combine(TargetDir, "AllowAll.bat"));
-            
-            string configPath = Path.Combine(TargetDir, "config.ini");
-            if (!File.Exists(configPath))
-            {
-                ExtractResource("config.ini", configPath);
-            }
+            ExtractResource("config.ini", Path.Combine(TargetDir, "config.ini"));
 
-            // 3. Extract Teacher tools ONLY if Teacher role is selected
+            // 3. Configure Browser Policies (Disable UDP QUIC & DoH so Chrome/Edge never bypass the PAC filter)
+            ConfigureBrowserPolicies(true);
+
+            // 4. Role-specific setup (Student vs Teacher)
             if (role == InstallRole.Teacher)
             {
                 ExtractResource("TeacherManager.bat", Path.Combine(TargetDir, "TeacherManager.bat"));
@@ -166,18 +174,41 @@ namespace SchoolFilter.Setup
                     Path.Combine(startMenuDir, "ניהול רשימה לבנה (ממשק מורה).url"),
                     TeacherPortalUrl
                 );
+
+                // Remove Student auto-lock on startup if previously installed as student
+                try
+                {
+                    using (RegistryKey runKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                    {
+                        if (runKey != null) runKey.DeleteValue("SchoolFilter", false);
+                    }
+                }
+                catch {}
             }
             else
             {
-                // In Student Mode: Clean up any teacher management files or shortcuts if they existed
+                // Student Mode: Remove any teacher shortcuts
                 string teacherBat = Path.Combine(TargetDir, "TeacherManager.bat");
                 if (File.Exists(teacherBat)) File.Delete(teacherBat);
 
                 string desktopLnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "SchoolFilter - ממשק ניהול למורה.url");
                 if (File.Exists(desktopLnk)) File.Delete(desktopLnk);
+
+                // Register Student Station to automatically enforce filter on Windows startup/login
+                try
+                {
+                    using (RegistryKey runKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                    {
+                        if (runKey != null)
+                        {
+                            runKey.SetValue("SchoolFilter", "\"" + ctlPath + "\" block", RegistryValueKind.String);
+                        }
+                    }
+                }
+                catch {}
             }
 
-            // 4. Copy running executable as uninstaller
+            // 5. Copy running executable as uninstaller
             string currentExePath = Assembly.GetExecutingAssembly().Location;
             string uninstallerPath = Path.Combine(TargetDir, "Uninstall.exe");
             if (!string.Equals(currentExePath, uninstallerPath, StringComparison.OrdinalIgnoreCase))
@@ -185,23 +216,29 @@ namespace SchoolFilter.Setup
                 File.Copy(currentExePath, uninstallerPath, true);
             }
 
-            // 5. Lock down NTFS ACLs:
+            // 6. Lock down NTFS ACLs:
             // Standard Users (Students): Read & Execute ONLY (no write, no delete, no modify)
             // Administrators & SYSTEM: Full Control
             ApplyStrictPermissions(TargetDir);
 
-            // 6. Register in Windows Add/Remove Programs
+            // 7. Register in Windows Add/Remove Programs
             RegisterUninstallEntry(uninstallerPath, role);
+
+            // 8. If Student Station, activate the filter immediately!
+            if (role == InstallRole.Student)
+            {
+                RunHiddenProcess(ctlPath, "block", true);
+            }
 
             if (!isSilent && !suppressMsgBoxes)
             {
                 string roleName = (role == InstallRole.Teacher) ? "עמדת מורה (Teacher)" : "עמדת תלמיד (Student)";
                 string roleDetails = (role == InstallRole.Teacher)
                     ? "הותקנו כלי הניהול ונוצר קיצור דרך בשולחן העבודה לממשק הניהול בענן."
-                    : "הותקן מנוע החסימה בלבד. לתלמידים אין גישה או הרשאות לשינוי הרשימה הלבנה.";
+                    : "הותקן והופעל מנוע החסימה והסינכרון לענן.\nלתלמידים אין גישה או הרשאות לשינוי הרשימה הלבנה.";
 
                 MessageBox.Show(
-                    "ההתקנה הושלמה בהצלחה!\n\n" +
+                    "ההתקנה הושלמה בהצלחה! (גרסה 2.0)\n\n" +
                     "פרופיל הותקן: " + roleName + "\n" +
                     "תיקיית יעד: " + TargetDir + "\n\n" +
                     roleDetails + "\n" +
@@ -232,22 +269,27 @@ namespace SchoolFilter.Setup
                 }
             }
 
-            // 1. Restore internet settings immediately for current user
+            // 1. Restore internet settings and stop sinkhole via SchoolFilterCtl.exe
+            string ctlPath = Path.Combine(TargetDir, "SchoolFilterCtl.exe");
+            if (File.Exists(ctlPath))
+            {
+                RunHiddenProcess(ctlPath, "allow", true);
+                Thread.Sleep(200);
+            }
+            KillExistingControllerProcesses();
+
+            // 2. Remove Startup entry and Browser Policies
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Internet Settings", true))
+                using (RegistryKey runKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
                 {
-                    if (key != null)
-                    {
-                        key.DeleteValue("AutoConfigURL", false);
-                    }
+                    if (runKey != null) runKey.DeleteValue("SchoolFilter", false);
                 }
-                InternetSetOption(IntPtr.Zero, 39, IntPtr.Zero, 0);
-                InternetSetOption(IntPtr.Zero, 37, IntPtr.Zero, 0);
             }
             catch {}
+            ConfigureBrowserPolicies(false);
 
-            // 2. Remove desktop and start menu shortcuts
+            // 3. Remove desktop and start menu shortcuts
             try
             {
                 string desktopLnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "SchoolFilter - ממשק ניהול למורה.url");
@@ -258,14 +300,14 @@ namespace SchoolFilter.Setup
             }
             catch {}
 
-            // 3. Remove registry uninstallation entry
+            // 4. Remove registry uninstallation entry
             try
             {
                 Registry.LocalMachine.DeleteSubKeyTree(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\SchoolFilter", false);
             }
             catch {}
 
-            // 4. Clean up directory and self via detached process
+            // 5. Clean up directory and self via detached process
             string batchCleanup = Path.Combine(Path.GetTempPath(), "SchoolFilter_Cleanup.bat");
             string cleanupScript = string.Format(
                 "@echo off\r\n" +
@@ -295,6 +337,85 @@ namespace SchoolFilter.Setup
             }
 
             return 0;
+        }
+
+        private static void ConfigureBrowserPolicies(bool enable)
+        {
+            string[] policyPaths = new string[]
+            {
+                @"SOFTWARE\Policies\Google\Chrome",
+                @"SOFTWARE\Policies\Microsoft\Edge"
+            };
+
+            foreach (string path in policyPaths)
+            {
+                try
+                {
+                    if (enable)
+                    {
+                        using (RegistryKey key = Registry.LocalMachine.CreateSubKey(path))
+                        {
+                            if (key != null)
+                            {
+                                // Prevent UDP QUIC and DoH from bypassing Windows system proxy/PAC
+                                key.SetValue("QuicAllowed", 0, RegistryValueKind.DWord);
+                                key.SetValue("DnsOverHttpsMode", "off", RegistryValueKind.String);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        using (RegistryKey key = Registry.LocalMachine.OpenSubKey(path, true))
+                        {
+                            if (key != null)
+                            {
+                                key.DeleteValue("QuicAllowed", false);
+                                key.DeleteValue("DnsOverHttpsMode", false);
+                            }
+                        }
+                    }
+                }
+                catch {}
+            }
+        }
+
+        private static void KillExistingControllerProcesses()
+        {
+            try
+            {
+                Process[] procs = Process.GetProcessesByName("SchoolFilterCtl");
+                foreach (Process p in procs)
+                {
+                    try
+                    {
+                        p.Kill();
+                        p.WaitForExit(1000);
+                    }
+                    catch {}
+                }
+            }
+            catch {}
+        }
+
+        private static void RunHiddenProcess(string fileName, string arguments, bool wait)
+        {
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo(fileName, arguments)
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+                using (Process p = Process.Start(psi))
+                {
+                    if (wait && p != null)
+                    {
+                        p.WaitForExit(5000);
+                    }
+                }
+            }
+            catch {}
         }
 
         private static void CreateUrlShortcut(string filePath, string targetUrl)
@@ -426,9 +547,6 @@ namespace SchoolFilter.Setup
         }
     }
 
-    /// <summary>
-    /// Interactive dialog for choosing Student vs Teacher installation role
-    /// </summary>
     internal class RoleSelectionForm : Form
     {
         public InstallRole SelectedRole { get; private set; }
@@ -441,7 +559,7 @@ namespace SchoolFilter.Setup
 
         private void InitializeComponent()
         {
-            this.Text = "התקנת SchoolFilter - בחירת סוג עמדה";
+            this.Text = "התקנת SchoolFilter v2.0 - בחירת סוג עמדה";
             this.Size = new Size(520, 390);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -485,7 +603,7 @@ namespace SchoolFilter.Setup
 
             Label lblStudentDesc = new Label()
             {
-                Text = "• מנוע חסימה נעול בלבד (נשלט מ-Veyon Master מרחוק).\n• לתלמידים אין שום גישה לממשק הניהול או לעריכת הרשימה.\n• הרשאות קבצים נעולות לחלוטין (Read & Execute בלבד).",
+                Text = "• מפעיל אוטומטית את מנוע החסימה והסינכרון לענן.\n• לתלמידים אין שום גישה לממשק הניהול או לעריכת הרשימה.\n• הרשאות קבצים נעולות לחלוטין (Read & Execute בלבד).",
                 Location = new Point(45, 60),
                 Size = new Size(395, 45),
                 ForeColor = Color.DarkSlateGray
@@ -501,7 +619,7 @@ namespace SchoolFilter.Setup
 
             Label lblTeacherDesc = new Label()
             {
-                Text = "• כולל קיצור דרך לממשק הניהול בענן (הוספת/הסרת אתרים).\n• כלי עזר לשליטה ואינטגרציה עם Veyon Master.",
+                Text = "• כולל קיצור דרך לממשק הניהול בענן (שליטה בחסימה והוספת אתרים).\n• כלי עזר לשליטה ואינטגרציה עם Veyon Master.",
                 Location = new Point(45, 142),
                 Size = new Size(395, 30),
                 ForeColor = Color.DarkSlateGray
