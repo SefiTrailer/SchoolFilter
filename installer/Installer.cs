@@ -19,7 +19,8 @@ namespace SchoolFilter.Setup
     public enum InstallRole
     {
         Student,
-        Teacher
+        Teacher,
+        Uninstall
     }
 
     public sealed class RoomOption
@@ -65,6 +66,17 @@ namespace SchoolFilter.Setup
             string roomName = "ישיבת נשמת התורה - חדר מחשבים";
             string institutionName = "ישיבת נשמת התורה";
 
+            // If launched directly as Uninstall.exe without arguments, default to uninstall mode
+            try
+            {
+                string exeName = Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location);
+                if (string.Equals(exeName, "Uninstall", StringComparison.OrdinalIgnoreCase))
+                {
+                    isUninstall = true;
+                }
+            }
+            catch {}
+
             foreach (string rawArg in args)
             {
                 string trimmed = rawArg.Trim();
@@ -77,7 +89,7 @@ namespace SchoolFilter.Setup
                 {
                     suppressMsgBoxes = true;
                 }
-                else if (arg == "/UNINSTALL" || arg == "-U" || arg == "/U")
+                else if (arg == "/UNINSTALL" || arg == "/REMOVE" || arg == "-U" || arg == "/U")
                 {
                     isUninstall = true;
                 }
@@ -107,7 +119,7 @@ namespace SchoolFilter.Setup
                 if (!suppressMsgBoxes)
                 {
                     MessageBox.Show(
-                        "נדרשות הרשאות מנהל מערכת (Administrator) להרצת ההתקנה.\nאנא הפעל את הקובץ כמנהל.",
+                        "נדרשות הרשאות מנהל מערכת (Administrator) להרצת ההתקנה או ההסרה.\nאנא הפעל את הקובץ כמנהל.",
                         "SchoolFilter Setup - שגיאת הרשאות",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error
@@ -132,6 +144,10 @@ namespace SchoolFilter.Setup
                             return 2; // Cancelled
                         }
                         role = form.SelectedRole;
+                        if (role == InstallRole.Uninstall)
+                        {
+                            return PerformUninstall(isSilent, suppressMsgBoxes);
+                        }
                         if (!string.IsNullOrEmpty(form.SelectedRoomId))
                         {
                             roomId = form.SelectedRoomId;
@@ -362,7 +378,14 @@ namespace SchoolFilter.Setup
             }
             catch {}
 
-            // 5. Clean up directory and self via detached process
+            // 5. Clean up ProgramData\SchoolFilter and TargetDir via detached process
+            try
+            {
+                string dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SchoolFilter");
+                if (Directory.Exists(dataDir)) Directory.Delete(dataDir, true);
+            }
+            catch {}
+
             string batchCleanup = Path.Combine(Path.GetTempPath(), "SchoolFilter_Cleanup.bat");
             string cleanupScript = string.Format(
                 "@echo off\r\n" +
@@ -622,8 +645,8 @@ namespace SchoolFilter.Setup
 
         private void InitializeComponent()
         {
-            this.Text = "התקנת SchoolFilter v3.0 - בחירת עמדה וחדר מחשבים";
-            this.Size = new Size(540, 460);
+            this.Text = "התקנת והסרת SchoolFilter v3.0 - בחירת עמדה וחדר מחשבים";
+            this.Size = new Size(550, 520);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -636,31 +659,31 @@ namespace SchoolFilter.Setup
             {
                 Text = "ברוכים הבאים לאשף ההתקנה של SchoolFilter v3.0",
                 Font = new Font("Segoe UI", 13F, FontStyle.Bold),
-                Location = new Point(20, 18),
+                Location = new Point(20, 16),
                 AutoSize = true
             };
 
             Label lblSub = new Label()
             {
-                Text = "אנא בחר את ייעוד המחשב ואת חדר המחשבים / העגלה שאליהם הוא שייך:",
-                Location = new Point(22, 50),
+                Text = "אנא בחר את ייעוד המחשב והחדר, או הסר התקנה קיימת (Remove):",
+                Location = new Point(22, 46),
                 AutoSize = true,
                 ForeColor = Color.DimGray
             };
 
             GroupBox grpRole = new GroupBox()
             {
-                Text = "פרופיל התקנה ושיוך לחדר",
-                Location = new Point(20, 82),
-                Size = new Size(480, 265)
+                Text = "פרופיל התקנה / הסרה",
+                Location = new Point(20, 76),
+                Size = new Size(490, 330)
             };
 
             RadioButton rbStudent = new RadioButton()
             {
                 Text = "🎓 עמדת תלמיד (Student Station) - למחשבי הכיתה והעגלות",
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                Location = new Point(20, 28),
-                Size = new Size(440, 25),
+                Location = new Point(20, 26),
+                Size = new Size(450, 25),
                 Checked = true
             };
 
@@ -668,15 +691,15 @@ namespace SchoolFilter.Setup
             {
                 Text = "🏫 בחר לאיזה חדר מחשבים או עגלת ניידים שייך מחשב זה:",
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                Location = new Point(42, 58),
-                Size = new Size(415, 22),
+                Location = new Point(42, 54),
+                Size = new Size(425, 22),
                 ForeColor = Color.FromArgb(30, 64, 175)
             };
 
             cmbRooms = new ComboBox()
             {
-                Location = new Point(42, 82),
-                Size = new Size(410, 28),
+                Location = new Point(42, 78),
+                Size = new Size(420, 28),
                 DropDownStyle = ComboBoxStyle.DropDown,
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
             };
@@ -686,8 +709,8 @@ namespace SchoolFilter.Setup
             Label lblStudentDesc = new Label()
             {
                 Text = "• מסתנכרן אוטומטית כל 5 שניות מול החדר שנבחר בלבד.\n• כולל חסימת משחקי דפדפן ומשחקים מותקנים על Windows בזמן שיעור.\n• מוגן מפני מחיקה או עקיפה (Read & Execute בלבד לתלמיד).",
-                Location = new Point(42, 116),
-                Size = new Size(415, 52),
+                Location = new Point(42, 110),
+                Size = new Size(425, 52),
                 ForeColor = Color.DarkSlateGray
             };
 
@@ -695,36 +718,40 @@ namespace SchoolFilter.Setup
             {
                 Text = "👨‍🏫 עמדת מורה (Teacher Station) - למחשב המורה בלבד",
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                Location = new Point(20, 180),
-                Size = new Size(440, 25)
+                Location = new Point(20, 170),
+                Size = new Size(450, 25)
             };
 
             Label lblTeacherDesc = new Label()
             {
                 Text = "• יוצר קיצור דרך לממשק הניהול בענן (עם התחברות Google ושליטה על כל החדרים).\n• אינו נועל את מחשב המורה.",
-                Location = new Point(42, 208),
-                Size = new Size(415, 42),
+                Location = new Point(42, 196),
+                Size = new Size(425, 40),
                 ForeColor = Color.DarkSlateGray
             };
 
-            rbStudent.CheckedChanged += (s, e) =>
+            RadioButton rbUninstall = new RadioButton()
             {
-                cmbRooms.Enabled = rbStudent.Checked;
-                lblRoomPrompt.Enabled = rbStudent.Checked;
+                Text = "🗑️ הסרת התוכנה מהמחשב (Remove / Uninstall)",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(185, 28, 28),
+                Location = new Point(20, 246),
+                Size = new Size(450, 25)
             };
 
-            grpRole.Controls.Add(rbStudent);
-            grpRole.Controls.Add(lblRoomPrompt);
-            grpRole.Controls.Add(cmbRooms);
-            grpRole.Controls.Add(lblStudentDesc);
-            grpRole.Controls.Add(rbTeacher);
-            grpRole.Controls.Add(lblTeacherDesc);
+            Label lblUninstallDesc = new Label()
+            {
+                Text = "• מסיר לחלוטין את SchoolFilter מהמחשב ומשחזר גישה ישירה מלאה לאינטרנט.",
+                Location = new Point(42, 272),
+                Size = new Size(425, 36),
+                ForeColor = Color.DarkSlateGray
+            };
 
             Button btnInstall = new Button()
             {
                 Text = "התקן כעת ⬅",
-                Location = new Point(380, 362),
-                Size = new Size(120, 40),
+                Location = new Point(380, 420),
+                Size = new Size(130, 40),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -732,16 +759,61 @@ namespace SchoolFilter.Setup
                 DialogResult = DialogResult.OK
             };
 
+            Button btnRemove = new Button()
+            {
+                Text = "🗑️ הסר תוכנה (Remove)",
+                Location = new Point(195, 420),
+                Size = new Size(170, 40),
+                BackColor = Color.FromArgb(220, 38, 38),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+            };
+
             Button btnCancel = new Button()
             {
                 Text = "ביטול",
-                Location = new Point(250, 362),
-                Size = new Size(110, 40),
+                Location = new Point(75, 420),
+                Size = new Size(105, 40),
                 DialogResult = DialogResult.Cancel
             };
 
+            EventHandler radioChanged = (s, e) =>
+            {
+                cmbRooms.Enabled = rbStudent.Checked;
+                lblRoomPrompt.Enabled = rbStudent.Checked;
+                if (rbUninstall.Checked)
+                {
+                    btnInstall.Text = "הסר כעת 🗑️";
+                    btnInstall.BackColor = Color.FromArgb(220, 38, 38);
+                }
+                else
+                {
+                    btnInstall.Text = "התקן כעת ⬅";
+                    btnInstall.BackColor = Color.FromArgb(37, 99, 235);
+                }
+            };
+
+            rbStudent.CheckedChanged += radioChanged;
+            rbTeacher.CheckedChanged += radioChanged;
+            rbUninstall.CheckedChanged += radioChanged;
+
+            grpRole.Controls.Add(rbStudent);
+            grpRole.Controls.Add(lblRoomPrompt);
+            grpRole.Controls.Add(cmbRooms);
+            grpRole.Controls.Add(lblStudentDesc);
+            grpRole.Controls.Add(rbTeacher);
+            grpRole.Controls.Add(lblTeacherDesc);
+            grpRole.Controls.Add(rbUninstall);
+            grpRole.Controls.Add(lblUninstallDesc);
+
             btnInstall.Click += (s, e) =>
             {
+                if (rbUninstall.Checked)
+                {
+                    SelectedRole = InstallRole.Uninstall;
+                    return;
+                }
                 SelectedRole = rbTeacher.Checked ? InstallRole.Teacher : InstallRole.Student;
                 RoomOption opt = cmbRooms.SelectedItem as RoomOption;
                 if (opt != null)
@@ -767,10 +839,18 @@ namespace SchoolFilter.Setup
                 }
             };
 
+            btnRemove.Click += (s, e) =>
+            {
+                SelectedRole = InstallRole.Uninstall;
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            };
+
             this.Controls.Add(lblHeader);
             this.Controls.Add(lblSub);
             this.Controls.Add(grpRole);
             this.Controls.Add(btnInstall);
+            this.Controls.Add(btnRemove);
             this.Controls.Add(btnCancel);
             this.AcceptButton = btnInstall;
             this.CancelButton = btnCancel;
