@@ -1,11 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -18,12 +22,25 @@ namespace SchoolFilter.Setup
         Teacher
     }
 
+    public sealed class RoomOption
+    {
+        public string RoomId { get; set; }
+        public string RoomName { get; set; }
+        public string InstitutionName { get; set; }
+
+        public override string ToString()
+        {
+            return InstitutionName + " — " + RoomName + "  (" + RoomId + ")";
+        }
+    }
+
     internal static class Program
     {
         private const string AppName = "SchoolFilter";
-        private const string AppVersion = "2.0.0";
+        private const string AppVersion = "3.0.0";
         private const string Publisher = "School IT Administration";
         private const string TeacherPortalUrl = "https://sefitrailer.github.io/SchoolFilter/";
+        private const string FirebaseProjectId = "school-filter-2026";
 
         private static readonly string TargetDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), 
@@ -44,10 +61,14 @@ namespace SchoolFilter.Setup
             bool isUninstall = false;
             InstallRole role = InstallRole.Student;
             bool roleExplicitlySet = false;
+            string roomId = "yeshiva-lab1";
+            string roomName = "חדר מחשבים ראשי";
+            string institutionName = "הישיבה שלנו";
 
             foreach (string rawArg in args)
             {
-                string arg = rawArg.Trim().ToUpperInvariant();
+                string trimmed = rawArg.Trim();
+                string arg = trimmed.ToUpperInvariant();
                 if (arg == "/VERYSILENT" || arg == "/SILENT" || arg == "-S" || arg == "/S")
                 {
                     isSilent = true;
@@ -69,6 +90,15 @@ namespace SchoolFilter.Setup
                 {
                     role = InstallRole.Student;
                     roleExplicitlySet = true;
+                }
+                else if (arg.StartsWith("/ROOM=", StringComparison.OrdinalIgnoreCase))
+                {
+                    string val = trimmed.Substring(6).Trim().ToLowerInvariant();
+                    if (!string.IsNullOrEmpty(val))
+                    {
+                        roomId = val;
+                        roomName = val;
+                    }
                 }
             }
 
@@ -102,10 +132,16 @@ namespace SchoolFilter.Setup
                             return 2; // Cancelled
                         }
                         role = form.SelectedRole;
+                        if (!string.IsNullOrEmpty(form.SelectedRoomId))
+                        {
+                            roomId = form.SelectedRoomId;
+                            roomName = form.SelectedRoomName;
+                            institutionName = form.SelectedInstitutionName;
+                        }
                     }
                 }
 
-                return PerformInstall(role, isSilent, suppressMsgBoxes);
+                return PerformInstall(role, roomId, roomName, institutionName, isSilent, suppressMsgBoxes);
             }
             catch (Exception ex)
             {
@@ -129,7 +165,7 @@ namespace SchoolFilter.Setup
             return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
 
-        private static int PerformInstall(InstallRole role, bool isSilent, bool suppressMsgBoxes)
+        private static int PerformInstall(InstallRole role, string roomId, string roomName, string institutionName, bool isSilent, bool suppressMsgBoxes)
         {
             // 1. Create target directory
             if (!Directory.Exists(TargetDir))
@@ -151,7 +187,16 @@ namespace SchoolFilter.Setup
             ExtractResource("filter.pac", Path.Combine(TargetDir, "filter.pac"));
             ExtractResource("BlockGames.bat", Path.Combine(TargetDir, "BlockGames.bat"));
             ExtractResource("AllowAll.bat", Path.Combine(TargetDir, "AllowAll.bat"));
-            ExtractResource("config.ini", Path.Combine(TargetDir, "config.ini"));
+
+            // Write room-specific config.ini
+            string configContent =
+                "[SchoolFilter]\r\n" +
+                "RoomId=" + roomId + "\r\n" +
+                "RoomName=" + roomName + "\r\n" +
+                "InstitutionName=" + institutionName + "\r\n" +
+                "FirebaseProjectId=" + FirebaseProjectId + "\r\n" +
+                "CloudPacUrl=http://127.0.0.1:9999/filter.pac\r\n";
+            File.WriteAllText(Path.Combine(TargetDir, "config.ini"), configContent, Encoding.UTF8);
 
             // 3. Configure Browser Policies (Disable UDP QUIC & DoH so Chrome/Edge never bypass the PAC filter)
             ConfigureBrowserPolicies(true);
@@ -243,15 +288,16 @@ namespace SchoolFilter.Setup
                 string roleName = (role == InstallRole.Teacher) ? "עמדת מורה (Teacher)" : "עמדת תלמיד (Student)";
                 string roleDetails = (role == InstallRole.Teacher)
                     ? "הותקנו כלי הניהול ונוצר קיצור דרך בשולחן העבודה לממשק הניהול בענן."
-                    : "הותקן והופעל מנוע החסימה והסינכרון לענן.\nלתלמידים אין גישה או הרשאות לשינוי הרשימה הלבנה.";
+                    : "משויך למוסד/חדר: " + institutionName + " — " + roomName + " (" + roomId + ")\n" +
+                      "הותקן והופעל מנוע החסימה והסינכרון לענן (מתעדכן כל 5 שניות).";
 
                 MessageBox.Show(
-                    "ההתקנה הושלמה בהצלחה! (גרסה 2.0)\n\n" +
+                    "ההתקנה הושלמה בהצלחה! (גרסה 3.0)\n\n" +
                     "פרופיל הותקן: " + roleName + "\n" +
                     "תיקיית יעד: " + TargetDir + "\n\n" +
                     roleDetails + "\n" +
                     "הרשאות NTFS ננעלו: משתמשי בית הספר במצב Read & Execute בלבד.",
-                    "SchoolFilter Setup",
+                    "SchoolFilter Setup v3.0",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information
                 );
@@ -559,17 +605,25 @@ namespace SchoolFilter.Setup
     internal class RoleSelectionForm : Form
     {
         public InstallRole SelectedRole { get; private set; }
+        public string SelectedRoomId { get; private set; }
+        public string SelectedRoomName { get; private set; }
+        public string SelectedInstitutionName { get; private set; }
+
+        private ComboBox cmbRooms;
 
         public RoleSelectionForm()
         {
             SelectedRole = InstallRole.Student;
+            SelectedRoomId = "yeshiva-lab1";
+            SelectedRoomName = "חדר מחשבים ראשי";
+            SelectedInstitutionName = "הישיבה שלנו";
             InitializeComponent();
         }
 
         private void InitializeComponent()
         {
-            this.Text = "התקנת SchoolFilter v2.0 - בחירת סוג עמדה";
-            this.Size = new Size(520, 390);
+            this.Text = "התקנת SchoolFilter v3.0 - בחירת עמדה וחדר מחשבים";
+            this.Size = new Size(540, 460);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -580,61 +634,88 @@ namespace SchoolFilter.Setup
 
             Label lblHeader = new Label()
             {
-                Text = "ברוכים הבאים לאשף ההתקנה של SchoolFilter",
+                Text = "ברוכים הבאים לאשף ההתקנה של SchoolFilter v3.0",
                 Font = new Font("Segoe UI", 13F, FontStyle.Bold),
-                Location = new Point(20, 20),
+                Location = new Point(20, 18),
                 AutoSize = true
             };
 
             Label lblSub = new Label()
             {
-                Text = "אנא בחר את ייעוד המחשב שעליו מותקנת התוכנה כעת:",
-                Location = new Point(22, 55),
+                Text = "אנא בחר את ייעוד המחשב ואת חדר המחשבים / העגלה שאליהם הוא שייך:",
+                Location = new Point(22, 50),
                 AutoSize = true,
                 ForeColor = Color.DimGray
             };
 
             GroupBox grpRole = new GroupBox()
             {
-                Text = "פרופיל התקנה",
-                Location = new Point(20, 90),
-                Size = new Size(460, 180)
+                Text = "פרופיל התקנה ושיוך לחדר",
+                Location = new Point(20, 82),
+                Size = new Size(480, 265)
             };
 
             RadioButton rbStudent = new RadioButton()
             {
-                Text = "🎓 עמדת תלמיד (Student Station) - מומלץ למחשבי הכיתה",
+                Text = "🎓 עמדת תלמיד (Student Station) - למחשבי הכיתה והעגלות",
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                Location = new Point(20, 30),
-                Size = new Size(420, 25),
+                Location = new Point(20, 28),
+                Size = new Size(440, 25),
                 Checked = true
             };
 
+            Label lblRoomPrompt = new Label()
+            {
+                Text = "🏫 בחר לאיזה חדר מחשבים או עגלת ניידים שייך מחשב זה:",
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                Location = new Point(42, 58),
+                Size = new Size(415, 22),
+                ForeColor = Color.FromArgb(30, 64, 175)
+            };
+
+            cmbRooms = new ComboBox()
+            {
+                Location = new Point(42, 82),
+                Size = new Size(410, 28),
+                DropDownStyle = ComboBoxStyle.DropDown,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
+            };
+
+            PopulateRoomsDropdown();
+
             Label lblStudentDesc = new Label()
             {
-                Text = "• מפעיל אוטומטית את מנוע החסימה והסינכרון לענן.\n• לתלמידים אין שום גישה לממשק הניהול או לעריכת הרשימה.\n• הרשאות קבצים נעולות לחלוטין (Read & Execute בלבד).",
-                Location = new Point(45, 60),
-                Size = new Size(395, 45),
+                Text = "• מסתנכרן אוטומטית כל 5 שניות מול החדר שנבחר בלבד.\n• כולל חסימת משחקי דפדפן ומשחקים מותקנים על Windows בזמן שיעור.\n• מוגן מפני מחיקה או עקיפה (Read & Execute בלבד לתלמיד).",
+                Location = new Point(42, 116),
+                Size = new Size(415, 52),
                 ForeColor = Color.DarkSlateGray
             };
 
             RadioButton rbTeacher = new RadioButton()
             {
-                Text = "👨‍🏫 עמדת מורה (Teacher Station) - למחשב המורה בכיתה",
+                Text = "👨‍🏫 עמדת מורה (Teacher Station) - למחשב המורה בלבד",
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                Location = new Point(20, 115),
-                Size = new Size(420, 25)
+                Location = new Point(20, 180),
+                Size = new Size(440, 25)
             };
 
             Label lblTeacherDesc = new Label()
             {
-                Text = "• כולל קיצור דרך לממשק הניהול בענן (שליטה בחסימה והוספת אתרים).\n• כלי עזר לשליטה ואינטגרציה עם Veyon Master.",
-                Location = new Point(45, 142),
-                Size = new Size(395, 30),
+                Text = "• יוצר קיצור דרך לממשק הניהול בענן (עם התחברות Google ושליטה על כל החדרים).\n• אינו נועל את מחשב המורה.",
+                Location = new Point(42, 208),
+                Size = new Size(415, 42),
                 ForeColor = Color.DarkSlateGray
             };
 
+            rbStudent.CheckedChanged += (s, e) =>
+            {
+                cmbRooms.Enabled = rbStudent.Checked;
+                lblRoomPrompt.Enabled = rbStudent.Checked;
+            };
+
             grpRole.Controls.Add(rbStudent);
+            grpRole.Controls.Add(lblRoomPrompt);
+            grpRole.Controls.Add(cmbRooms);
             grpRole.Controls.Add(lblStudentDesc);
             grpRole.Controls.Add(rbTeacher);
             grpRole.Controls.Add(lblTeacherDesc);
@@ -642,8 +723,8 @@ namespace SchoolFilter.Setup
             Button btnInstall = new Button()
             {
                 Text = "התקן כעת ⬅",
-                Location = new Point(360, 290),
-                Size = new Size(120, 38),
+                Location = new Point(380, 362),
+                Size = new Size(120, 40),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -654,14 +735,36 @@ namespace SchoolFilter.Setup
             Button btnCancel = new Button()
             {
                 Text = "ביטול",
-                Location = new Point(230, 290),
-                Size = new Size(110, 38),
+                Location = new Point(250, 362),
+                Size = new Size(110, 40),
                 DialogResult = DialogResult.Cancel
             };
 
             btnInstall.Click += (s, e) =>
             {
                 SelectedRole = rbTeacher.Checked ? InstallRole.Teacher : InstallRole.Student;
+                RoomOption opt = cmbRooms.SelectedItem as RoomOption;
+                if (opt != null)
+                {
+                    SelectedRoomId = opt.RoomId;
+                    SelectedRoomName = opt.RoomName;
+                    SelectedInstitutionName = opt.InstitutionName;
+                }
+                else if (!string.IsNullOrEmpty(cmbRooms.Text))
+                {
+                    string raw = cmbRooms.Text.Trim();
+                    int openParen = raw.LastIndexOf('(');
+                    int closeParen = raw.LastIndexOf(')');
+                    if (openParen >= 0 && closeParen > openParen)
+                    {
+                        SelectedRoomId = raw.Substring(openParen + 1, closeParen - openParen - 1).Trim();
+                    }
+                    else
+                    {
+                        SelectedRoomId = raw.ToLowerInvariant();
+                        SelectedRoomName = raw;
+                    }
+                }
             };
 
             this.Controls.Add(lblHeader);
@@ -671,6 +774,66 @@ namespace SchoolFilter.Setup
             this.Controls.Add(btnCancel);
             this.AcceptButton = btnInstall;
             this.CancelButton = btnCancel;
+        }
+
+        private void PopulateRoomsDropdown()
+        {
+            List<RoomOption> options = new List<RoomOption>();
+
+            try
+            {
+                ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(
+                    "https://firestore.googleapis.com/v1/projects/school-filter-2026/databases/(default)/documents/rooms?pageSize=100"
+                );
+                req.Proxy = null;
+                req.Timeout = 2500;
+                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
+                using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
+                {
+                    string json = sr.ReadToEnd();
+                    string[] docBlocks = json.Split(new string[] { "\"fields\"" }, StringSplitOptions.RemoveEmptyEntries);
+                    for (int i = 1; i < docBlocks.Length; i++)
+                    {
+                        string block = docBlocks[i];
+                        string rId = ExtractJsonStringField(block, "roomId");
+                        string rName = ExtractJsonStringField(block, "name");
+                        string iName = ExtractJsonStringField(block, "institutionName");
+                        if (!string.IsNullOrEmpty(rId) && !string.IsNullOrEmpty(rName))
+                        {
+                            options.Add(new RoomOption
+                            {
+                                RoomId = rId,
+                                RoomName = rName,
+                                InstitutionName = string.IsNullOrEmpty(iName) ? "הישיבה שלנו" : iName
+                            });
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            if (options.Count == 0)
+            {
+                options.Add(new RoomOption { RoomId = "yeshiva-lab1", RoomName = "חדר מחשבים ראשי", InstitutionName = "הישיבה שלנו" });
+                options.Add(new RoomOption { RoomId = "yeshiva-cart1", RoomName = "עגלת מחשבים ניידים 1", InstitutionName = "הישיבה שלנו" });
+                options.Add(new RoomOption { RoomId = "yeshiva-cart2", RoomName = "עגלת מחשבים ניידים 2", InstitutionName = "הישיבה שלנו" });
+            }
+
+            foreach (RoomOption opt in options)
+            {
+                cmbRooms.Items.Add(opt);
+            }
+            if (cmbRooms.Items.Count > 0)
+            {
+                cmbRooms.SelectedIndex = 0;
+            }
+        }
+
+        private static string ExtractJsonStringField(string text, string fieldName)
+        {
+            Match m = Regex.Match(text, "\"" + fieldName + "\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
+            return m.Success ? m.Groups[1].Value : "";
         }
     }
 }

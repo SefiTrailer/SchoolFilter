@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SchoolFilter - ממשק ניהול למורה</title>
+    <title>SchoolFilter Cloud - מערכת ניהול חדרי מחשבים ומוסדות</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,13 +14,13 @@
             --success: #16a34a;
             --danger: #dc2626;
             --danger-hover: #b91c1c;
-            --bg: #f8fafc;
+            --bg: #f1f5f9;
             --card-bg: #ffffff;
             --text-main: #0f172a;
             --text-muted: #64748b;
             --border: #e2e8f0;
-            --radius: 12px;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+            --radius: 14px;
+            --shadow: 0 4px 12px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.05);
         }
 
         * {
@@ -41,10 +41,12 @@
         header {
             background: #ffffff;
             border-bottom: 1px solid var(--border);
-            padding: 16px 24px;
+            padding: 14px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
             box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
         }
 
@@ -55,11 +57,11 @@
         }
 
         .logo-icon {
-            width: 42px;
-            height: 42px;
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #2563eb, #1e40af);
             color: white;
-            border-radius: 10px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -69,7 +71,7 @@
 
         h1 {
             font-size: 20px;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--text-main);
         }
 
@@ -81,7 +83,8 @@
         .user-status {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .badge {
@@ -91,7 +94,7 @@
             padding: 6px 12px;
             border-radius: 9999px;
             font-size: 13px;
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .badge-online {
@@ -104,6 +107,12 @@
             color: #991b1b;
         }
 
+        .badge-role {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
         .status-dot {
             width: 8px;
             height: 8px;
@@ -112,7 +121,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 980px;
             width: 100%;
             margin: 24px auto;
             padding: 0 16px;
@@ -125,70 +134,68 @@
             border: 1px solid var(--border);
             box-shadow: var(--shadow);
             padding: 24px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
             padding-bottom: 12px;
             border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .card-title {
-            font-size: 17px;
+            font-size: 18px;
             font-weight: 700;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        /* Login Box */
-        .login-box {
-            text-align: center;
-            padding: 40px 20px;
-        }
-
-        .login-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-
         .input-group {
             display: flex;
             gap: 10px;
-            margin-top: 16px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
         }
 
-        input[type="text"], input[type="password"] {
+        input[type="text"],
+        input[type="password"],
+        input[type="email"],
+        select {
             flex: 1;
-            padding: 12px 16px;
+            min-width: 200px;
+            padding: 11px 14px;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 15px;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
+            background: #fff;
         }
 
-        input[type="text"]:focus, input[type="password"]:focus {
+        input:focus, select:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
         }
 
-        button {
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: none;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
+        .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            padding: 11px 20px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.18s;
+            white-space: nowrap;
         }
 
         .btn-primary {
@@ -203,9 +210,6 @@
         .btn-success {
             background-color: var(--success);
             color: white;
-            font-size: 16px;
-            padding: 14px 28px;
-            width: 100%;
         }
 
         .btn-success:hover {
@@ -213,14 +217,13 @@
         }
 
         .btn-danger {
-            background-color: transparent;
+            background-color: #fee2e2;
             color: var(--danger);
-            padding: 6px 10px;
-            font-size: 13px;
         }
 
         .btn-danger:hover {
-            background-color: #fee2e2;
+            background-color: var(--danger);
+            color: white;
         }
 
         .btn-outline {
@@ -230,107 +233,183 @@
         }
 
         .btn-outline:hover {
-            background: #f1f5f9;
+            background: #f8fafc;
         }
 
-        /* Sites List */
+        .btn-google {
+            background: #ffffff;
+            color: #1e293b;
+            border: 2px solid #cbd5e1;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 14px 28px;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        .btn-google:hover {
+            border-color: #2563eb;
+            background: #f8fafc;
+        }
+
+        /* Room Cards Grid */
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 14px;
+            margin-top: 12px;
+        }
+
+        .room-tab {
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            background: #f8fafc;
+            transition: all 0.18s;
+            position: relative;
+        }
+
+        .room-tab:hover {
+            border-color: #93c5fd;
+            background: #ffffff;
+        }
+
+        .room-tab.active {
+            border-color: var(--primary);
+            background: #eff6ff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+        }
+
+        .room-tab-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .room-tab-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .room-tab-code {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .sites-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
         .site-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 12px 16px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            margin-bottom: 8px;
-            background: #ffffff;
-            transition: background-color 0.15s;
-        }
-
-        .site-item:hover {
             background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 10px;
         }
 
         .site-domain {
             font-weight: 600;
-            direction: ltr;
-            text-align: right;
             font-size: 15px;
+            direction: ltr;
+            text-align: left;
+            color: #1e293b;
         }
 
         .site-tag {
             font-size: 11px;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-weight: 500;
-            margin-right: 8px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: #e0e7ff;
+            color: #3730a3;
+            margin-top: 3px;
+            display: inline-block;
         }
 
-        .tag-core {
-            background: #dbeafe;
-            color: #1e40af;
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+            flex-wrap: wrap;
         }
 
-        .tag-custom {
-            background: #fef3c7;
-            color: #92400e;
+        .nav-tab-btn {
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            border: none;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-muted);
         }
 
-        .tag-school {
-            background: #dcfce7;
-            color: #166534;
+        .nav-tab-btn.active {
+            background: var(--primary);
+            color: white;
         }
 
-        /* Tester section */
-        .test-result {
+        .table-list {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 12px;
+        }
+
+        .table-list th, .table-list td {
             padding: 12px;
-            border-radius: 8px;
-            display: none;
-            font-weight: 600;
-            text-align: center;
+            border-bottom: 1px solid var(--border);
+            text-align: right;
+            font-size: 14px;
         }
 
-        .test-allowed {
-            background: #dcfce7;
-            color: #166534;
-            display: block;
-        }
-
-        .test-blocked {
-            background: #fee2e2;
-            color: #991b1b;
-            display: block;
+        .table-list th {
+            background: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 700;
         }
 
         .toast {
             position: fixed;
             bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 24px;
             background: #1e293b;
             color: white;
-            padding: 14px 24px;
-            border-radius: 9999px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 14px;
             font-weight: 500;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2);
             display: none;
             z-index: 1000;
-            animation: fadeIn 0.3s;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translate(-50%, 10px); }
-            to { opacity: 1; transform: translate(-50%, 0); }
+        .alert-box {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #92400e;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-top: 16px;
+            text-align: right;
         }
 
-        .help-text {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-top: 8px;
-            line-height: 1.5;
-        }
-
-        .footer {
+        footer {
             text-align: center;
             padding: 20px;
             font-size: 13px;
@@ -347,308 +426,524 @@
         <div class="header-title">
             <div class="logo-icon">🛡️</div>
             <div>
-                <h1>SchoolFilter - ממשק ניהול למורה</h1>
-                <div class="subtitle">ניהול הרשימה הלבנה בכיתת המחשבים בזמן אמת</div>
+                <h1>SchoolFilter Cloud v3.0</h1>
+                <div class="subtitle">ניהול חדרי מחשבים, עגלות ניידים ומוסדות לימוד</div>
             </div>
         </div>
-        <div class="user-status" id="statusContainer">
-            <a href="https://raw.githubusercontent.com/SefiTrailer/SchoolFilter/main/dist/SchoolFilter_Setup.exe" download="SchoolFilter_Setup.exe" class="btn-outline" style="padding: 8px 14px; font-size: 13px; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                📥 הורד תוכנת התקנה (v2.0)
-            </a>
-            <span class="badge badge-offline" id="statusBadge">
+        <div class="user-status">
+            <span id="userRoleBadge" class="badge badge-role" style="display: none;"></span>
+            <span id="statusBadge" class="badge badge-offline">
                 <span class="status-dot"></span>
                 לא מחובר
             </span>
-            <button class="btn-outline" id="btnLogout" style="display:none;" onclick="logout()">התנתק</button>
+            <button id="btnLogout" class="btn btn-outline" style="display: none; padding: 6px 12px; font-size: 13px;" onclick="logoutUser()">התנתק</button>
         </div>
     </header>
 
     <div class="container">
-        
-        <!-- Auth Card (shown if no token) -->
-        <div class="card login-box" id="authCard">
-            <div class="login-icon">🔐</div>
-            <h2 style="margin-bottom: 8px;">התחברות לממשק מורה</h2>
-            <p class="subtitle" style="max-width: 500px; margin: 0 auto 20px auto;">
-                כדי שרק מורים מורשים יוכלו לשנות את רשימת האתרים המותרים, יש להזין את מפתח הגישה של המורה (GitHub Personal Access Token).
+
+        <!-- מסך התחברות עם Google -->
+        <div id="authCard" class="card" style="max-width: 540px; margin: 36px auto; text-align: center;">
+            <div style="font-size: 46px; margin-bottom: 10px;">🔐</div>
+            <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 8px;">כניסת מורים ומנהלי מוסדות</h2>
+            <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 24px;">
+                התחבר באמצעות חשבון Google שלך כדי לשלוט על חדרי המחשבים ועגלות הניידים של המוסד שלך.
             </p>
 
-            <div style="max-width: 480px; margin: 0 auto;">
-                <div class="input-group">
-                    <input type="password" id="tokenInput" placeholder="הדבק כאן את מפתח המורה (ghp_... או gho_...)" autocomplete="off">
-                    <button class="btn-primary" onclick="saveToken()">התחבר</button>
-                </div>
-                <div class="help-text" style="text-align: right; margin-top: 14px;">
-                    💡 <strong>אין לך עדיין מפתח מורה?</strong><br>
-                    <a href="https://github.com/settings/tokens/new?scopes=repo&description=SchoolFilter_Teacher" target="_blank" style="color: var(--primary); font-weight: 600; text-decoration: none;">
-                        👉 לחץ כאן להפקת מפתח מורה ב-GitHub תוך 10 שניות
-                    </a>
-                </div>
+            <button class="btn btn-google" onclick="signInWithGoogle()" style="width: 100%; justify-content: center; margin-bottom: 16px;">
+                <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                התחבר באמצעות חשבון Google
+            </button>
+
+            <!-- הודעת הגדרה חד-פעמית אם טרם הופעל כפתור Google ב-Firebase Console -->
+            <div id="firebaseSetupHint" class="alert-box" style="display: none;">
+                <strong>⚙️ הפעלה חד-פעמית של Google Auth בפרויקט החדש (`school-filter-2026`):</strong><br>
+                1. פתח את <a href="https://console.firebase.google.com/project/school-filter-2026/authentication/providers" target="_blank" style="color: #2563eb; font-weight: 700;">מסך ספקי ההתחברות ב-Firebase</a>, לחץ על <strong>Get started</strong>, בחר ב-<strong>Google</strong>, העבר למצב <strong>Enable</strong> ולחץ <strong>Save</strong>.<br>
+                2. בלשונית <a href="https://console.firebase.google.com/project/school-filter-2026/authentication/settings" target="_blank" style="color: #2563eb; font-weight: 700;">Settings -> Authorized domains</a> לחץ על <strong>Add domain</strong> והוסף את: <code>sefitrailer.github.io</code>
             </div>
+
+            <details style="margin-top: 18px; text-align: right; border-top: 1px solid var(--border); padding-top: 14px;">
+                <summary style="cursor: pointer; font-size: 13px; color: var(--text-muted); font-weight: 600;">🔑 כניסת גיבוי למנהל מערכת (GitHub Token)</summary>
+                <div style="margin-top: 10px; display: flex; gap: 8px;">
+                    <input type="password" id="backupTokenInput" placeholder="הדבק GitHub Token של SefiTrailer..." style="direction: ltr; font-size: 13px;">
+                    <button class="btn btn-primary" style="font-size: 13px; padding: 8px 14px;" onclick="signInWithBackupToken()">כניסה</button>
+                </div>
+            </details>
         </div>
 
-        <!-- Main Dashboard (shown after auth) -->
+        <!-- לוח בקרה ראשי -->
         <div id="dashboard" style="display: none;">
 
-            <!-- Master Classroom Filter Switch Card -->
-            <div class="card" style="border: 2px solid var(--primary);">
-                <div class="card-header">
-                    <div class="card-title">⚡ מצב הסינון בכיתה (שליטה מרחוק מהענן)</div>
-                    <span id="filterStateBadge" class="badge badge-online">🔒 מצב למידה פעיל (חסימת משחקים)</span>
-                </div>
-                <p class="subtitle" style="margin-bottom: 16px;">
-                    בחר את מצב האינטרנט עבור מחשבי התלמידים בכיתה (ניתן לשלוט גם מכאן וגם מתוך Veyon Master):
-                </p>
-                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <button id="btnModeBlock" onclick="setClassroomMode(true)" style="flex: 1; padding: 16px; font-size: 16px; background: #dc2626; color: white;">
-                        🔒 הפעל חסימת משחקים (רשימה לבנה בלבד)
-                    </button>
-                    <button id="btnModeAllow" onclick="setClassroomMode(false)" style="flex: 1; padding: 16px; font-size: 16px; background: #16a34a; color: white;">
-                        🔓 פתח אינטרנט מלא (גלישה חופשית)
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Add Site Card -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">➕ הוספת אתר חדש לרשימה הלבנה</div>
-                </div>
-                <p class="subtitle" style="margin-bottom: 12px;">
-                    הקלד או הדבק את כתובת האתר שברצונך לאפשר לתלמידים לגלוש אליו (לדוגמה: <code>kahoot.it</code> או <code>matific.com</code>).
-                </p>
-                <div class="input-group">
-                    <input type="text" id="newSiteInput" placeholder="לדוגמה: kahoot.it או https://www.geogebra.org" dir="ltr" onkeypress="if(event.key==='Enter') addSite()">
-                    <button class="btn-primary" onclick="addSite()">הוסף לרשימה</button>
-                </div>
-                <div class="help-text">
-                    המערכת מנקה אוטומטית קידומות כמו <code>https://</code> וכוללת גם תתי-דומיינים (למשל <code>*.kahoot.it</code>).
-                </div>
+            <!-- תפריט ניווט עליון -->
+            <div class="nav-tabs">
+                <button id="tabBtnRooms" class="nav-tab-btn active" onclick="switchMainTab('rooms')">🖥️ שליטה על חדרי מחשבים ועגלות</button>
+                <button id="tabBtnUsers" class="nav-tab-btn" onclick="switchMainTab('users')" style="display: none;">👥 ניהול מורים ומוסדות לימוד</button>
             </div>
 
-            <!-- Whitelist Card -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        📋 רשימת האתרים המאושרים כעת
-                        <span style="font-size: 13px; font-weight: normal; color: var(--text-muted);" id="siteCount"></span>
+            <!-- טאב 1: שליטה על חדרי מחשבים -->
+            <div id="tabRoomsContent">
+
+                <!-- בחירת מוסד וחדר מחשבים / עגלת ניידים -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>🏫 בחר חדר מחשבים או עגלת ניידים לשליטה</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <select id="institutionSelect" onchange="onInstitutionChange()" style="min-width: 190px; font-weight: 700; display: none;"></select>
+                            <button class="btn btn-outline" style="padding: 8px 14px; font-size: 13px;" onclick="promptAddRoom()">➕ הוסף חדר / עגלה חדשה</button>
+                        </div>
                     </div>
-                    <button class="btn-outline" style="padding: 6px 12px; font-size: 13px;" onclick="fetchFromGitHub()">🔄 רענן מהענן</button>
+
+                    <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 10px;">
+                        כל חדר מחשבים או עגלת מחשבים ניידים פועלים <strong>בנפרד לחלוטין</strong>. לחץ על החדר הרצוי כדי לנעול/לפתוח אותו או לערוך את רשימת האתרים שלו:
+                    </p>
+
+                    <div id="roomsGrid" class="rooms-grid"></div>
                 </div>
 
-                <div id="sitesList">
-                    <div style="text-align: center; padding: 24px; color: var(--text-muted);">טוען נתונים מענן GitHub...</div>
+                <!-- מתג שליטה לחדר הנבחר -->
+                <div class="card" style="border: 2px solid #bfdbfe; background: linear-gradient(to left, #eff6ff, #ffffff);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+                                <span id="activeRoomTitle" style="font-size: 20px; font-weight: 800; color: #1e3a8a;">🖥️ חדר מחשבים ראשי</span>
+                                <span id="filterStateBadge" class="badge badge-offline" style="font-size: 13px;">🔒 מצב שיעור פעיל (חסימת משחקים)</span>
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-muted);">
+                                קוד חדר להתקנה במחשבי התלמידים: <code id="activeRoomCodeBadge" style="background: #e2e8f0; padding: 2px 8px; border-radius: 6px; font-weight: 700; color: #0f172a;">yeshiva-lab1</code>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn" style="background: #dc2626; color: white;" onclick="setRoomFilterMode(true)">
+                                🔒 נעל חדר זה לשיעור (חסום משחקים)
+                            </button>
+                            <button class="btn" style="background: #16a34a; color: white;" onclick="setRoomFilterMode(false)">
+                                🔓 פתח אינטרנט מלא בחדר זה
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <div style="margin-top: 24px;">
-                    <button class="btn-success" id="btnSave" onclick="saveToGitHub()">
-                        💾 שמור ועדכן את כל מחשבי הכיתה עכשיו
-                    </button>
+                <!-- עריכת הרשימה הלבנה של החדר הנבחר -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span>🌐 אתרים מותרים לגלישה עבור: <span id="whitelistRoomLabel" style="color: var(--primary);">חדר מחשבים ראשי</span></span>
+                        </div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button class="btn btn-outline" style="font-size: 13px; padding: 8px 14px;" onclick="copyWhitelistToAllInstitutionRooms()">
+                                📋 העתק רשימה זו לכל חדרי המוסד
+                            </button>
+                            <button class="btn btn-success" onclick="saveCurrentRoomToCloud()">
+                                💾 שמור וסנכרן לחדר זה
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" id="newSiteInput" placeholder="הקלד כתובת אתר להוספה לחדר זה (למשל: kahoot.it או cet.ac.il)..." onkeypress="if(event.key === 'Enter') addSiteToRoom()">
+                        <button class="btn btn-primary" onclick="addSiteToRoom()">+ הוסף אתר לחדר</button>
+                    </div>
+
+                    <div id="sitesList" class="sites-list"></div>
                 </div>
+
             </div>
 
-            <!-- Live Site Simulator Card -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">🔍 בדיקת אתר (סימולטור חסימה בזמן אמת)</div>
+            <!-- טאב 2: ניהול מורים ומוסדות לימוד -->
+            <div id="tabUsersContent" style="display: none;">
+
+                <!-- ניהול מוסדות לימוד (למנהל ראשי) -->
+                <div id="institutionsAdminCard" class="card" style="display: none;">
+                    <div class="card-header">
+                        <div class="card-title">🏢 מוסדות לימוד רשומים במערכת</div>
+                    </div>
+                    <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 14px;">
+                        כל מוסד מופרד לחלוטין ממוסדות אחרים ובעל חדרי מחשבים ומורים משלו:
+                    </p>
+                    <div class="input-group">
+                        <input type="text" id="newInstName" placeholder="שם המוסד החדש (למשל: ישיבת בני עקיבא / תיכון אורט)...">
+                        <input type="text" id="newInstCode" placeholder="קוד מוסד באנגלית (למשל: ort-school)..." style="direction: ltr;">
+                        <button class="btn btn-primary" onclick="createInstitution()">+ הקם מוסד חדש</button>
+                    </div>
+                    <table class="table-list">
+                        <thead>
+                            <tr>
+                                <th>שם המוסד</th>
+                                <th>קוד מוסד</th>
+                                <th>מספר חדרים/עגלות</th>
+                            </tr>
+                        </thead>
+                        <tbody id="institutionsTableBody"></tbody>
+                    </table>
                 </div>
-                <p class="subtitle" style="margin-bottom: 12px;">
-                    בדוק האם אתר מסוים ייפתח לתלמיד או ייחסם לפי הרשימה הנוכחית:
-                </p>
-                <div class="input-group">
-                    <input type="text" id="testSiteInput" placeholder="הזן כתובת לבדיקה (למשל: roblox.com או one-class.co.il)" dir="ltr" oninput="testSite()">
+
+                <!-- ניהול מורים ומשתמשים מורשים -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">👩‍🏫 מורים ומנהלים מורשים (התחברות באמצעות Google)</div>
+                    </div>
+                    <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 14px;">
+                        הוסף את כתובת ה-Gmail של המורה ושייך אותו למוסד המתאים. רק משתמשים שמופיעים ברשימה זו יוכלו להתחבר עם חשבון Google שלהם:
+                    </p>
+                    <div class="input-group">
+                        <input type="email" id="newUserEmail" placeholder="כתובת Gmail של המורה (למשל: teacher@gmail.com)..." style="direction: ltr;">
+                        <input type="text" id="newUserName" placeholder="שם המורה...">
+                        <select id="newUserInstSelect"></select>
+                        <select id="newUserRoleSelect" style="max-width: 180px;">
+                            <option value="teacher">מורה (שליטה על חדרי המוסד)</option>
+                            <option value="inst_admin">מנהל מוסד (יכול להוסיף מורים במוסד)</option>
+                            <option value="superadmin">מנהל על (כל המוסדות)</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="addAuthorizedUser()">+ הוסף מורה מורשה</button>
+                    </div>
+
+                    <table class="table-list">
+                        <thead>
+                            <tr>
+                                <th>שם</th>
+                                <th>כתובת Google (אימייל)</th>
+                                <th>מוסד משויך</th>
+                                <th>תפקיד</th>
+                                <th>פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody"></tbody>
+                    </table>
                 </div>
-                <div id="testResult" class="test-result"></div>
+
             </div>
 
         </div>
 
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div id="toast" class="toast"></div>
 
-    <footer class="footer">
-        SchoolFilter &copy; 2026 | מערכת ניהול אינטרנט כיתתי עבור Veyon | מחובר ל-GitHub: SefiTrailer/SchoolFilter
+    <footer>
+        SchoolFilter Cloud v3.0 &copy; מערכת ניהול סינון אינטרנט לחדרי מחשבים ועגלות ניידים | מופעל על גבי Google Firebase
     </footer>
 
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
     <script>
-        const REPO_OWNER = 'SefiTrailer';
-        const REPO_NAME = 'SchoolFilter';
-        const PAC_PATH = 'src/filter.pac';
-        const STORAGE_KEY = 'schoolfilter_teacher_token';
-
-        let currentPacSha = null;
-        let whitelistSites = [];
-        let filterEnabled = true;
-
-        // Protected core sites that cannot be accidentally deleted
-        const coreSites = [
-            'one-class.co.il',
-            '*.one-class.co.il',
-            'edu.gov.il',
-            '*.edu.gov.il',
-            'education.gov.il',
-            '*.education.gov.il',
-            'classroom.google.com',
-            'accounts.google.com',
-            'accounts.youtube.com',
-            'ssl.gstatic.com',
-            'fonts.gstatic.com',
-            'fonts.googleapis.com',
-            'apis.google.com',
-            'drive.google.com',
-            'docs.google.com',
-            'lh3.googleusercontent.com'
-        ];
-
-        window.onload = function() {
-            const savedToken = localStorage.getItem(STORAGE_KEY);
-            if (savedToken) {
-                initDashboard(savedToken);
-            }
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyCFr2wXvAgP7pB8OYcjdqWG5XB095xAKLo",
+            authDomain: "school-filter-2026.firebaseapp.com",
+            projectId: "school-filter-2026",
+            storageBucket: "school-filter-2026.firebasestorage.app",
+            messagingSenderId: "335731286674",
+            appId: "1:335731286674:web:65eee16f1ffcac03cc7c4b"
         };
 
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 3500);
+        firebase.initializeApp(FIREBASE_CONFIG);
+        const auth = firebase.auth();
+
+        const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents`;
+        const OWNER_EMAIL = "shalomyosefzeev@gmail.com";
+
+        let currentUser = null; // { email, name, role, institutionId, institutionName }
+        let institutions = [];
+        let allRooms = [];
+        let allUsers = [];
+        let selectedInstitutionId = "yeshiva";
+        let selectedRoomId = "yeshiva-lab1";
+
+        const coreSites = [
+            "one-class.co.il", "*.one-class.co.il",
+            "edu.gov.il", "*.edu.gov.il",
+            "education.gov.il", "*.education.gov.il",
+            "classroom.google.com", "docs.google.com", "drive.google.com"
+        ];
+
+        // Listen for Firebase Auth state
+        auth.onAuthStateChanged(async (fbUser) => {
+            if (fbUser && fbUser.email) {
+                await verifyAndLoadUser(fbUser.email.toLowerCase(), fbUser.displayName || fbUser.email);
+            } else {
+                const savedBackupEmail = localStorage.getItem('sf_backup_admin_email');
+                if (savedBackupEmail) {
+                    await verifyAndLoadUser(savedBackupEmail, 'מנהל מערכת ראשי');
+                }
+            }
+        });
+
+        async function signInWithGoogle() {
+            document.getElementById('firebaseSetupHint').style.display = 'none';
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.setCustomParameters({ prompt: 'select_account' });
+                const result = await auth.signInWithPopup(provider);
+                if (result.user && result.user.email) {
+                    await verifyAndLoadUser(result.user.email.toLowerCase(), result.user.displayName || result.user.email);
+                }
+            } catch (err) {
+                console.error("Google Sign-In error:", err);
+                if (err.code === 'auth/configuration-not-found' ||
+                    err.code === 'auth/operation-not-allowed' ||
+                    err.code === 'auth/unauthorized-domain' ||
+                    (err.message && err.message.includes('CONFIGURATION_NOT_FOUND'))) {
+                    document.getElementById('firebaseSetupHint').style.display = 'block';
+                } else {
+                    alert('שגיאה בהתחברות עם Google: ' + (err.message || err.code));
+                }
+            }
         }
 
-        function saveToken() {
-            const token = document.getElementById('tokenInput').value.trim();
+        async function signInWithBackupToken() {
+            const token = document.getElementById('backupTokenInput').value.trim();
             if (!token) {
-                alert('אנא הזן מפתח גישה תקף');
+                alert('אנא הזן מפתח GitHub תקף');
                 return;
             }
-            localStorage.setItem(STORAGE_KEY, token);
-            initDashboard(token);
+            try {
+                const res = await fetch('https://api.github.com/repos/SefiTrailer/SchoolFilter', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                if (!res.ok) throw new Error('המפתח אינו תקף');
+                const repoData = await res.json();
+                if (!repoData.permissions || !repoData.permissions.push) {
+                    throw new Error('מפתח זה אינו שייך לבעל המערכת (SefiTrailer)');
+                }
+                localStorage.setItem('sf_backup_admin_email', OWNER_EMAIL);
+                localStorage.setItem('schoolfilter_gh_token', token);
+                await verifyAndLoadUser(OWNER_EMAIL, 'מנהל מערכת ראשי (Sefi)');
+            } catch (e) {
+                alert('שגיאת הרשאה: ' + e.message);
+            }
         }
 
-        function logout() {
-            localStorage.removeItem(STORAGE_KEY);
+        async function logoutUser() {
+            localStorage.removeItem('sf_backup_admin_email');
+            try { await auth.signOut(); } catch (e) {}
+            currentUser = null;
             document.getElementById('authCard').style.display = 'block';
             document.getElementById('dashboard').style.display = 'none';
             document.getElementById('btnLogout').style.display = 'none';
+            document.getElementById('userRoleBadge').style.display = 'none';
             const badge = document.getElementById('statusBadge');
             badge.className = 'badge badge-offline';
             badge.innerHTML = '<span class="status-dot"></span> לא מחובר';
         }
 
-        async function initDashboard(token) {
-            document.getElementById('authCard').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'block';
-            document.getElementById('btnLogout').style.display = 'inline-block';
-            
-            const badge = document.getElementById('statusBadge');
-            badge.className = 'badge badge-online';
-            badge.innerHTML = '<span class="status-dot"></span> מחובר כ-מורה מורשה';
-
-            await fetchFromGitHub();
-        }
-
-        async function fetchFromGitHub() {
-            const token = localStorage.getItem(STORAGE_KEY);
-            const listContainer = document.getElementById('sitesList');
-            listContainer.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--text-muted);">מאמת הרשאות מורה וטוען רשימה מהענן...</div>';
-
+        async function verifyAndLoadUser(email, displayName) {
             try {
-                // 1. Verify that this token belongs to SefiTrailer (or an authorized repo admin with push/write access)
-                const repoRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
+                await loadAllCloudData();
 
-                if (!repoRes.ok) {
-                    throw new Error(`שגיאה באימות המפתח מול GitHub (${repoRes.status}): המפתח אינו תקף.`);
+                let userDoc = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+                if (!userDoc && email.toLowerCase() === OWNER_EMAIL) {
+                    userDoc = {
+                        email: OWNER_EMAIL,
+                        name: displayName || 'מנהל מערכת ראשי',
+                        role: 'superadmin',
+                        institutionId: 'all',
+                        institutionName: 'כל המוסדות'
+                    };
                 }
 
-                const repoData = await repoRes.json();
-                if (!repoData.permissions || !repoData.permissions.push) {
-                    throw new Error('גישה נדחתה! מפתח זה אינו שייך לחשבון המורה המורשה (SefiTrailer) ואין לו הרשאות ניהול.');
+                if (!userDoc) {
+                    alert(`גישה נדחתה!\nחשבון ה-Google שלך (${email}) אינו רשום כמורה מורשה במערכת.\nבקש ממנהל המערכת להוסיף את כתובת המייל שלך בלשונית 'ניהול מורים ומוסדות'.`);
+                    await logoutUser();
+                    return;
                 }
 
-                // 2. Fetch the current filter.pac file
-                const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${PAC_PATH}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/vnd.github.v3+json'
-                    }
-                });
+                currentUser = userDoc;
+                document.getElementById('authCard').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                document.getElementById('btnLogout').style.display = 'inline-block';
 
-                if (!res.ok) {
-                    throw new Error(`שגיאה בגישה לקובץ הסינון (${res.status}).`);
-                }
+                const badge = document.getElementById('statusBadge');
+                badge.className = 'badge badge-online';
+                badge.innerHTML = `<span class="status-dot"></span> ${currentUser.email}`;
 
-                const data = await res.json();
-                currentPacSha = data.sha;
-                const decodedContent = decodeURIComponent(escape(atob(data.content)));
+                const roleBadge = document.getElementById('userRoleBadge');
+                roleBadge.style.display = 'inline-flex';
+                roleBadge.textContent = currentUser.role === 'superadmin'
+                    ? '👑 מנהל על (כל המוסדות)'
+                    : (currentUser.role === 'inst_admin' ? `🏫 מנהל מוסד (${currentUser.institutionName})` : `👨‍🏫 מורה (${currentUser.institutionName})`);
 
-                parsePacContent(decodedContent);
-                renderSitesList();
-                showToast('רשימת האתרים סונכרנה בהצלחה מהענן');
-            } catch (err) {
-                alert(err.message);
-                logout();
+                // Show/hide admin controls
+                const canManageUsers = (currentUser.role === 'superadmin' || currentUser.role === 'inst_admin');
+                document.getElementById('tabBtnUsers').style.display = canManageUsers ? 'inline-block' : 'none';
+                document.getElementById('institutionsAdminCard').style.display = (currentUser.role === 'superadmin') ? 'block' : 'none';
+
+                setupInstitutionSelector();
+                renderRoomsGrid();
+                renderActiveRoomPanel();
+                renderAdminTables();
+            } catch (e) {
+                console.error(e);
+                alert('שגיאה בטעינת נתוני המערכת מהענן: ' + e.message);
             }
         }
 
-        function parsePacContent(content) {
-            // Strip single-line and multi-line comments first
-            const cleanContent = content
-                .replace(/\/\*[\s\S]*?\*\//g, '')
-                .replace(/\/\/.*$/gm, '');
+        async function loadAllCloudData() {
+            // 1. Fetch Institutions
+            const instRes = await fetch(`${FIRESTORE_BASE}/institutions?pageSize=100`);
+            const instJson = await instRes.json();
+            institutions = (instJson.documents || []).map(doc => ({
+                code: getStr(doc, 'code') || doc.name.split('/').pop(),
+                name: getStr(doc, 'name'),
+                ownerEmail: getStr(doc, 'ownerEmail')
+            }));
 
-            // Check FILTER_ENABLED master switch
-            const modeMatch = cleanContent.match(/var\s+FILTER_ENABLED\s*=\s*(true|false)/i);
-            if (modeMatch && modeMatch[1]) {
-                filterEnabled = (modeMatch[1].toLowerCase() === 'true');
+            // 2. Fetch Rooms
+            const roomsRes = await fetch(`${FIRESTORE_BASE}/rooms?pageSize=200`);
+            const roomsJson = await roomsRes.json();
+            allRooms = (roomsJson.documents || []).map(doc => ({
+                roomId: getStr(doc, 'roomId') || doc.name.split('/').pop(),
+                name: getStr(doc, 'name'),
+                icon: getStr(doc, 'icon') || '🖥️',
+                institutionId: getStr(doc, 'institutionId') || 'yeshiva',
+                institutionName: getStr(doc, 'institutionName') || 'הישיבה שלנו',
+                filterEnabled: getBool(doc, 'filterEnabled', true),
+                whitelist: getStrArray(doc, 'whitelist', coreSites),
+                updatedBy: getStr(doc, 'updatedBy')
+            }));
+
+            // 3. Fetch Users
+            const usersRes = await fetch(`${FIRESTORE_BASE}/users?pageSize=200`);
+            const usersJson = await usersRes.json();
+            allUsers = (usersJson.documents || []).map(doc => ({
+                email: getStr(doc, 'email') || doc.name.split('/').pop(),
+                name: getStr(doc, 'name'),
+                role: getStr(doc, 'role') || 'teacher',
+                institutionId: getStr(doc, 'institutionId') || 'yeshiva',
+                institutionName: getStr(doc, 'institutionName') || 'הישיבה שלנו'
+            }));
+        }
+
+        function setupInstitutionSelector() {
+            const sel = document.getElementById('institutionSelect');
+            const allowedInsts = (currentUser.role === 'superadmin' || currentUser.institutionId === 'all')
+                ? institutions
+                : institutions.filter(i => i.code === currentUser.institutionId);
+
+            sel.innerHTML = allowedInsts.map(i => `<option value="${i.code}">🏫 מוסד: ${i.name}</option>`).join('');
+
+            if (allowedInsts.length > 1 || currentUser.role === 'superadmin') {
+                sel.style.display = 'inline-block';
             } else {
-                filterEnabled = true;
+                sel.style.display = 'none';
             }
-            updateFilterStateUI();
 
-            // Extract whitelist array from JS code
-            const match = cleanContent.match(/var\s+whitelist\s*=\s*\[([\s\S]*?)\];/);
-            if (match && match[1]) {
-                const rawItems = match[1]
-                    .split(',')
-                    .map(s => s.trim().replace(/^["']|["']$/g, '').trim())
-                    .filter(s => s.length > 0);
+            if (allowedInsts.length > 0 && !allowedInsts.some(i => i.code === selectedInstitutionId)) {
+                selectedInstitutionId = allowedInsts[0].code;
+            }
+            sel.value = selectedInstitutionId;
 
-                // Ensure every base domain has both "domain" and "*.domain"
-                const expanded = [];
-                for (const item of rawItems) {
-                    const base = item.replace(/^\*\./, '');
-                    if (!expanded.includes(base)) expanded.push(base);
-                    if (!expanded.includes('*.' + base)) expanded.push('*.' + base);
-                }
-                whitelistSites = expanded;
-            } else {
-                whitelistSites = [...coreSites];
+            const instRooms = getRoomsForSelectedInstitution();
+            if (instRooms.length > 0 && !instRooms.some(r => r.roomId === selectedRoomId)) {
+                selectedRoomId = instRooms[0].roomId;
             }
         }
 
-        function updateFilterStateUI() {
+        function onInstitutionChange() {
+            selectedInstitutionId = document.getElementById('institutionSelect').value;
+            const instRooms = getRoomsForSelectedInstitution();
+            if (instRooms.length > 0) {
+                selectedRoomId = instRooms[0].roomId;
+            }
+            renderRoomsGrid();
+            renderActiveRoomPanel();
+        }
+
+        function getRoomsForSelectedInstitution() {
+            return allRooms.filter(r => r.institutionId === selectedInstitutionId);
+        }
+
+        function getCurrentRoom() {
+            return allRooms.find(r => r.roomId === selectedRoomId) || getRoomsForSelectedInstitution()[0];
+        }
+
+        function selectRoom(roomId) {
+            selectedRoomId = roomId;
+            renderRoomsGrid();
+            renderActiveRoomPanel();
+        }
+
+        function renderRoomsGrid() {
+            const container = document.getElementById('roomsGrid');
+            const rooms = getRoomsForSelectedInstitution();
+
+            if (rooms.length === 0) {
+                container.innerHTML = `<div style="grid-column: 1/-1; padding: 20px; text-align: center; color: var(--text-muted);">אין עדיין חדרי מחשבים במוסד זה. לחץ על '➕ הוסף חדר / עגלה חדשה'.</div>`;
+                return;
+            }
+
+            container.innerHTML = rooms.map(r => {
+                const isActive = (r.roomId === selectedRoomId);
+                const statusBadge = r.filterEnabled
+                    ? `<span class="badge badge-offline" style="font-size: 11px; padding: 3px 8px;">🔒 נעול לשיעור</span>`
+                    : `<span class="badge badge-online" style="font-size: 11px; padding: 3px 8px;">🔓 אינטרנט פתוח</span>`;
+
+                return `
+                    <div class="room-tab ${isActive ? 'active' : ''}" onclick="selectRoom('${r.roomId}')">
+                        <div class="room-tab-header">
+                            <span class="room-tab-title">${r.icon} ${r.name}</span>
+                            ${statusBadge}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                            <span class="room-tab-code">${r.roomId}</span>
+                            <span style="font-size: 12px; color: var(--text-muted);">${CountBaseDomains(r.whitelist)} אתרים מותרים</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function CountBaseDomains(list) {
+            const set = new Set();
+            (list || []).forEach(s => set.add(s.replace(/^\*\./, '')));
+            return set.size;
+        }
+
+        function renderActiveRoomPanel() {
+            const room = getCurrentRoom();
+            if (!room) return;
+
+            document.getElementById('activeRoomTitle').textContent = `${room.icon} ${room.name} (${room.institutionName})`;
+            document.getElementById('activeRoomCodeBadge').textContent = room.roomId;
+            document.getElementById('whitelistRoomLabel').textContent = `${room.name}`;
+
             const badge = document.getElementById('filterStateBadge');
-            if (!badge) return;
-            if (filterEnabled) {
+            if (room.filterEnabled) {
                 badge.className = 'badge badge-offline';
-                badge.textContent = '🔒 מצב למידה פעיל (חסימת משחקים)';
+                badge.textContent = '🔒 מצב שיעור פעיל (חסימת משחקים)';
             } else {
                 badge.className = 'badge badge-online';
-                badge.textContent = '🔓 אינטרנט חופשי פעיל (כל האתרים פתוחים)';
+                badge.textContent = '🔓 אינטרנט חופשי פעיל בחדר זה';
             }
+
+            renderSitesList(room);
         }
 
-        async function setClassroomMode(enableBlock) {
-            filterEnabled = enableBlock;
-            updateFilterStateUI();
-            await saveToGitHub();
+        function renderSitesList(room) {
+            const container = document.getElementById('sitesList');
+            const uniqueDomains = [];
+            (room.whitelist || []).forEach(s => {
+                const base = s.replace(/^\*\./, '');
+                if (!uniqueDomains.includes(base)) uniqueDomains.push(base);
+            });
+
+            container.innerHTML = uniqueDomains.map(domain => {
+                const isCore = coreSites.includes(domain);
+                return `
+                    <div class="site-item">
+                        <div>
+                            <div class="site-domain">${domain}</div>
+                            <span class="site-tag">${isCore ? 'אתר ליבה מוגן' : 'כולל תתי-דומיינים (*)'}</span>
+                        </div>
+                        <button class="btn btn-danger" style="padding: 6px 12px; font-size: 13px;" onclick="removeSiteFromRoom('${domain}')">הסר</button>
+                    </div>
+                `;
+            }).join('');
         }
 
         function cleanDomain(input) {
@@ -659,256 +954,299 @@
             return domain;
         }
 
-        function addSite() {
+        function addSiteToRoom() {
+            const room = getCurrentRoom();
+            if (!room) return;
             const input = document.getElementById('newSiteInput');
-            const rawValue = input.value.trim();
-            if (!rawValue) return;
-
-            const domain = cleanDomain(rawValue);
+            const domain = cleanDomain(input.value);
             if (!domain) return;
 
-            // Add main domain and wildcard subdomain
-            const mainPattern = domain;
-            const wildPattern = '*.' + domain;
+            if (!room.whitelist.includes(domain)) room.whitelist.push(domain);
+            if (!room.whitelist.includes('*.' + domain)) room.whitelist.push('*.' + domain);
 
-            let added = false;
-            if (!whitelistSites.includes(mainPattern)) {
-                whitelistSites.push(mainPattern);
-                added = true;
-            }
-            if (!whitelistSites.includes(wildPattern)) {
-                whitelistSites.push(wildPattern);
-                added = true;
-            }
-
-            if (added) {
-                input.value = '';
-                renderSitesList();
-                showToast(`האתר ${domain} נוסף לרשימה (לחץ 'שמור' כדי להחיל בכיתה)`);
-            } else {
-                alert('האתר כבר קיים ברשימה הלבנה.');
-            }
+            input.value = '';
+            renderSitesList(room);
+            renderRoomsGrid();
+            showToast(`האתר ${domain} נוסף ל-${room.name}. לחץ 'שמור וסנכרן לחדר זה' להחלה.`);
         }
 
-        function removeSite(site) {
-            if (coreSites.includes(site)) {
-                alert('אתר זה הוא אתר ליבה של בית הספר / משרד החינוך ולא ניתן להסירו.');
+        function removeSiteFromRoom(domain) {
+            const room = getCurrentRoom();
+            if (!room) return;
+            room.whitelist = room.whitelist.filter(s => s !== domain && s !== '*.' + domain);
+            renderSitesList(room);
+            renderRoomsGrid();
+        }
+
+        async function setRoomFilterMode(enableBlock) {
+            const room = getCurrentRoom();
+            if (!room) return;
+            room.filterEnabled = enableBlock;
+            renderActiveRoomPanel();
+            renderRoomsGrid();
+            await saveRoomDocument(room);
+            showToast(enableBlock
+                ? `🔒 ${room.name} ננעל למצב שיעור! מתעדכן במחשבי החדר תוך 5 שניות.`
+                : `🔓 האינטרנט ב-${room.name} נפתח לגלישה חופשית!`);
+        }
+
+        async function saveCurrentRoomToCloud() {
+            const room = getCurrentRoom();
+            if (!room) return;
+            await saveRoomDocument(room);
+            showToast(`✅ ההגדרות של '${room.name}' נשמרו! מחשבי החדר מתעדכנים כעת.`);
+        }
+
+        async function copyWhitelistToAllInstitutionRooms() {
+            const sourceRoom = getCurrentRoom();
+            if (!sourceRoom) return;
+            const targetRooms = getRoomsForSelectedInstitution();
+            if (!confirm(`האם להעתיק את רשימת האתרים של '${sourceRoom.name}' לכל ${targetRooms.length} החדרים והעגלות במוסד '${sourceRoom.institutionName}'?`)) {
                 return;
             }
-
-            const cleanBase = site.replace(/^\*\./, '');
-            whitelistSites = whitelistSites.filter(s => s !== cleanBase && s !== '*.' + cleanBase);
-            renderSitesList();
-            showToast(`האתר ${cleanBase} הוסר (לחץ 'שמור' כדי להחיל בכיתה)`);
+            for (const r of targetRooms) {
+                r.whitelist = [...sourceRoom.whitelist];
+                await saveRoomDocument(r);
+            }
+            renderRoomsGrid();
+            showToast(`✅ רשימת האתרים הועתקה וסונכרנה לכל חדרי '${sourceRoom.institutionName}'!`);
         }
 
-        function renderSitesList() {
-            const listContainer = document.getElementById('sitesList');
-            const countElem = document.getElementById('siteCount');
-
-            // Unique base domains for cleaner display
-            const displayedDomains = [];
-            const processedBases = new Set();
-
-            for (const item of whitelistSites) {
+        async function saveRoomDocument(room) {
+            // Ensure every domain has both base and *.base
+            const expanded = [];
+            for (const item of (room.whitelist || [])) {
                 const base = item.replace(/^\*\./, '');
-                if (!processedBases.has(base)) {
-                    processedBases.add(base);
-                    displayedDomains.push({
-                        domain: base,
-                        isCore: coreSites.includes(base) || coreSites.includes('*.' + base)
-                    });
-                }
+                if (!expanded.includes(base)) expanded.push(base);
+                if (!expanded.includes('*.' + base)) expanded.push('*.' + base);
             }
+            room.whitelist = expanded;
 
-            countElem.textContent = `(${displayedDomains.length} אתרים מורשים)`;
-
-            if (displayedDomains.length === 0) {
-                listContainer.innerHTML = '<div style="text-align: center; padding: 24px;">אין אתרים ברשימה.</div>';
-                return;
-            }
-
-            let html = '';
-            for (const item of displayedDomains) {
-                let tag = '';
-                if (item.domain.includes('one-class')) {
-                    tag = '<span class="site-tag tag-school">One-Class</span>';
-                } else if (item.isCore) {
-                    tag = '<span class="site-tag tag-core">אתר ליבה מאושר</span>';
-                } else {
-                    tag = '<span class="site-tag tag-custom">הוסף ע"י מורה</span>';
-                }
-
-                const deleteBtn = item.isCore
-                    ? '<span style="color: var(--text-muted); font-size: 13px;">🔒 נעול</span>'
-                    : `<button class="btn-danger" onclick="removeSite('${item.domain}')">🗑️ הסר</button>`;
-
-                html += `
-                    <div class="site-item">
-                        <div>
-                            ${tag}
-                            <span class="site-domain">${item.domain}</span>
-                        </div>
-                        <div>
-                            ${deleteBtn}
-                        </div>
-                    </div>
-                `;
-            }
-
-            listContainer.innerHTML = html;
-        }
-
-        async function saveToGitHub() {
-            const token = localStorage.getItem(STORAGE_KEY);
-            const btnSave = document.getElementById('btnSave');
-            btnSave.disabled = true;
-            btnSave.textContent = '⏳ שומר ומעדכן את הענן...';
-
-            try {
-                // Generate new PAC file content
-                const pacJs = generatePacCode(whitelistSites);
-                const encodedContent = btoa(unescape(encodeURIComponent(pacJs)));
-
-                const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${PAC_PATH}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
+            const body = {
+                fields: {
+                    roomId: { stringValue: room.roomId },
+                    name: { stringValue: room.name },
+                    icon: { stringValue: room.icon || '🖥️' },
+                    institutionId: { stringValue: room.institutionId },
+                    institutionName: { stringValue: room.institutionName },
+                    filterEnabled: { booleanValue: Boolean(room.filterEnabled) },
+                    whitelist: {
+                        arrayValue: {
+                            values: room.whitelist.map(s => ({ stringValue: s }))
+                        }
                     },
-                    body: JSON.stringify({
-                        message: 'Update whitelist via Teacher Portal',
-                        content: encodedContent,
-                        sha: currentPacSha
-                    })
-                });
-
-                if (!res.ok) {
-                    const errData = await res.json();
-                    throw new Error(errData.message || 'שגיאה בעדכון GitHub');
+                    updatedAt: { stringValue: new Date().toISOString() },
+                    updatedBy: { stringValue: currentUser ? currentUser.email : '' }
                 }
+            };
 
-                const data = await res.json();
-                currentPacSha = data.content.sha;
-                showToast('🎉 הרשימה עודכנה בהצלחה בענן! כל מחשבי הכיתה מעודכנים כעת.');
-                alert('✅ השינויים נשמרו בהצלחה בענן!\nכל מחשבי התלמידים בכיתה מעודכנים כעת מיידית.');
-            } catch (err) {
-                alert('שגיאה בשמירה: ' + err.message);
-            } finally {
-                btnSave.disabled = false;
-                btnSave.textContent = '💾 שמור ועדכן את כל מחשבי הכיתה עכשיו';
+            const res = await fetch(`${FIRESTORE_BASE}/rooms/${encodeURIComponent(room.roomId)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (!res.ok) {
+                throw new Error('שגיאה בשמירת הגדרות החדר בענן');
             }
         }
 
-        function generatePacCode(sites) {
-            // Ensure both base domain and *.domain are present for every entry
-            const normalizedSet = new Set();
-            for (const s of sites) {
-                const base = s.replace(/^\*\./, '').trim();
-                if (base) {
-                    normalizedSet.add(base);
-                    normalizedSet.add('*.' + base);
-                }
+        async function promptAddRoom() {
+            const inst = institutions.find(i => i.code === selectedInstitutionId) || { code: 'yeshiva', name: 'הישיבה שלנו' };
+            const roomName = prompt(`הקלד שם עבור החדר או עגלת המחשבים החדשה במוסד '${inst.name}' (למשל: עגלת מחשבים ניידים 3 / מעבדת פיזיקה):`);
+            if (!roomName || !roomName.trim()) return;
+
+            const isCart = roomName.includes('עגלה') || roomName.includes('נייד');
+            const defaultCode = `${inst.code}-${isCart ? 'cart' : 'lab'}${ getRoomsForSelectedInstitution().length + 1 }`;
+            const roomCodeInput = prompt(`בחר קוד מזהה באנגלית לחדר זה (ישמש בעת ההתקנה במחשבי החדר):`, defaultCode);
+            if (!roomCodeInput || !roomCodeInput.trim()) return;
+
+            const cleanCode = roomCodeInput.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+            const newRoom = {
+                roomId: cleanCode,
+                name: roomName.trim(),
+                icon: isCart ? '💻' : '🖥️',
+                institutionId: inst.code,
+                institutionName: inst.name,
+                filterEnabled: true,
+                whitelist: [...coreSites],
+                updatedBy: currentUser.email
+            };
+
+            await saveRoomDocument(newRoom);
+            allRooms.push(newRoom);
+            selectedRoomId = newRoom.roomId;
+            renderRoomsGrid();
+            renderActiveRoomPanel();
+            renderAdminTables();
+            showToast(`✅ החדר '${newRoom.name}' (${newRoom.roomId}) נוצר בהצלחה!`);
+        }
+
+        function switchMainTab(tab) {
+            document.getElementById('tabBtnRooms').className = 'nav-tab-btn' + (tab === 'rooms' ? ' active' : '');
+            document.getElementById('tabBtnUsers').className = 'nav-tab-btn' + (tab === 'users' ? ' active' : '');
+            document.getElementById('tabRoomsContent').style.display = (tab === 'rooms') ? 'block' : 'none';
+            document.getElementById('tabUsersContent').style.display = (tab === 'users') ? 'block' : 'none';
+            if (tab === 'users') {
+                renderAdminTables();
             }
-            const formattedSites = Array.from(normalizedSet).map(s => `        "${s}"`).join(',\n');
-
-            // Strictly ASCII comments for 100% compatibility with Windows WinINet/WinHTTP PAC parser
-            return `/**
- * SchoolFilter - Proxy Auto-Configuration (PAC) File
- * Architecture: Whitelist-only filter with sinkhole drop
- * Managed dynamically via SchoolFilter Teacher Portal
- * Target: Windows 10/11 - Chrome, Edge, Firefox, WinINet
- * NOTE: Keep this file strictly ASCII for WinINet/WinHTTP compatibility.
- */
-
-var FILTER_ENABLED = ${filterEnabled ? 'true' : 'false'};
-
-function FindProxyForURL(url, host) {
-    // Master switch: if teacher set classroom to Full Internet mode in Portal
-    if (!FILTER_ENABLED) {
-        return "DIRECT";
-    }
-
-    // Normalize host to lowercase
-    host = host.toLowerCase();
-
-    // =========================================================================
-    // 1. LOCALHOST, LAN & PAC HOSTING BYPASS
-    // Keeps Veyon Classroom Management (ports 11100/11400), local LAN,
-    // and the GitHub PAC cloud host itself always accessible.
-    // =========================================================================
-    if (isPlainHostName(host) ||
-        host === "localhost" ||
-        host === "127.0.0.1" ||
-        host === "::1" ||
-        host === "sefitrailer.github.io" ||
-        host === "raw.githubusercontent.com") {
-        return "DIRECT";
-    }
-
-    // Private IPv4 Subnets (School internal network)
-    if (shExpMatch(host, "10.*") ||
-        shExpMatch(host, "192.168.*") ||
-        shExpMatch(host, "172.1[6-9].*") ||
-        shExpMatch(host, "172.2[0-9].*") ||
-        shExpMatch(host, "172.3[0-1].*") ||
-        shExpMatch(host, "*.local")) {
-        return "DIRECT";
-    }
-
-    // =========================================================================
-    // 2. APPROVED EDUCATIONAL WHITELIST
-    // =========================================================================
-    var whitelist = [
-${formattedSites}
-    ];
-
-    // Evaluate host against whitelist
-    for (var i = 0; i < whitelist.length; i++) {
-        var pattern = whitelist[i];
-        if (shExpMatch(host, pattern) || host === pattern) {
-            return "DIRECT";
-        }
-    }
-
-    // =========================================================================
-    // 3. SINKHOLE DROP (BLOCK ALL OTHER TRAFFIC)
-    // =========================================================================
-    return "PROXY 127.0.0.1:9999";
-}
-`;
         }
 
-        function testSite() {
-            const input = document.getElementById('testSiteInput').value.trim();
-            const resultBox = document.getElementById('testResult');
-            if (!input) {
-                resultBox.style.display = 'none';
+        function renderAdminTables() {
+            // Populate institution select for adding users
+            const userInstSel = document.getElementById('newUserInstSelect');
+            const allowedInsts = (currentUser.role === 'superadmin')
+                ? institutions
+                : institutions.filter(i => i.code === currentUser.institutionId);
+            userInstSel.innerHTML = allowedInsts.map(i => `<option value="${i.code}">${i.name}</option>`).join('');
+
+            // Institutions table
+            const instTbody = document.getElementById('institutionsTableBody');
+            instTbody.innerHTML = institutions.map(inst => {
+                const count = allRooms.filter(r => r.institutionId === inst.code).length;
+                return `
+                    <tr>
+                        <td><strong>${inst.name}</strong></td>
+                        <td><code>${inst.code}</code></td>
+                        <td>${count} חדרים / עגלות</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Users table
+            const usersTbody = document.getElementById('usersTableBody');
+            const visibleUsers = (currentUser.role === 'superadmin')
+                ? allUsers
+                : allUsers.filter(u => u.institutionId === currentUser.institutionId);
+
+            usersTbody.innerHTML = visibleUsers.map(u => {
+                const roleLabel = u.role === 'superadmin' ? '👑 מנהל על' : (u.role === 'inst_admin' ? '🏫 מנהל מוסד' : '👨‍🏫 מורה');
+                const isOwner = u.email.toLowerCase() === OWNER_EMAIL;
+                return `
+                    <tr>
+                        <td><strong>${u.name || '-'}</strong></td>
+                        <td style="direction: ltr; text-align: right;">${u.email}</td>
+                        <td>${u.institutionName}</td>
+                        <td>${roleLabel}</td>
+                        <td>
+                            ${isOwner ? '<span style="font-size:12px;color:#64748b;">בעל המערכת</span>' : `<button class="btn btn-danger" style="padding: 4px 10px; font-size: 12px;" onclick="removeAuthorizedUser('${u.email}')">הסר הרשאה</button>`}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function createInstitution() {
+            const name = document.getElementById('newInstName').value.trim();
+            const rawCode = document.getElementById('newInstCode').value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+            if (!name || !rawCode) {
+                alert('אנא הזן את שם המוסד וקוד מוסד באנגלית');
                 return;
             }
 
-            const host = cleanDomain(input);
-            let allowed = false;
-
-            // Simple match against current whitelist
-            for (const p of whitelistSites) {
-                const regexPattern = '^' + p.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$';
-                const regex = new RegExp(regexPattern, 'i');
-                if (regex.test(host)) {
-                    allowed = true;
-                    break;
+            const body = {
+                fields: {
+                    name: { stringValue: name },
+                    code: { stringValue: rawCode },
+                    ownerEmail: { stringValue: currentUser.email },
+                    createdAt: { stringValue: new Date().toISOString() }
                 }
+            };
+
+            await fetch(`${FIRESTORE_BASE}/institutions/${encodeURIComponent(rawCode)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            // Also create a default Computer Lab room for the new institution
+            const defaultRoom = {
+                roomId: `${rawCode}-lab1`,
+                name: 'חדר מחשבים ראשי',
+                icon: '🖥️',
+                institutionId: rawCode,
+                institutionName: name,
+                filterEnabled: true,
+                whitelist: [...coreSites],
+                updatedBy: currentUser.email
+            };
+            await saveRoomDocument(defaultRoom);
+
+            document.getElementById('newInstName').value = '';
+            document.getElementById('newInstCode').value = '';
+            await loadAllCloudData();
+            setupInstitutionSelector();
+            renderAdminTables();
+            showToast(`✅ המוסד '${name}' הוקם בהצלחה עם חדר מחשבים ראשון (${defaultRoom.roomId})!`);
+        }
+
+        async function addAuthorizedUser() {
+            const email = document.getElementById('newUserEmail').value.trim().toLowerCase();
+            const name = document.getElementById('newUserName').value.trim();
+            const instCode = document.getElementById('newUserInstSelect').value;
+            const role = document.getElementById('newUserRoleSelect').value;
+
+            if (!email || !email.includes('@')) {
+                alert('אנא הזן כתובת אימייל (Google) תקינה');
+                return;
             }
 
-            resultBox.style.display = 'block';
-            if (allowed) {
-                resultBox.className = 'test-result test-allowed';
-                resultBox.textContent = `✅ פתוח: האתר ${host} מותר לגלישה לפי הרשימה`;
-            } else {
-                resultBox.className = 'test-result test-blocked';
-                resultBox.textContent = `🚫 חסום: האתר ${host} ייחסם מיד במחשבי התלמידים`;
+            const instObj = institutions.find(i => i.code === instCode) || { code: 'yeshiva', name: 'הישיבה שלנו' };
+            const body = {
+                fields: {
+                    email: { stringValue: email },
+                    name: { stringValue: name || email },
+                    role: { stringValue: role },
+                    institutionId: { stringValue: role === 'superadmin' ? 'all' : instObj.code },
+                    institutionName: { stringValue: role === 'superadmin' ? 'כל המוסדות' : instObj.name }
+                }
+            };
+
+            await fetch(`${FIRESTORE_BASE}/users/${encodeURIComponent(email)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            document.getElementById('newUserEmail').value = '';
+            document.getElementById('newUserName').value = '';
+            await loadAllCloudData();
+            renderAdminTables();
+            showToast(`✅ המשתמש ${email} נוסף בהצלחה ויכול להתחבר עם חשבון Google שלו!`);
+        }
+
+        async function removeAuthorizedUser(email) {
+            if (!confirm(`האם להסיר את הרשאת הגישה של ${email}?`)) return;
+            await fetch(`${FIRESTORE_BASE}/users/${encodeURIComponent(email)}`, {
+                method: 'DELETE'
+            });
+            await loadAllCloudData();
+            renderAdminTables();
+            showToast(`ההרשאה של ${email} הוסרה.`);
+        }
+
+        // Firestore JSON helpers
+        function getStr(doc, field) {
+            return (doc.fields && doc.fields[field] && doc.fields[field].stringValue) || '';
+        }
+        function getBool(doc, field, defaultVal) {
+            if (doc.fields && doc.fields[field] && typeof doc.fields[field].booleanValue === 'boolean') {
+                return doc.fields[field].booleanValue;
             }
+            return defaultVal;
+        }
+        function getStrArray(doc, field, defaultArr) {
+            if (doc.fields && doc.fields[field] && doc.fields[field].arrayValue && doc.fields[field].arrayValue.values) {
+                return doc.fields[field].arrayValue.values.map(v => v.stringValue).filter(Boolean);
+            }
+            return [...defaultArr];
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 4000);
         }
     </script>
 </body>

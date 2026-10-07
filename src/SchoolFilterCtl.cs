@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -16,7 +17,8 @@ namespace SchoolFilter.Controller
 {
     internal static class Program
     {
-        private const string DefaultCloudPacUrl = "https://raw.githubusercontent.com/SefiTrailer/SchoolFilter/main/src/filter.pac";
+        private const string DefaultFirebaseProjectId = "school-filter-2026";
+        private const string DefaultRoomId = "yeshiva-lab1";
         private const int SinkholePort = 9999;
 
         private static readonly string InstallDir = Path.Combine(
@@ -24,19 +26,24 @@ namespace SchoolFilter.Controller
             "SchoolFilter"
         );
 
-        private static readonly string StateFilePath = Path.Combine(
+        private static readonly string DataDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-            "SchoolFilter",
-            "state.txt"
+            "SchoolFilter"
         );
 
+        private static readonly string StateFilePath = Path.Combine(DataDir, "state.txt");
+        private static readonly string CachedPacFilePath = Path.Combine(DataDir, "cached_room_filter.pac");
+
+        // Dynamic Room State served by local Sinkhole + PAC Server on 127.0.0.1:9999
+        private static volatile string CurrentPacScript = null;
+        private static volatile string CurrentRoomDisplayLabel = "מצב שיעור פעיל בכיתה";
+
         // Background telemetry/CDN domains that browsers request automatically without user navigation.
-        // We block them silently without popping up the classroom notification banner.
         private static readonly string[] SilentTelemetryDomains = new string[]
         {
             "googleapis.com", "gstatic.com", "google.com", "gvt1.com", "gvt2.com", "1e100.net",
             "microsoft.com", "windows.com", "windowsupdate.com", "live.com", "msn.com", "bing.com",
-            "msedge.net", "office.com", "office365.com", " office.net", "skype.com", "sfx.ms",
+            "msedge.net", "office.com", "office365.com", "office.net", "skype.com", "sfx.ms",
             "azureedge.net", "trafficmanager.net", "visualstudio.com", "aka.ms",
             "cloudflare.com", "cloudflare-dns.com", "amazonaws.com", "akamai.net", "akamaihd.net",
             "edgekey.net", "edgesuite.net", "fastly.net", "digicert.com", "lencr.org", "sectigo.com",
@@ -47,7 +54,7 @@ namespace SchoolFilter.Controller
             "opera.com", "brave.com", "localhost", "127.0.0.1"
         };
 
-        // Installed desktop games & game launchers that should be closed automatically during class
+        // Installed desktop games & game launchers closed automatically during class
         private static readonly Dictionary<string, string> BlockedGameProcesses = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { "RobloxPlayerBeta", "Roblox" },
@@ -169,7 +176,8 @@ namespace SchoolFilter.Controller
                 {
                     string targetName = (args.Length > 1) ? args[1] : "אתר לא מורשה";
                     string isGame = (args.Length > 2) ? args[2] : "web";
-                    Application.Run(new ClassroomBlockNotificationForm(targetName, isGame == "game"));
+                    string roomLabel = (args.Length > 3) ? args[3] : GetConfiguredRoomDisplayLabel();
+                    Application.Run(new ClassroomBlockNotificationForm(targetName, isGame == "game", roomLabel));
                     return 0;
                 }
                 else if (action == "watchdog")
@@ -208,8 +216,7 @@ namespace SchoolFilter.Controller
         {
             try
             {
-                string dir = Path.GetDirectoryName(StateFilePath);
-                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
                 File.WriteAllText(StateFilePath, mode);
             }
             catch {}
@@ -228,15 +235,14 @@ namespace SchoolFilter.Controller
             return "auto";
         }
 
-        private static string GetBasePacUrl()
+        private static string GetConfigValue(string keyName, string defaultValue)
         {
-            string baseUrl = DefaultCloudPacUrl;
             try
             {
                 string configPath = Path.Combine(InstallDir, "config.ini");
                 if (File.Exists(configPath))
                 {
-                    string[] lines = File.ReadAllLines(configPath);
+                    string[] lines = File.ReadAllLines(configPath, Encoding.UTF8);
                     foreach (string rawLine in lines)
                     {
                         string line = rawLine.Trim();
@@ -246,30 +252,27 @@ namespace SchoolFilter.Controller
                         int idx = line.IndexOf('=');
                         string key = line.Substring(0, idx).Trim();
                         string val = line.Substring(idx + 1).Trim();
-                        if (string.Equals(key, "CloudPacUrl", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(val))
+                        if (string.Equals(key, keyName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(val))
                         {
-                            baseUrl = val;
-                            break;
+                            return val;
                         }
                     }
                 }
             }
             catch {}
-            return baseUrl;
+            return defaultValue;
         }
 
-        private static string GetConfiguredPacUrl(long cacheBuster)
+        private static string GetConfiguredRoomDisplayLabel()
         {
-            string baseUrl = GetBasePacUrl();
+            string inst = GetConfigValue("InstitutionName", "הישיבה שלנו");
+            string room = GetConfigValue("RoomName", "חדר מחשבים");
+            return inst + " — " + room;
+        }
 
-            if (baseUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                baseUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            {
-                string sep = baseUrl.Contains("?") ? "&" : "?";
-                return baseUrl + sep + "t=" + cacheBuster.ToString();
-            }
-
-            return baseUrl;
+        private static string GetLocalPacEndpointUrl(long cacheBuster)
+        {
+            return "http://127.0.0.1:" + SinkholePort + "/filter.pac?v=" + cacheBuster.ToString();
         }
 
         private static void EnableFilter()
@@ -282,7 +285,7 @@ namespace SchoolFilter.Controller
 
         private static void RefreshPacSettings(long cacheBuster)
         {
-            string pacUrl = GetConfiguredPacUrl(cacheBuster);
+            string pacUrl = GetLocalPacEndpointUrl(cacheBuster);
 
             // Apply to current session via WinINet API
             SetWinInetPac(true, pacUrl);
@@ -300,48 +303,30 @@ namespace SchoolFilter.Controller
 
         private static void DisableFilter(bool stopDaemon)
         {
-            // 1. Disable in current session via WinINet API
             SetWinInetPac(false, "");
-
-            // 2. Remove from HKEY_CURRENT_USER
             ApplyPacToRegistryRoot(Registry.CurrentUser, false, "");
-
-            // 3. Remove from ALL logged-in user hives in HKEY_USERS
             ApplyPacToAllLoadedUsers(false, "");
-
-            // 4. Remove Desktop Game Firewall blocks so full internet is open
             ConfigureGameFirewallRules(false);
 
-            // 5. Stop background sinkhole server if requested
             if (stopDaemon)
             {
                 StopSinkholeServer();
             }
 
-            // 6. Broadcast settings change
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
         }
 
-        /// <summary>
-        /// Blocks or unblocks multiplayer desktop game ports in Windows Firewall.
-        /// Never blocks TCP 80/443 (Web), UDP 53 (DNS), or LocalSubnet/Veyon (11100-11400).
-        /// </summary>
         private static void ConfigureGameFirewallRules(bool blockGames)
         {
             try
             {
-                // First delete any existing rules to avoid duplicates
                 RunNetsh("advfirewall firewall delete rule name=\"SchoolFilter_BlockGameUDP\"");
                 RunNetsh("advfirewall firewall delete rule name=\"SchoolFilter_BlockGameTCP\"");
 
                 if (blockGames)
                 {
-                    // Block non-LAN multiplayer UDP ports used by Roblox, Fortnite, Valorant, Minecraft Bedrock, Steam, etc.
-                    // Ports 1024-11099 and 11401-65535 (leaves DNS 53, DHCP 67-68, NTP 123, and Veyon 11100-11400 completely untouched!)
                     RunNetsh("advfirewall firewall add rule name=\"SchoolFilter_BlockGameUDP\" dir=out action=block protocol=UDP remoteport=1024-11099,11401-65535");
-
-                    // Block common non-HTTP TCP game server ports (Battle.net, Xbox Live, Epic, Valorant, Minecraft Java/Bedrock, Steam, FiveM)
                     RunNetsh("advfirewall firewall add rule name=\"SchoolFilter_BlockGameTCP\" dir=out action=block protocol=TCP remoteport=1119,3074,3724,5222,6667,7000-9100,19132-19133,25565,27000-27100,30120");
                 }
             }
@@ -376,7 +361,7 @@ namespace SchoolFilter.Controller
                     if (ar.AsyncWaitHandle.WaitOne(80))
                     {
                         client.EndConnect(ar);
-                        return; // Already listening!
+                        return;
                     }
                 }
             }
@@ -433,6 +418,131 @@ namespace SchoolFilter.Controller
             catch {}
         }
 
+        private static string LoadInitialPacScript()
+        {
+            try
+            {
+                if (File.Exists(CachedPacFilePath))
+                {
+                    string cached = File.ReadAllText(CachedPacFilePath, Encoding.ASCII);
+                    if (!string.IsNullOrEmpty(cached)) return cached;
+                }
+                string installedPac = Path.Combine(InstallDir, "filter.pac");
+                if (File.Exists(installedPac))
+                {
+                    return File.ReadAllText(installedPac, Encoding.ASCII);
+                }
+            }
+            catch {}
+
+            return GenerateDynamicPacScript(true, new List<string>
+            {
+                "one-class.co.il", "*.one-class.co.il",
+                "edu.gov.il", "*.edu.gov.il",
+                "education.gov.il", "*.education.gov.il",
+                "classroom.google.com", "docs.google.com", "drive.google.com", "accounts.google.com"
+            });
+        }
+
+        private static string GenerateDynamicPacScript(bool filterEnabled, List<string> whitelist)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("function FindProxyForURL(url, host) {");
+            sb.AppendLine("    host = host.toLowerCase();");
+            sb.AppendLine("    var FILTER_ENABLED = " + (filterEnabled ? "true" : "false") + ";");
+            sb.AppendLine("    if (!FILTER_ENABLED) { return \"DIRECT\"; }");
+            sb.AppendLine("    if (isPlainHostName(host) || shExpMatch(host, \"*.local\") || shExpMatch(host, \"localhost\") || shExpMatch(host, \"127.*\") || shExpMatch(host, \"10.*\") || shExpMatch(host, \"192.168.*\") || shExpMatch(host, \"172.16.*\") || shExpMatch(host, \"172.17.*\") || shExpMatch(host, \"172.18.*\") || shExpMatch(host, \"172.19.*\") || shExpMatch(host, \"172.2*.*\") || shExpMatch(host, \"172.30.*\") || shExpMatch(host, \"172.31.*\")) {");
+            sb.AppendLine("        return \"DIRECT\";");
+            sb.AppendLine("    }");
+            sb.AppendLine("    var whitelist = [");
+            for (int i = 0; i < whitelist.Count; i++)
+            {
+                string item = whitelist[i].Replace("\"", "").Trim().ToLowerInvariant();
+                string comma = (i < whitelist.Count - 1) ? "," : "";
+                sb.AppendLine("        \"" + item + "\"" + comma);
+            }
+            sb.AppendLine("    ];");
+            sb.AppendLine("    for (var i = 0; i < whitelist.length; i++) {");
+            sb.AppendLine("        var pattern = whitelist[i].toLowerCase();");
+            sb.AppendLine("        if (shExpMatch(host, pattern)) { return \"DIRECT\"; }");
+            sb.AppendLine("        if (pattern.indexOf(\"*.\") === 0) {");
+            sb.AppendLine("            var baseDomain = pattern.substring(2);");
+            sb.AppendLine("            if (host === baseDomain) { return \"DIRECT\"; }");
+            sb.AppendLine("        }");
+            sb.AppendLine("    }");
+            sb.AppendLine("    return \"PROXY 127.0.0.1:9999\";");
+            sb.AppendLine("}");
+            return sb.ToString();
+        }
+
+        private static bool ParseFirestoreRoomJson(string json, out bool filterEnabled, out List<string> whitelist, out string roomLabel)
+        {
+            filterEnabled = true;
+            whitelist = new List<string>();
+            roomLabel = GetConfiguredRoomDisplayLabel();
+
+            if (string.IsNullOrEmpty(json)) return false;
+
+            try
+            {
+                // 1. Parse filterEnabled booleanValue
+                Match boolMatch = Regex.Match(json, "\"filterEnabled\"\\s*:\\s*\\{\\s*\"booleanValue\"\\s*:\\s*(true|false)", RegexOptions.IgnoreCase);
+                if (boolMatch.Success)
+                {
+                    filterEnabled = string.Equals(boolMatch.Groups[1].Value, "true", StringComparison.OrdinalIgnoreCase);
+                }
+
+                // 2. Parse room name and institutionName
+                string rName = "";
+                string iName = "";
+                Match rMatch = Regex.Match(json, "\"name\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
+                if (rMatch.Success) rName = rMatch.Groups[1].Value;
+                Match iMatch = Regex.Match(json, "\"institutionName\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
+                if (iMatch.Success) iName = iMatch.Groups[1].Value;
+                if (!string.IsNullOrEmpty(rName) && !string.IsNullOrEmpty(iName))
+                {
+                    roomLabel = iName + " — " + rName;
+                }
+                else if (!string.IsNullOrEmpty(rName))
+                {
+                    roomLabel = rName;
+                }
+
+                // 3. Parse whitelist arrayValue
+                int wlIdx = json.IndexOf("\"whitelist\"", StringComparison.OrdinalIgnoreCase);
+                if (wlIdx >= 0)
+                {
+                    int arrEnd = json.IndexOf("]", wlIdx);
+                    if (arrEnd > wlIdx)
+                    {
+                        string wlSection = json.Substring(wlIdx, arrEnd - wlIdx);
+                        MatchCollection matches = Regex.Matches(wlSection, "\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
+                        foreach (Match m in matches)
+                        {
+                            string domain = m.Groups[1].Value.Trim().ToLowerInvariant();
+                            if (!string.IsNullOrEmpty(domain))
+                            {
+                                string baseDom = domain.StartsWith("*.") ? domain.Substring(2) : domain;
+                                if (!whitelist.Contains(baseDom)) whitelist.Add(baseDom);
+                                if (!whitelist.Contains("*." + baseDom)) whitelist.Add("*." + baseDom);
+                            }
+                        }
+                    }
+                }
+
+                if (whitelist.Count == 0)
+                {
+                    whitelist.AddRange(new string[] { "one-class.co.il", "*.one-class.co.il", "edu.gov.il", "*.edu.gov.il", "classroom.google.com" });
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static void RunSinkholeAndCloudSyncDaemon()
         {
             bool createdNew;
@@ -440,16 +550,20 @@ namespace SchoolFilter.Controller
             {
                 if (!createdNew)
                 {
-                    return; // Another instance is already running
+                    return;
                 }
+
+                CurrentPacScript = LoadInitialPacScript();
+                CurrentRoomDisplayLabel = GetConfiguredRoomDisplayLabel();
 
                 TcpListener listener = null;
                 bool running = true;
 
-                // Thread 1: Cloud Sync & Registry Self-Healing (every 10s) + Desktop Game Blocker (every 2.5s)
+                // Background watcher thread:
+                // Polls Firebase Firestore for THIS room's settings every 5 seconds & enforces desktop game blocking every 2.5 seconds.
                 Thread cloudSyncThread = new Thread(() =>
                 {
-                    string lastPacContent = null;
+                    string lastGeneratedPac = null;
                     bool lastCloudFilterEnabled = true;
                     bool lastAppliedFirewallState = false;
                     long currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
@@ -461,43 +575,61 @@ namespace SchoolFilter.Controller
                     {
                         try
                         {
-                            // Poll GitHub every 10 seconds (every 4 ticks of 2.5s)
-                            if (tickCounter % 4 == 0)
+                            // Poll Firebase Firestore every 5 seconds (every 2 ticks of 2.5s)
+                            if (tickCounter % 2 == 0)
                             {
-                                string baseUrl = GetBasePacUrl();
-                                if (baseUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                                string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
+                                string roomId = GetConfigValue("RoomId", DefaultRoomId);
+                                long ticks = DateTime.UtcNow.Ticks;
+                                string firestoreUrl = "https://firestore.googleapis.com/v1/projects/" + projectId +
+                                                      "/databases/(default)/documents/rooms/" + Uri.EscapeDataString(roomId) +
+                                                      "?nocache=" + ticks;
+
+                                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(firestoreUrl);
+                                req.Proxy = null; // Direct connection to Firebase Cloud, bypassing local proxy
+                                req.Timeout = 4000;
+                                req.UserAgent = "SchoolFilter-RoomDaemon/3.0";
+
+                                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
+                                using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
                                 {
-                                    long ticks = DateTime.UtcNow.Ticks;
-                                    string checkUrl = baseUrl + (baseUrl.Contains("?") ? "&" : "?") + "nocache=" + ticks;
-                                    HttpWebRequest req = (HttpWebRequest)WebRequest.Create(checkUrl);
-                                    req.Proxy = null;
-                                    req.Timeout = 4000;
-                                    req.UserAgent = "SchoolFilter-Daemon/2.1";
-                                    using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
-                                    using (StreamReader sr = new StreamReader(resp.GetResponseStream()))
+                                    string json = sr.ReadToEnd();
+                                    bool cloudFilterEnabled;
+                                    List<string> whitelist;
+                                    string roomLabel;
+
+                                    if (ParseFirestoreRoomJson(json, out cloudFilterEnabled, out whitelist, out roomLabel))
                                     {
-                                        string content = sr.ReadToEnd();
-                                        if (!string.IsNullOrEmpty(content))
+                                        CurrentRoomDisplayLabel = roomLabel;
+                                        string newPac = GenerateDynamicPacScript(cloudFilterEnabled, whitelist);
+                                        CurrentPacScript = newPac;
+
+                                        bool pacChanged = (lastGeneratedPac != null && lastGeneratedPac != newPac);
+                                        if (pacChanged || lastGeneratedPac == null)
                                         {
-                                            bool cloudFilterEnabled = !content.Contains("FILTER_ENABLED = false");
-                                            bool contentChanged = (lastPacContent != null && lastPacContent != content);
-
-                                            if (contentChanged)
+                                            try
                                             {
-                                                currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-                                                if (cloudFilterEnabled != lastCloudFilterEnabled)
-                                                {
-                                                    SaveLocalOverride("auto");
-                                                }
+                                                if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
+                                                File.WriteAllText(CachedPacFilePath, newPac, Encoding.ASCII);
                                             }
+                                            catch {}
+                                        }
 
-                                            lastPacContent = content;
-                                            lastCloudFilterEnabled = cloudFilterEnabled;
-
-                                            if (contentChanged && cloudFilterEnabled && ReadLocalOverride() != "allow")
+                                        if (pacChanged)
+                                        {
+                                            currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                                            if (cloudFilterEnabled != lastCloudFilterEnabled)
                                             {
-                                                RefreshPacSettings(currentCacheBuster);
+                                                SaveLocalOverride("auto");
                                             }
+                                        }
+
+                                        lastGeneratedPac = newPac;
+                                        lastCloudFilterEnabled = cloudFilterEnabled;
+
+                                        if (pacChanged && cloudFilterEnabled && ReadLocalOverride() != "allow")
+                                        {
+                                            RefreshPacSettings(currentCacheBuster);
                                         }
                                     }
                                 }
@@ -519,7 +651,6 @@ namespace SchoolFilter.Controller
                                     lastAppliedFirewallState = true;
                                 }
 
-                                // Actively scan and close installed desktop games during class!
                                 EnforceInstalledGameBlock();
                             }
                             else
@@ -540,7 +671,7 @@ namespace SchoolFilter.Controller
                         tickCounter++;
                         for (int i = 0; i < 5 && running; i++)
                         {
-                            Thread.Sleep(500); // 2.5 seconds total per loop
+                            Thread.Sleep(500);
                         }
                     }
                 });
@@ -579,17 +710,33 @@ namespace SchoolFilter.Controller
                                     return;
                                 }
 
+                                // Check if Windows/Browser is requesting the room's PAC file: GET /filter.pac
+                                if (req.StartsWith("GET /filter.pac", StringComparison.OrdinalIgnoreCase) ||
+                                    req.StartsWith("HEAD /filter.pac", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    string pacContent = CurrentPacScript ?? LoadInitialPacScript();
+                                    byte[] pacBytes = Encoding.ASCII.GetBytes(pacContent);
+                                    string pacHeader = "HTTP/1.1 200 OK\r\n" +
+                                                       "Content-Type: application/x-ns-proxy-autoconfig\r\n" +
+                                                       "Content-Length: " + pacBytes.Length + "\r\n" +
+                                                       "Cache-Control: no-store, no-cache, must-revalidate, max-age=0\r\n" +
+                                                       "Connection: close\r\n\r\n";
+                                    byte[] pacHeaderBytes = Encoding.ASCII.GetBytes(pacHeader);
+                                    stream.Write(pacHeaderBytes, 0, pacHeaderBytes.Length);
+                                    stream.Write(pacBytes, 0, pacBytes.Length);
+                                    stream.Flush();
+                                    return;
+                                }
+
                                 bool isDirectInfoPage = false;
                                 string blockedDomain = ExtractDomainFromHttpRequest(req, out isDirectInfoPage);
 
-                                // If the user is actively browsing in Chrome/Edge/Firefox and tried to enter a blocked HTTPS site,
-                                // show the friendly Hebrew Classroom Block Banner so they immediately know why it's blocked!
                                 if (!isDirectInfoPage && IsFilterCurrentlyEnforced && !string.IsNullOrEmpty(blockedDomain))
                                 {
                                     MaybeShowBrowserBlockNotification(blockedDomain);
                                 }
 
-                                string htmlBody = BuildHebrewBlockPageHtml(blockedDomain);
+                                string htmlBody = BuildHebrewBlockPageHtml(blockedDomain, CurrentRoomDisplayLabel);
                                 byte[] bodyBytes = Encoding.UTF8.GetBytes(htmlBody);
                                 string statusCode = isDirectInfoPage ? "200 OK" : "403 Forbidden";
                                 string header = "HTTP/1.1 " + statusCode + "\r\n" +
@@ -637,7 +784,6 @@ namespace SchoolFilter.Controller
 
                         if (BlockedGameProcesses.TryGetValue(procName, out gameDisplayName))
                         {
-                            // Match found in blocked game dictionary
                         }
                         else if (string.Equals(procName, "javaw", StringComparison.OrdinalIgnoreCase) ||
                                  string.Equals(procName, "java", StringComparison.OrdinalIgnoreCase))
@@ -679,7 +825,6 @@ namespace SchoolFilter.Controller
                 if (lines.Length == 0) return "";
 
                 string firstLine = lines[0];
-                // Example 1: CONNECT www.poki.com:443 HTTP/1.1
                 if (firstLine.StartsWith("CONNECT ", StringComparison.OrdinalIgnoreCase))
                 {
                     string[] parts = firstLine.Split(' ');
@@ -691,7 +836,6 @@ namespace SchoolFilter.Controller
                     }
                 }
 
-                // Example 2: GET /?site=poki.com HTTP/1.1 (Direct access to 127.0.0.1:9999 info page)
                 if (firstLine.StartsWith("GET /", StringComparison.OrdinalIgnoreCase))
                 {
                     isDirectInfoPage = true;
@@ -706,7 +850,6 @@ namespace SchoolFilter.Controller
                     return "";
                 }
 
-                // Example 3: GET http://example.com/path HTTP/1.1 or Host header
                 foreach (string line in lines)
                 {
                     if (line.StartsWith("Host:", StringComparison.OrdinalIgnoreCase))
@@ -738,7 +881,6 @@ namespace SchoolFilter.Controller
 
                 if (string.IsNullOrEmpty(cleanDomain)) return;
 
-                // Ignore background telemetry / CDN / OS domains
                 foreach (string ignored in SilentTelemetryDomains)
                 {
                     if (cleanDomain == ignored || cleanDomain.EndsWith("." + ignored, StringComparison.OrdinalIgnoreCase))
@@ -747,7 +889,6 @@ namespace SchoolFilter.Controller
                     }
                 }
 
-                // Only trigger if the student's active foreground window is a Web Browser
                 if (!IsForegroundWindowBrowser())
                 {
                     return;
@@ -789,7 +930,6 @@ namespace SchoolFilter.Controller
                 DateTime now = DateTime.UtcNow;
                 double secondsSinceLast = (now - LastNotificationTime).TotalSeconds;
 
-                // Cooldown: max 1 popup every 4 seconds (or 8 seconds for the exact same domain)
                 if (secondsSinceLast < 4.0) return;
                 if (string.Equals(LastNotifiedTarget, targetName, StringComparison.OrdinalIgnoreCase) && secondsSinceLast < 8.0) return;
 
@@ -801,7 +941,8 @@ namespace SchoolFilter.Controller
             {
                 string exePath = Assembly.GetExecutingAssembly().Location;
                 string safeArg = targetName.Replace("\"", "");
-                ProcessStartInfo psi = new ProcessStartInfo(exePath, "notify \"" + safeArg + "\" " + (isGame ? "game" : "web"))
+                string safeRoom = (CurrentRoomDisplayLabel ?? "").Replace("\"", "");
+                ProcessStartInfo psi = new ProcessStartInfo(exePath, "notify \"" + safeArg + "\" " + (isGame ? "game" : "web") + " \"" + safeRoom + "\"")
                 {
                     UseShellExecute = false,
                     CreateNoWindow = true
@@ -811,9 +952,10 @@ namespace SchoolFilter.Controller
             catch {}
         }
 
-        private static string BuildHebrewBlockPageHtml(string blockedDomain)
+        private static string BuildHebrewBlockPageHtml(string blockedDomain, string roomLabel)
         {
             string displayDomain = string.IsNullOrEmpty(blockedDomain) ? "אתר לא מורשה" : WebUtility.HtmlEncode(blockedDomain);
+            string displayRoom = string.IsNullOrEmpty(roomLabel) ? "כעת מתקיים שיעור בכיתה" : WebUtility.HtmlEncode(roomLabel);
 
             return "<!DOCTYPE html>" +
                    "<html dir='rtl' lang='he'>" +
@@ -840,9 +982,9 @@ namespace SchoolFilter.Controller
                    "<div class='card'>" +
                    "<div class='icon'>🛑</div>" +
                    "<h1>הגלישה לאתר זה נחסמה</h1>" +
-                   "<div class='lesson-badge'>📚 כעת מתקיים שיעור בכיתה</div>" +
+                   "<div class='lesson-badge'>📚 מצב שיעור פעיל: " + displayRoom + "</div>" +
                    "<div class='domain-box'>" + displayDomain + "</div>" +
-                   "<p>הכניסה לאתר זה חסומה כעת מאחר שהמחשב נמצא <strong>במצב שיעור</strong>.<br>בזמן השיעור ניתן לגלוש אך ורק לאתרי הלימוד שאושרו על ידי המורה.</p>" +
+                   "<p>הכניסה לאתר זה חסומה כעת מאחר שהמחשב נמצא <strong>במצב שיעור</strong>.<br>בזמן השיעור ניתן לגלוש אך ורק לאתרי הלימוד שאושרו על ידי המורה לחדר זה.</p>" +
                    "<div class='links-title'>מעבר מהיר לאתרי השיעור המותרים:</div>" +
                    "<div class='links'>" +
                    "<a class='btn' href='https://one-class.co.il'>🎓 One-Class</a>" +
@@ -1022,27 +1164,22 @@ namespace SchoolFilter.Controller
         }
     }
 
-    /// <summary>
-    /// Top-most Hebrew notification overlay displayed over the browser when a student attempts
-    /// to visit a blocked HTTPS website or launch an installed game during class.
-    /// </summary>
     internal sealed class ClassroomBlockNotificationForm : Form
     {
         private System.Windows.Forms.Timer closeTimer;
 
-        public ClassroomBlockNotificationForm(string targetName, bool isGame)
+        public ClassroomBlockNotificationForm(string targetName, bool isGame, string roomLabel)
         {
             this.Text = "SchoolFilter - חסימת גלישה בזמן שיעור";
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.Manual;
-            this.Size = new Size(480, 215);
+            this.Size = new Size(490, 220);
             this.TopMost = true;
             this.ShowInTaskbar = false;
-            this.BackColor = Color.FromArgb(220, 38, 38); // Red border frame
+            this.BackColor = Color.FromArgb(220, 38, 38);
             this.RightToLeft = RightToLeft.Yes;
             this.RightToLeftLayout = true;
 
-            // Position at top-center of primary screen (right over the browser content area)
             Rectangle workingArea = Screen.PrimaryScreen.WorkingArea;
             this.Location = new Point(
                 workingArea.Left + (workingArea.Width - this.Width) / 2,
@@ -1058,13 +1195,13 @@ namespace SchoolFilter.Controller
 
             Label badgeLabel = new Label
             {
-                Text = "📚 מצב שיעור פעיל בכיתה",
+                Text = "📚 מצב שיעור: " + (string.IsNullOrEmpty(roomLabel) ? "חדר מחשבים" : roomLabel),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(146, 64, 14),
                 BackColor = Color.FromArgb(254, 243, 199),
                 AutoSize = false,
-                Size = new Size(190, 26),
-                Location = new Point((contentPanel.Width - 190) / 2, 14),
+                Size = new Size(contentPanel.Width - 40, 26),
+                Location = new Point(20, 14),
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
@@ -1096,7 +1233,7 @@ namespace SchoolFilter.Controller
 
             Label descLabel = new Label
             {
-                Text = "בזמן השיעור ניתן לגלוש אך ורק לאתרי הלימוד שאושרו על ידי המורה.",
+                Text = "בזמן השיעור ניתן לגלוש אך ורק לאתרי הלימוד שאושרו על ידי המורה לחדר זה.",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(71, 85, 105),
                 AutoSize = false,
@@ -1109,8 +1246,8 @@ namespace SchoolFilter.Controller
             {
                 Text = "🎓 פתח בדפדפן את אתרי השיעור המותרים",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Size = new Size(265, 36),
-                Location = new Point(25, 145),
+                Size = new Size(270, 36),
+                Location = new Point(25, 148),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -1133,7 +1270,7 @@ namespace SchoolFilter.Controller
                 Text = "הבנתי, סגור",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
                 Size = new Size(140, 36),
-                Location = new Point(305, 145),
+                Location = new Point(310, 148),
                 BackColor = Color.FromArgb(241, 245, 249),
                 ForeColor = Color.FromArgb(51, 65, 85),
                 FlatStyle = FlatStyle.Flat,
@@ -1150,7 +1287,6 @@ namespace SchoolFilter.Controller
             contentPanel.Controls.Add(closeBtn);
             this.Controls.Add(contentPanel);
 
-            // Automatically close after 6.5 seconds so it never stays stuck
             closeTimer = new System.Windows.Forms.Timer();
             closeTimer.Interval = 6500;
             closeTimer.Tick += (s, e) =>
