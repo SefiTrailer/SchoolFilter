@@ -557,14 +557,27 @@
         }
 
         function parsePacContent(content) {
+            // Strip single-line and multi-line comments first
+            const cleanContent = content
+                .replace(/\/\*[\s\S]*?\*\//g, '')
+                .replace(/\/\/.*$/gm, '');
+
             // Extract whitelist array from JS code
-            const match = content.match(/var\s+whitelist\s*=\s*\[([\s\S]*?)\];/);
+            const match = cleanContent.match(/var\s+whitelist\s*=\s*\[([\s\S]*?)\];/);
             if (match && match[1]) {
-                const items = match[1]
+                const rawItems = match[1]
                     .split(',')
-                    .map(s => s.trim().replace(/^["']|["']$/g, ''))
-                    .filter(s => s.length > 0 && !s.startsWith('//'));
-                whitelistSites = [...new Set(items)];
+                    .map(s => s.trim().replace(/^["']|["']$/g, '').trim())
+                    .filter(s => s.length > 0);
+
+                // Ensure every base domain has both "domain" and "*.domain"
+                const expanded = [];
+                for (const item of rawItems) {
+                    const base = item.replace(/^\*\./, '');
+                    if (!expanded.includes(base)) expanded.push(base);
+                    if (!expanded.includes('*.' + base)) expanded.push('*.' + base);
+                }
+                whitelistSites = expanded;
             } else {
                 whitelistSites = [...coreSites];
             }
@@ -697,7 +710,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        message: 'עדכון רשימה לבנה ע"י ממשק המורה',
+                        message: 'Update whitelist via Teacher Portal',
                         content: encodedContent,
                         sha: currentPacSha
                     })
@@ -721,13 +734,24 @@
         }
 
         function generatePacCode(sites) {
-            const formattedSites = sites.map(s => `        "${s}"`).join(',\n');
+            // Ensure both base domain and *.domain are present for every entry
+            const normalizedSet = new Set();
+            for (const s of sites) {
+                const base = s.replace(/^\*\./, '').trim();
+                if (base) {
+                    normalizedSet.add(base);
+                    normalizedSet.add('*.' + base);
+                }
+            }
+            const formattedSites = Array.from(normalizedSet).map(s => `        "${s}"`).join(',\n');
 
+            // Strictly ASCII comments for 100% compatibility with Windows WinINet/WinHTTP PAC parser
             return `/**
  * SchoolFilter - Proxy Auto-Configuration (PAC) File
  * Architecture: Whitelist-only filter with sinkhole drop
  * Managed dynamically via SchoolFilter Teacher Portal
  * Target: Windows 10/11 - Chrome, Edge, Firefox, WinINet
+ * NOTE: Keep this file strictly ASCII for WinINet/WinHTTP compatibility.
  */
 
 function FindProxyForURL(url, host) {
@@ -735,17 +759,20 @@ function FindProxyForURL(url, host) {
     host = host.toLowerCase();
 
     // =========================================================================
-    // 1. LOCALHOST & INTRANET / LAN BYPASS
-    // מונע חסימה של Veyon (פורטים 11100/11400) והרשת המקומית הבית-ספרית
+    // 1. LOCALHOST, LAN & PAC HOSTING BYPASS
+    // Keeps Veyon Classroom Management (ports 11100/11400), local LAN,
+    // and the GitHub PAC cloud host itself always accessible.
     // =========================================================================
     if (isPlainHostName(host) ||
         host === "localhost" ||
         host === "127.0.0.1" ||
-        host === "::1") {
+        host === "::1" ||
+        host === "sefitrailer.github.io" ||
+        host === "raw.githubusercontent.com") {
         return "DIRECT";
     }
 
-    // Private IPv4 Subnets (רשת בית ספרית פנימית)
+    // Private IPv4 Subnets (School internal network)
     if (shExpMatch(host, "10.*") ||
         shExpMatch(host, "192.168.*") ||
         shExpMatch(host, "172.1[6-9].*") ||
@@ -756,22 +783,22 @@ function FindProxyForURL(url, host) {
     }
 
     // =========================================================================
-    // 2. APPROVED EDUCATIONAL WHITELIST (רשימה לבנה מאושרת)
+    // 2. APPROVED EDUCATIONAL WHITELIST
     // =========================================================================
     var whitelist = [
 ${formattedSites}
     ];
 
-    // בדיקה האם הכתובת נמצאת ברשימה הלבנה
+    // Evaluate host against whitelist
     for (var i = 0; i < whitelist.length; i++) {
         var pattern = whitelist[i];
-        if (shExpMatch(host, pattern)) {
+        if (shExpMatch(host, pattern) || host === pattern) {
             return "DIRECT";
         }
     }
 
     // =========================================================================
-    // 3. SINKHOLE DROP (חסימת כל שאר האתרים והמשחקים)
+    // 3. SINKHOLE DROP (BLOCK ALL OTHER TRAFFIC)
     // =========================================================================
     return "PROXY 127.0.0.1:9999";
 }

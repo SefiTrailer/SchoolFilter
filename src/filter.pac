@@ -3,6 +3,7 @@
  * Architecture: Whitelist-only filter with sinkhole drop
  * Managed dynamically via SchoolFilter Teacher Portal
  * Target: Windows 10/11 - Chrome, Edge, Firefox, WinINet
+ * NOTE: Keep this file strictly ASCII for WinINet/WinHTTP compatibility.
  */
 
 function FindProxyForURL(url, host) {
@@ -16,7 +17,9 @@ function FindProxyForURL(url, host) {
     if (isPlainHostName(host) ||
         host === "localhost" ||
         host === "127.0.0.1" ||
-        host === "::1") {
+        host === "::1" ||
+        host === "sefitrailer.github.io" ||
+        host === "raw.githubusercontent.com") {
         return "DIRECT";
     }
 
@@ -39,20 +42,26 @@ function FindProxyForURL(url, host) {
         "education.gov.il",
         "*.education.gov.il",
         "accounts.google.com",
+        "*.accounts.google.com",
         "accounts.youtube.com",
         "ssl.gstatic.com",
+        "*.gstatic.com",
         "fonts.gstatic.com",
         "fonts.googleapis.com",
+        "*.googleapis.com",
         "apis.google.com",
         "drive.google.com",
+        "*.drive.google.com",
         "docs.google.com",
-        "lh3.googleusercontent.com"
+        "*.docs.google.com",
+        "lh3.googleusercontent.com",
+        "*.googleusercontent.com"
     ];
 
     // בדיקה האם הכתובת נמצאת ברשימה הלבנה
     for (var i = 0; i < whitelist.length; i++) {
         var pattern = whitelist[i];
-        if (shExpMatch(host, pattern)) {
+        if (shExpMatch(host, pattern) || host === pattern) {
             return "DIRECT";
         }
     }
