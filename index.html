@@ -1012,6 +1012,15 @@
             showToast(`✅ רשימת האתרים הועתקה וסונכרנה לכל חדרי '${sourceRoom.institutionName}'!`);
         }
 
+        async function getWriteHeaders() {
+            const headers = { 'Content-Type': 'application/json' };
+            if (auth.currentUser) {
+                const idToken = await auth.currentUser.getIdToken();
+                headers['Authorization'] = `Bearer ${idToken}`;
+            }
+            return headers;
+        }
+
         async function saveRoomDocument(room) {
             // Ensure every domain has both base and *.base
             const expanded = [];
@@ -1042,7 +1051,7 @@
 
             const res = await fetch(`${FIRESTORE_BASE}/rooms/${encodeURIComponent(room.roomId)}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await getWriteHeaders(),
                 body: JSON.stringify(body)
             });
 
@@ -1155,7 +1164,7 @@
 
             await fetch(`${FIRESTORE_BASE}/institutions/${encodeURIComponent(rawCode)}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await getWriteHeaders(),
                 body: JSON.stringify(body)
             });
 
@@ -1204,7 +1213,7 @@
 
             await fetch(`${FIRESTORE_BASE}/users/${encodeURIComponent(email)}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await getWriteHeaders(),
                 body: JSON.stringify(body)
             });
 
@@ -1218,7 +1227,8 @@
         async function removeAuthorizedUser(email) {
             if (!confirm(`האם להסיר את הרשאת הגישה של ${email}?`)) return;
             await fetch(`${FIRESTORE_BASE}/users/${encodeURIComponent(email)}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: await getWriteHeaders()
             });
             await loadAllCloudData();
             renderAdminTables();
