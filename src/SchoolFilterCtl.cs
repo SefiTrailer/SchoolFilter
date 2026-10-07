@@ -22,6 +22,12 @@ namespace SchoolFilter.Controller
             "SchoolFilter"
         );
 
+        private static readonly string StateFilePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "SchoolFilter",
+            "state.txt"
+        );
+
         public const int INTERNET_OPTION_PER_CONNECTION_OPTION = 75;
         public const int INTERNET_OPTION_SETTINGS_CHANGED = 39;
         public const int INTERNET_OPTION_REFRESH = 37;
@@ -75,7 +81,12 @@ namespace SchoolFilter.Controller
             {
                 if (action == "sinkhole")
                 {
-                    RunSinkholeServer();
+                    RunSinkholeAndCloudSyncDaemon();
+                    return 0;
+                }
+                else if (action == "watchdog")
+                {
+                    EnsureSinkholeRunning();
                     return 0;
                 }
                 else if (action == "stop-sinkhole")
@@ -85,10 +96,16 @@ namespace SchoolFilter.Controller
                 }
                 else if (action == "allow" || action == "unblock" || action == "off" || action == "restore")
                 {
-                    DisableFilter();
+                    SaveLocalOverride("allow");
+                    DisableFilter(false); // Keep daemon alive if student station, or disable proxy
+                }
+                else if (action == "uninstall-cleanup")
+                {
+                    DisableFilter(true);
                 }
                 else
                 {
+                    SaveLocalOverride("auto");
                     EnableFilter();
                 }
                 return 0;
@@ -97,6 +114,30 @@ namespace SchoolFilter.Controller
             {
                 return 1;
             }
+        }
+
+        private static void SaveLocalOverride(string mode)
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(StateFilePath);
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                File.WriteAllText(StateFilePath, mode);
+            }
+            catch {}
+        }
+
+        private static string ReadLocalOverride()
+        {
+            try
+            {
+                if (File.Exists(StateFilePath))
+                {
+                    return File.ReadAllText(StateFilePath).Trim().ToLowerInvariant();
+                }
+            }
+            catch {}
+            return "auto";
         }
 
         private static string GetBasePacUrl()
@@ -129,18 +170,15 @@ namespace SchoolFilter.Controller
             return baseUrl;
         }
 
-        private static string GetConfiguredPacUrl()
+        private static string GetConfiguredPacUrl(long cacheBuster)
         {
             string baseUrl = GetBasePacUrl();
 
-            // Append cache-busting timestamp to HTTP/HTTPS URLs so WinINet & Chrome/Edge
-            // always fetch the latest cloud whitelist immediately without stale cache.
             if (baseUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                 baseUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
-                long ts = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
                 string sep = baseUrl.Contains("?") ? "&" : "?";
-                return baseUrl + sep + "t=" + ts.ToString();
+                return baseUrl + sep + "t=" + cacheBuster.ToString();
             }
 
             return baseUrl;
@@ -148,32 +186,30 @@ namespace SchoolFilter.Controller
 
         private static void EnableFilter()
         {
-            // 1. Ensure local sinkhole listener on 127.0.0.1:9999 is active so browsers receive HTTP 403 Forbidden
-            // and NEVER trigger WinINet/Chromium dead-proxy failover to DIRECT!
             EnsureSinkholeRunning();
-
-            RefreshPacSettings();
+            long ts = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+            RefreshPacSettings(ts);
         }
 
-        private static void RefreshPacSettings()
+        private static void RefreshPacSettings(long cacheBuster)
         {
-            string pacUrl = GetConfiguredPacUrl();
+            string pacUrl = GetConfiguredPacUrl(cacheBuster);
 
-            // Apply to current session via WinINet API (updates DefaultConnectionSettings & notifies browsers)
+            // Apply to current session via WinINet API
             SetWinInetPac(true, pacUrl);
 
             // Apply directly to HKEY_CURRENT_USER
             ApplyPacToRegistryRoot(Registry.CurrentUser, true, pacUrl);
 
-            // Apply to ALL logged-in user hives in HKEY_USERS (crucial when run by Veyon Service as SYSTEM or Admin)
+            // Apply to ALL logged-in user hives in HKEY_USERS
             ApplyPacToAllLoadedUsers(true, pacUrl);
 
-            // Broadcast settings change after all registry updates
+            // Broadcast settings change
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
         }
 
-        private static void DisableFilter()
+        private static void DisableFilter(bool stopDaemon)
         {
             // 1. Disable in current session via WinINet API
             SetWinInetPac(false, "");
@@ -184,10 +220,13 @@ namespace SchoolFilter.Controller
             // 3. Remove from ALL logged-in user hives in HKEY_USERS
             ApplyPacToAllLoadedUsers(false, "");
 
-            // 4. Stop background sinkhole server
-            StopSinkholeServer();
+            // 4. Stop background sinkhole server if requested (e.g. during uninstall or explicit stop)
+            if (stopDaemon)
+            {
+                StopSinkholeServer();
+            }
 
-            // 5. Broadcast settings change after all registry updates
+            // 5. Broadcast settings change
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
         }
@@ -260,7 +299,7 @@ namespace SchoolFilter.Controller
             catch {}
         }
 
-        private static void RunSinkholeServer()
+        private static void RunSinkholeAndCloudSyncDaemon()
         {
             bool createdNew;
             using (Mutex mutex = new Mutex(true, "Global\\SchoolFilterSinkholeMutex", out createdNew))
@@ -273,11 +312,17 @@ namespace SchoolFilter.Controller
                 TcpListener listener = null;
                 bool running = true;
 
-                // Background watcher thread: checks GitHub cloud PAC every 20 seconds for live teacher changes
+                // Background watcher thread:
+                // 1. Polls GitHub every 10 seconds to detect whitelist or Master Switch (FILTER_ENABLED) changes.
+                // 2. Self-heals registry proxy settings if a student tries to turn off the proxy manually.
                 Thread cloudSyncThread = new Thread(() =>
                 {
                     string lastPacContent = null;
+                    bool lastCloudFilterEnabled = true;
+                    long currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+
                     ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+
                     while (running)
                     {
                         try
@@ -285,31 +330,59 @@ namespace SchoolFilter.Controller
                             string baseUrl = GetBasePacUrl();
                             if (baseUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                             {
-                                long ts = DateTime.UtcNow.Ticks;
-                                string checkUrl = baseUrl + (baseUrl.Contains("?") ? "&" : "?") + "nocache=" + ts;
+                                long ticks = DateTime.UtcNow.Ticks;
+                                string checkUrl = baseUrl + (baseUrl.Contains("?") ? "&" : "?") + "nocache=" + ticks;
                                 HttpWebRequest req = (HttpWebRequest)WebRequest.Create(checkUrl);
-                                req.Proxy = null; // Direct check, bypass proxy
+                                req.Proxy = null; // Direct connection to GitHub, bypassing local proxy
                                 req.Timeout = 4000;
-                                req.UserAgent = "SchoolFilter-Sync/1.0";
+                                req.UserAgent = "SchoolFilter-Daemon/2.0";
                                 using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                                 using (StreamReader sr = new StreamReader(resp.GetResponseStream()))
                                 {
                                     string content = sr.ReadToEnd();
                                     if (!string.IsNullOrEmpty(content))
                                     {
-                                        if (lastPacContent != null && lastPacContent != content)
+                                        bool cloudFilterEnabled = !content.Contains("FILTER_ENABLED = false");
+                                        bool contentChanged = (lastPacContent != null && lastPacContent != content);
+
+                                        if (contentChanged)
                                         {
-                                            // Cloud PAC changed! Refresh WinINet & browsers immediately!
-                                            RefreshPacSettings();
+                                            currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                                            // If teacher toggled mode in Cloud Portal, reset any local Veyon override
+                                            if (cloudFilterEnabled != lastCloudFilterEnabled)
+                                            {
+                                                SaveLocalOverride("auto");
+                                            }
                                         }
+
                                         lastPacContent = content;
+                                        lastCloudFilterEnabled = cloudFilterEnabled;
                                     }
+                                }
+                            }
+
+                            string localOverride = ReadLocalOverride();
+                            bool shouldEnforceBlock = (localOverride == "allow") ? false : lastCloudFilterEnabled;
+
+                            if (shouldEnforceBlock)
+                            {
+                                // Self-heal: if content changed OR if student disabled proxy in Windows Settings, re-apply immediately!
+                                if (!IsProxyCurrentlyEnforced())
+                                {
+                                    RefreshPacSettings(currentCacheBuster);
+                                }
+                            }
+                            else
+                            {
+                                if (IsProxyCurrentlyEnforced())
+                                {
+                                    DisableFilter(false);
                                 }
                             }
                         }
                         catch {}
 
-                        for (int i = 0; i < 20 && running; i++)
+                        for (int i = 0; i < 10 && running; i++)
                         {
                             Thread.Sleep(1000);
                         }
@@ -385,6 +458,37 @@ namespace SchoolFilter.Controller
                         try { listener.Stop(); } catch {}
                     }
                 }
+            }
+        }
+
+        private static bool IsProxyCurrentlyEnforced()
+        {
+            try
+            {
+                string[] subKeyNames = Registry.Users.GetSubKeyNames();
+                foreach (string sid in subKeyNames)
+                {
+                    if (sid.StartsWith("S-1-5-21-", StringComparison.OrdinalIgnoreCase) &&
+                        !sid.EndsWith("_Classes", StringComparison.OrdinalIgnoreCase))
+                    {
+                        using (RegistryKey connKey = Registry.Users.OpenSubKey(sid + @"\Software\Microsoft\Windows\CurrentVersion\Internet Settings\Connections", false))
+                        {
+                            if (connKey != null)
+                            {
+                                byte[] data = connKey.GetValue("DefaultConnectionSettings") as byte[];
+                                if (data == null || data.Length < 12 || (data[8] & PROXY_TYPE_AUTO_PROXY_URL) == 0)
+                                {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 

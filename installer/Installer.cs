@@ -182,6 +182,7 @@ namespace SchoolFilter.Setup
                     {
                         if (runKey != null) runKey.DeleteValue("SchoolFilter", false);
                     }
+                    RunHiddenProcess("schtasks.exe", "/Delete /TN \"SchoolFilterGuard\" /F", true);
                 }
                 catch {}
             }
@@ -194,16 +195,23 @@ namespace SchoolFilter.Setup
                 string desktopLnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "SchoolFilter - ממשק ניהול למורה.url");
                 if (File.Exists(desktopLnk)) File.Delete(desktopLnk);
 
-                // Register Student Station to automatically enforce filter on Windows startup/login
+                // Register Student Station to automatically enforce filter & cloud-sync daemon on Windows startup/login
                 try
                 {
                     using (RegistryKey runKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
                     {
                         if (runKey != null)
                         {
-                            runKey.SetValue("SchoolFilter", "\"" + ctlPath + "\" block", RegistryValueKind.String);
+                            runKey.SetValue("SchoolFilter", "\"" + ctlPath + "\" watchdog", RegistryValueKind.String);
                         }
                     }
+
+                    // Also register a high-privilege Scheduled Task at logon so it starts reliably on every reboot
+                    RunHiddenProcess(
+                        "schtasks.exe",
+                        "/Create /TN \"SchoolFilterGuard\" /TR \"\\\"" + ctlPath + "\\\" watchdog\" /SC ONLOGON /RL HIGHEST /F",
+                        true
+                    );
                 }
                 catch {}
             }
@@ -224,7 +232,7 @@ namespace SchoolFilter.Setup
             // 7. Register in Windows Add/Remove Programs
             RegisterUninstallEntry(uninstallerPath, role);
 
-            // 8. If Student Station, activate the filter immediately!
+            // 8. If Student Station, activate the filter & cloud listener immediately!
             if (role == InstallRole.Student)
             {
                 RunHiddenProcess(ctlPath, "block", true);
@@ -273,18 +281,19 @@ namespace SchoolFilter.Setup
             string ctlPath = Path.Combine(TargetDir, "SchoolFilterCtl.exe");
             if (File.Exists(ctlPath))
             {
-                RunHiddenProcess(ctlPath, "allow", true);
+                RunHiddenProcess(ctlPath, "uninstall-cleanup", true);
                 Thread.Sleep(200);
             }
             KillExistingControllerProcesses();
 
-            // 2. Remove Startup entry and Browser Policies
+            // 2. Remove Startup entry, Scheduled Task, and Browser Policies
             try
             {
                 using (RegistryKey runKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
                 {
                     if (runKey != null) runKey.DeleteValue("SchoolFilter", false);
                 }
+                RunHiddenProcess("schtasks.exe", "/Delete /TN \"SchoolFilterGuard\" /F", true);
             }
             catch {}
             ConfigureBrowserPolicies(false);
