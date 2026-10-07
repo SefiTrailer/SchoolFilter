@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -8,6 +9,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Windows.Forms;
 using Microsoft.Win32;
 
 namespace SchoolFilter.Controller
@@ -27,6 +29,70 @@ namespace SchoolFilter.Controller
             "SchoolFilter",
             "state.txt"
         );
+
+        // Background telemetry/CDN domains that browsers request automatically without user navigation.
+        // We block them silently without popping up the classroom notification banner.
+        private static readonly string[] SilentTelemetryDomains = new string[]
+        {
+            "googleapis.com", "gstatic.com", "google.com", "gvt1.com", "gvt2.com", "1e100.net",
+            "microsoft.com", "windows.com", "windowsupdate.com", "live.com", "msn.com", "bing.com",
+            "msedge.net", "office.com", "office365.com", " office.net", "skype.com", "sfx.ms",
+            "azureedge.net", "trafficmanager.net", "visualstudio.com", "aka.ms",
+            "cloudflare.com", "cloudflare-dns.com", "amazonaws.com", "akamai.net", "akamaihd.net",
+            "edgekey.net", "edgesuite.net", "fastly.net", "digicert.com", "lencr.org", "sectigo.com",
+            "verisign.com", "globalsign.com", "identrust.com", "pki.goog", "ocsp", "crl",
+            "doubleclick.net", "googlesyndication.com", "googleadservices.com", "google-analytics.com",
+            "googletagmanager.com", "adnxs.com", "rubiconproject.com", "criteo.com", "taboola.com",
+            "outbrain.com", "mozilla.org", "mozilla.com", "mozilla.net", "firefox.com",
+            "opera.com", "brave.com", "localhost", "127.0.0.1"
+        };
+
+        // Installed desktop games & game launchers that should be closed automatically during class
+        private static readonly Dictionary<string, string> BlockedGameProcesses = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "RobloxPlayerBeta", "Roblox" },
+            { "RobloxPlayerLauncher", "Roblox" },
+            { "RobloxStudioBeta", "Roblox Studio" },
+            { "Windows10Universal", "Roblox (Windows App)" },
+            { "Minecraft", "Minecraft" },
+            { "MinecraftLauncher", "Minecraft Launcher" },
+            { "Minecraft.Windows", "Minecraft" },
+            { "TLauncher", "Minecraft (TLauncher)" },
+            { "Lunar Client", "Minecraft (Lunar Client)" },
+            { "Badlion Client", "Minecraft (Badlion)" },
+            { "FortniteClient-Win64-Shipping", "Fortnite" },
+            { "FortniteLauncher", "Fortnite" },
+            { "EpicGamesLauncher", "Epic Games" },
+            { "RocketLeague", "Rocket League" },
+            { "FallGuys_client_game", "Fall Guys" },
+            { "steam", "Steam" },
+            { "cs2", "Counter-Strike 2" },
+            { "csgo", "Counter-Strike" },
+            { "dota2", "Dota 2" },
+            { "hl2", "Half-Life / Source Game" },
+            { "gta5", "GTA V" },
+            { "PlayGTAV", "GTA V" },
+            { "FiveM", "FiveM (GTA RP)" },
+            { "RiotClientServices", "Riot Games" },
+            { "RiotClientUx", "Riot Games" },
+            { "VALORANT", "Valorant" },
+            { "VALORANT-Win64-Shipping", "Valorant" },
+            { "LeagueClient", "League of Legends" },
+            { "LeagueClientUx", "League of Legends" },
+            { "League of Legends", "League of Legends" },
+            { "Battle.net", "Battle.net" },
+            { "Overwatch", "Overwatch" },
+            { "Hearthstone", "Hearthstone" },
+            { "EADesktop", "EA Play" },
+            { "Origin", "Origin Games" },
+            { "Among Us", "Among Us" },
+            { "GenshinImpact", "Genshin Impact" },
+            { "StarRail", "Honkai: Star Rail" },
+            { "HD-Player", "BlueStacks Android Emulator" },
+            { "Bluestacks", "BlueStacks" },
+            { "LDPlayer", "LDPlayer Emulator" },
+            { "Nox", "Nox Emulator" }
+        };
 
         public const int INTERNET_OPTION_PER_CONNECTION_OPTION = 75;
         public const int INTERNET_OPTION_SETTINGS_CHANGED = 39;
@@ -73,8 +139,23 @@ namespace SchoolFilter.Controller
         [DllImport("wininet.dll", SetLastError = true, CharSet = CharSet.Auto)]
         private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);
 
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+        private static volatile bool IsFilterCurrentlyEnforced = true;
+        private static DateTime LastNotificationTime = DateTime.MinValue;
+        private static string LastNotifiedTarget = "";
+        private static readonly object NotificationLock = new object();
+
+        [STAThread]
         private static int Main(string[] args)
         {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
             string action = (args.Length > 0) ? args[0].Trim().ToLowerInvariant() : "block";
 
             try
@@ -82,6 +163,13 @@ namespace SchoolFilter.Controller
                 if (action == "sinkhole")
                 {
                     RunSinkholeAndCloudSyncDaemon();
+                    return 0;
+                }
+                else if (action == "notify")
+                {
+                    string targetName = (args.Length > 1) ? args[1] : "אתר לא מורשה";
+                    string isGame = (args.Length > 2) ? args[2] : "web";
+                    Application.Run(new ClassroomBlockNotificationForm(targetName, isGame == "game"));
                     return 0;
                 }
                 else if (action == "watchdog")
@@ -97,7 +185,7 @@ namespace SchoolFilter.Controller
                 else if (action == "allow" || action == "unblock" || action == "off" || action == "restore")
                 {
                     SaveLocalOverride("allow");
-                    DisableFilter(false); // Keep daemon alive if student station, or disable proxy
+                    DisableFilter(false);
                 }
                 else if (action == "uninstall-cleanup")
                 {
@@ -189,6 +277,7 @@ namespace SchoolFilter.Controller
             EnsureSinkholeRunning();
             long ts = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
             RefreshPacSettings(ts);
+            ConfigureGameFirewallRules(true);
         }
 
         private static void RefreshPacSettings(long cacheBuster)
@@ -220,15 +309,61 @@ namespace SchoolFilter.Controller
             // 3. Remove from ALL logged-in user hives in HKEY_USERS
             ApplyPacToAllLoadedUsers(false, "");
 
-            // 4. Stop background sinkhole server if requested (e.g. during uninstall or explicit stop)
+            // 4. Remove Desktop Game Firewall blocks so full internet is open
+            ConfigureGameFirewallRules(false);
+
+            // 5. Stop background sinkhole server if requested
             if (stopDaemon)
             {
                 StopSinkholeServer();
             }
 
-            // 5. Broadcast settings change
+            // 6. Broadcast settings change
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
+        }
+
+        /// <summary>
+        /// Blocks or unblocks multiplayer desktop game ports in Windows Firewall.
+        /// Never blocks TCP 80/443 (Web), UDP 53 (DNS), or LocalSubnet/Veyon (11100-11400).
+        /// </summary>
+        private static void ConfigureGameFirewallRules(bool blockGames)
+        {
+            try
+            {
+                // First delete any existing rules to avoid duplicates
+                RunNetsh("advfirewall firewall delete rule name=\"SchoolFilter_BlockGameUDP\"");
+                RunNetsh("advfirewall firewall delete rule name=\"SchoolFilter_BlockGameTCP\"");
+
+                if (blockGames)
+                {
+                    // Block non-LAN multiplayer UDP ports used by Roblox, Fortnite, Valorant, Minecraft Bedrock, Steam, etc.
+                    // Ports 1024-11099 and 11401-65535 (leaves DNS 53, DHCP 67-68, NTP 123, and Veyon 11100-11400 completely untouched!)
+                    RunNetsh("advfirewall firewall add rule name=\"SchoolFilter_BlockGameUDP\" dir=out action=block protocol=UDP remoteport=1024-11099,11401-65535");
+
+                    // Block common non-HTTP TCP game server ports (Battle.net, Xbox Live, Epic, Valorant, Minecraft Java/Bedrock, Steam, FiveM)
+                    RunNetsh("advfirewall firewall add rule name=\"SchoolFilter_BlockGameTCP\" dir=out action=block protocol=TCP remoteport=1119,3074,3724,5222,6667,7000-9100,19132-19133,25565,27000-27100,30120");
+                }
+            }
+            catch {}
+        }
+
+        private static void RunNetsh(string arguments)
+        {
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo("netsh.exe", arguments)
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+                using (Process p = Process.Start(psi))
+                {
+                    if (p != null) p.WaitForExit(1500);
+                }
+            }
+            catch {}
         }
 
         private static void EnsureSinkholeRunning()
@@ -257,7 +392,6 @@ namespace SchoolFilter.Controller
                 };
                 Process.Start(psi);
 
-                // Wait up to 400ms for sinkhole to bind
                 for (int i = 0; i < 8; i++)
                 {
                     Thread.Sleep(50);
@@ -312,65 +446,81 @@ namespace SchoolFilter.Controller
                 TcpListener listener = null;
                 bool running = true;
 
-                // Background watcher thread:
-                // 1. Polls GitHub every 10 seconds to detect whitelist or Master Switch (FILTER_ENABLED) changes.
-                // 2. Self-heals registry proxy settings if a student tries to turn off the proxy manually.
+                // Thread 1: Cloud Sync & Registry Self-Healing (every 10s) + Desktop Game Blocker (every 2.5s)
                 Thread cloudSyncThread = new Thread(() =>
                 {
                     string lastPacContent = null;
                     bool lastCloudFilterEnabled = true;
+                    bool lastAppliedFirewallState = false;
                     long currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
 
                     ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
 
+                    int tickCounter = 0;
                     while (running)
                     {
                         try
                         {
-                            string baseUrl = GetBasePacUrl();
-                            if (baseUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                            // Poll GitHub every 10 seconds (every 4 ticks of 2.5s)
+                            if (tickCounter % 4 == 0)
                             {
-                                long ticks = DateTime.UtcNow.Ticks;
-                                string checkUrl = baseUrl + (baseUrl.Contains("?") ? "&" : "?") + "nocache=" + ticks;
-                                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(checkUrl);
-                                req.Proxy = null; // Direct connection to GitHub, bypassing local proxy
-                                req.Timeout = 4000;
-                                req.UserAgent = "SchoolFilter-Daemon/2.0";
-                                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
-                                using (StreamReader sr = new StreamReader(resp.GetResponseStream()))
+                                string baseUrl = GetBasePacUrl();
+                                if (baseUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    string content = sr.ReadToEnd();
-                                    if (!string.IsNullOrEmpty(content))
+                                    long ticks = DateTime.UtcNow.Ticks;
+                                    string checkUrl = baseUrl + (baseUrl.Contains("?") ? "&" : "?") + "nocache=" + ticks;
+                                    HttpWebRequest req = (HttpWebRequest)WebRequest.Create(checkUrl);
+                                    req.Proxy = null;
+                                    req.Timeout = 4000;
+                                    req.UserAgent = "SchoolFilter-Daemon/2.1";
+                                    using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
+                                    using (StreamReader sr = new StreamReader(resp.GetResponseStream()))
                                     {
-                                        bool cloudFilterEnabled = !content.Contains("FILTER_ENABLED = false");
-                                        bool contentChanged = (lastPacContent != null && lastPacContent != content);
-
-                                        if (contentChanged)
+                                        string content = sr.ReadToEnd();
+                                        if (!string.IsNullOrEmpty(content))
                                         {
-                                            currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-                                            // If teacher toggled mode in Cloud Portal, reset any local Veyon override
-                                            if (cloudFilterEnabled != lastCloudFilterEnabled)
+                                            bool cloudFilterEnabled = !content.Contains("FILTER_ENABLED = false");
+                                            bool contentChanged = (lastPacContent != null && lastPacContent != content);
+
+                                            if (contentChanged)
                                             {
-                                                SaveLocalOverride("auto");
+                                                currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                                                if (cloudFilterEnabled != lastCloudFilterEnabled)
+                                                {
+                                                    SaveLocalOverride("auto");
+                                                }
+                                            }
+
+                                            lastPacContent = content;
+                                            lastCloudFilterEnabled = cloudFilterEnabled;
+
+                                            if (contentChanged && cloudFilterEnabled && ReadLocalOverride() != "allow")
+                                            {
+                                                RefreshPacSettings(currentCacheBuster);
                                             }
                                         }
-
-                                        lastPacContent = content;
-                                        lastCloudFilterEnabled = cloudFilterEnabled;
                                     }
                                 }
                             }
 
                             string localOverride = ReadLocalOverride();
                             bool shouldEnforceBlock = (localOverride == "allow") ? false : lastCloudFilterEnabled;
+                            IsFilterCurrentlyEnforced = shouldEnforceBlock;
 
                             if (shouldEnforceBlock)
                             {
-                                // Self-heal: if content changed OR if student disabled proxy in Windows Settings, re-apply immediately!
                                 if (!IsProxyCurrentlyEnforced())
                                 {
                                     RefreshPacSettings(currentCacheBuster);
                                 }
+                                if (!lastAppliedFirewallState)
+                                {
+                                    ConfigureGameFirewallRules(true);
+                                    lastAppliedFirewallState = true;
+                                }
+
+                                // Actively scan and close installed desktop games during class!
+                                EnforceInstalledGameBlock();
                             }
                             else
                             {
@@ -378,13 +528,19 @@ namespace SchoolFilter.Controller
                                 {
                                     DisableFilter(false);
                                 }
+                                if (lastAppliedFirewallState)
+                                {
+                                    ConfigureGameFirewallRules(false);
+                                    lastAppliedFirewallState = false;
+                                }
                             }
                         }
                         catch {}
 
-                        for (int i = 0; i < 10 && running; i++)
+                        tickCounter++;
+                        for (int i = 0; i < 5 && running; i++)
                         {
-                            Thread.Sleep(1000);
+                            Thread.Sleep(500); // 2.5 seconds total per loop
                         }
                     }
                 });
@@ -395,18 +551,6 @@ namespace SchoolFilter.Controller
                 {
                     listener = new TcpListener(IPAddress.Loopback, SinkholePort);
                     listener.Start();
-
-                    string htmlBody = "<!DOCTYPE html><html dir='rtl' lang='he'><head><meta charset='utf-8'><title>האתר חסום - SchoolFilter</title><style>body{font-family:'Segoe UI',Tahoma,sans-serif;background:#f8fafc;color:#0f172a;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center}.box{background:#fff;padding:40px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.08);max-width:460px;border:1px solid #e2e8f0}h1{color:#dc2626;margin-top:0;font-size:24px}p{color:#475569;line-height:1.6}</style></head><body><div class='box'><h1>🛑 הגלישה לאתר זה חסומה</h1><p>מחשב זה נמצא כעת במצב למידה (רשימה לבנה בלבד).</p><p>ניתן לגלוש לאתרי הלימוד המאושרים על ידי המורה בלבד.</p></div></body></html>";
-                    byte[] bodyBytes = Encoding.UTF8.GetBytes(htmlBody);
-                    string header = "HTTP/1.1 403 Forbidden\r\n" +
-                                    "Content-Type: text/html; charset=utf-8\r\n" +
-                                    "Content-Length: " + bodyBytes.Length + "\r\n" +
-                                    "Cache-Control: no-store, no-cache, must-revalidate\r\n" +
-                                    "Connection: close\r\n\r\n";
-                    byte[] headerBytes = Encoding.ASCII.GetBytes(header);
-                    byte[] fullResponse = new byte[headerBytes.Length + bodyBytes.Length];
-                    Buffer.BlockCopy(headerBytes, 0, fullResponse, 0, headerBytes.Length);
-                    Buffer.BlockCopy(bodyBytes, 0, fullResponse, headerBytes.Length, bodyBytes.Length);
 
                     while (running)
                     {
@@ -419,7 +563,7 @@ namespace SchoolFilter.Controller
                                 c.ReceiveTimeout = 1000;
                                 c.SendTimeout = 1000;
                                 NetworkStream stream = c.GetStream();
-                                byte[] buf = new byte[512];
+                                byte[] buf = new byte[1024];
                                 int read = 0;
                                 try
                                 {
@@ -427,18 +571,36 @@ namespace SchoolFilter.Controller
                                 }
                                 catch {}
 
-                                if (read > 0)
+                                string req = (read > 0) ? Encoding.ASCII.GetString(buf, 0, read) : "";
+                                if (req.StartsWith("STOP_SINKHOLE", StringComparison.Ordinal))
                                 {
-                                    string req = Encoding.ASCII.GetString(buf, 0, read);
-                                    if (req.StartsWith("STOP_SINKHOLE", StringComparison.Ordinal))
-                                    {
-                                        running = false;
-                                        try { listener.Stop(); } catch {}
-                                        return;
-                                    }
+                                    running = false;
+                                    try { listener.Stop(); } catch {}
+                                    return;
                                 }
 
-                                stream.Write(fullResponse, 0, fullResponse.Length);
+                                bool isDirectInfoPage = false;
+                                string blockedDomain = ExtractDomainFromHttpRequest(req, out isDirectInfoPage);
+
+                                // If the user is actively browsing in Chrome/Edge/Firefox and tried to enter a blocked HTTPS site,
+                                // show the friendly Hebrew Classroom Block Banner so they immediately know why it's blocked!
+                                if (!isDirectInfoPage && IsFilterCurrentlyEnforced && !string.IsNullOrEmpty(blockedDomain))
+                                {
+                                    MaybeShowBrowserBlockNotification(blockedDomain);
+                                }
+
+                                string htmlBody = BuildHebrewBlockPageHtml(blockedDomain);
+                                byte[] bodyBytes = Encoding.UTF8.GetBytes(htmlBody);
+                                string statusCode = isDirectInfoPage ? "200 OK" : "403 Forbidden";
+                                string header = "HTTP/1.1 " + statusCode + "\r\n" +
+                                                "Content-Type: text/html; charset=utf-8\r\n" +
+                                                "Content-Length: " + bodyBytes.Length + "\r\n" +
+                                                "Cache-Control: no-store, no-cache, must-revalidate\r\n" +
+                                                "Connection: close\r\n\r\n";
+                                byte[] headerBytes = Encoding.ASCII.GetBytes(header);
+
+                                stream.Write(headerBytes, 0, headerBytes.Length);
+                                stream.Write(bodyBytes, 0, bodyBytes.Length);
                                 stream.Flush();
                             }
                             catch {}
@@ -459,6 +621,237 @@ namespace SchoolFilter.Controller
                     }
                 }
             }
+        }
+
+        private static void EnforceInstalledGameBlock()
+        {
+            try
+            {
+                Process[] allProcs = Process.GetProcesses();
+                foreach (Process p in allProcs)
+                {
+                    try
+                    {
+                        string procName = p.ProcessName;
+                        string gameDisplayName = null;
+
+                        if (BlockedGameProcesses.TryGetValue(procName, out gameDisplayName))
+                        {
+                            // Match found in blocked game dictionary
+                        }
+                        else if (string.Equals(procName, "javaw", StringComparison.OrdinalIgnoreCase) ||
+                                 string.Equals(procName, "java", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string title = p.MainWindowTitle ?? "";
+                            if (title.IndexOf("Minecraft", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                title.IndexOf("Lunar Client", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                title.IndexOf("Badlion", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                title.IndexOf("TLauncher", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                gameDisplayName = "Minecraft";
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(gameDisplayName))
+                        {
+                            p.Kill();
+                            TriggerPopupNotification(gameDisplayName, true);
+                        }
+                    }
+                    catch {}
+                    finally
+                    {
+                        try { p.Dispose(); } catch {}
+                    }
+                }
+            }
+            catch {}
+        }
+
+        private static string ExtractDomainFromHttpRequest(string req, out bool isDirectInfoPage)
+        {
+            isDirectInfoPage = false;
+            if (string.IsNullOrEmpty(req)) return "";
+
+            try
+            {
+                string[] lines = req.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                if (lines.Length == 0) return "";
+
+                string firstLine = lines[0];
+                // Example 1: CONNECT www.poki.com:443 HTTP/1.1
+                if (firstLine.StartsWith("CONNECT ", StringComparison.OrdinalIgnoreCase))
+                {
+                    string[] parts = firstLine.Split(' ');
+                    if (parts.Length >= 2)
+                    {
+                        string hostPort = parts[1].Trim();
+                        int colonIdx = hostPort.IndexOf(':');
+                        return (colonIdx > 0) ? hostPort.Substring(0, colonIdx) : hostPort;
+                    }
+                }
+
+                // Example 2: GET /?site=poki.com HTTP/1.1 (Direct access to 127.0.0.1:9999 info page)
+                if (firstLine.StartsWith("GET /", StringComparison.OrdinalIgnoreCase))
+                {
+                    isDirectInfoPage = true;
+                    int siteIdx = firstLine.IndexOf("site=", StringComparison.OrdinalIgnoreCase);
+                    if (siteIdx > 0)
+                    {
+                        string rest = firstLine.Substring(siteIdx + 5);
+                        int endIdx = rest.IndexOfAny(new char[] { ' ', '&', '#' });
+                        string rawSite = (endIdx > 0) ? rest.Substring(0, endIdx) : rest;
+                        return Uri.UnescapeDataString(rawSite);
+                    }
+                    return "";
+                }
+
+                // Example 3: GET http://example.com/path HTTP/1.1 or Host header
+                foreach (string line in lines)
+                {
+                    if (line.StartsWith("Host:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string host = line.Substring(5).Trim();
+                        int colonIdx = host.IndexOf(':');
+                        string cleanHost = (colonIdx > 0) ? host.Substring(0, colonIdx) : host;
+                        if (cleanHost != "127.0.0.1" && cleanHost != "localhost")
+                        {
+                            return cleanHost;
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            return "";
+        }
+
+        private static void MaybeShowBrowserBlockNotification(string domain)
+        {
+            try
+            {
+                string cleanDomain = domain.Trim().ToLowerInvariant();
+                if (cleanDomain.StartsWith("www."))
+                {
+                    cleanDomain = cleanDomain.Substring(4);
+                }
+
+                if (string.IsNullOrEmpty(cleanDomain)) return;
+
+                // Ignore background telemetry / CDN / OS domains
+                foreach (string ignored in SilentTelemetryDomains)
+                {
+                    if (cleanDomain == ignored || cleanDomain.EndsWith("." + ignored, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return;
+                    }
+                }
+
+                // Only trigger if the student's active foreground window is a Web Browser
+                if (!IsForegroundWindowBrowser())
+                {
+                    return;
+                }
+
+                TriggerPopupNotification(cleanDomain, false);
+            }
+            catch {}
+        }
+
+        private static bool IsForegroundWindowBrowser()
+        {
+            try
+            {
+                IntPtr hwnd = GetForegroundWindow();
+                if (hwnd == IntPtr.Zero) return false;
+
+                uint pid;
+                GetWindowThreadProcessId(hwnd, out pid);
+                if (pid == 0) return false;
+
+                using (Process p = Process.GetProcessById((int)pid))
+                {
+                    string name = (p.ProcessName ?? "").ToLowerInvariant();
+                    return (name == "chrome" || name == "msedge" || name == "firefox" ||
+                            name == "brave" || name == "opera" || name == "iexplore");
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void TriggerPopupNotification(string targetName, bool isGame)
+        {
+            lock (NotificationLock)
+            {
+                DateTime now = DateTime.UtcNow;
+                double secondsSinceLast = (now - LastNotificationTime).TotalSeconds;
+
+                // Cooldown: max 1 popup every 4 seconds (or 8 seconds for the exact same domain)
+                if (secondsSinceLast < 4.0) return;
+                if (string.Equals(LastNotifiedTarget, targetName, StringComparison.OrdinalIgnoreCase) && secondsSinceLast < 8.0) return;
+
+                LastNotificationTime = now;
+                LastNotifiedTarget = targetName;
+            }
+
+            try
+            {
+                string exePath = Assembly.GetExecutingAssembly().Location;
+                string safeArg = targetName.Replace("\"", "");
+                ProcessStartInfo psi = new ProcessStartInfo(exePath, "notify \"" + safeArg + "\" " + (isGame ? "game" : "web"))
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                Process.Start(psi);
+            }
+            catch {}
+        }
+
+        private static string BuildHebrewBlockPageHtml(string blockedDomain)
+        {
+            string displayDomain = string.IsNullOrEmpty(blockedDomain) ? "אתר לא מורשה" : WebUtility.HtmlEncode(blockedDomain);
+
+            return "<!DOCTYPE html>" +
+                   "<html dir='rtl' lang='he'>" +
+                   "<head>" +
+                   "<meta charset='utf-8'>" +
+                   "<meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
+                   "<title>האתר נחסם - כעת מתקיים שיעור | SchoolFilter</title>" +
+                   "<style>" +
+                   "*{box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}" +
+                   "body{margin:0;min-height:100vh;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#0f172a;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center}" +
+                   ".card{background:#ffffff;max-width:560px;width:100%;border-radius:20px;padding:38px 32px;box-shadow:0 20px 50px rgba(0,0,0,0.35);border-top:8px solid #dc2626}" +
+                   ".icon{width:72px;height:72px;background:#fef2f2;color:#dc2626;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:16px;border:2px solid #fecaca}" +
+                   "h1{color:#dc2626;margin:0 0 10px 0;font-size:26px;font-weight:800}" +
+                   ".lesson-badge{display:inline-block;background:#fef3c7;color:#92400e;font-weight:700;padding:6px 16px;border-radius:999px;font-size:15px;margin-bottom:18px;border:1px solid #fde68a}" +
+                   ".domain-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 16px;margin:12px 0 20px 0;font-family:Consolas,monospace;font-size:16px;color:#334155;direction:ltr;font-weight:600}" +
+                   "p{color:#475569;font-size:16px;line-height:1.6;margin:0 0 22px 0}" +
+                   ".links-title{font-size:14px;font-weight:700;color:#64748b;margin-bottom:12px}" +
+                   ".links{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}" +
+                   ".btn{text-decoration:none;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:10px 18px;border-radius:10px;font-weight:700;font-size:14px;transition:all 0.15s}" +
+                   ".btn:hover{background:#2563eb;color:#ffffff}" +
+                   "</style>" +
+                   "</head>" +
+                   "<body>" +
+                   "<div class='card'>" +
+                   "<div class='icon'>🛑</div>" +
+                   "<h1>הגלישה לאתר זה נחסמה</h1>" +
+                   "<div class='lesson-badge'>📚 כעת מתקיים שיעור בכיתה</div>" +
+                   "<div class='domain-box'>" + displayDomain + "</div>" +
+                   "<p>הכניסה לאתר זה חסומה כעת מאחר שהמחשב נמצא <strong>במצב שיעור</strong>.<br>בזמן השיעור ניתן לגלוש אך ורק לאתרי הלימוד שאושרו על ידי המורה.</p>" +
+                   "<div class='links-title'>מעבר מהיר לאתרי השיעור המותרים:</div>" +
+                   "<div class='links'>" +
+                   "<a class='btn' href='https://one-class.co.il'>🎓 One-Class</a>" +
+                   "<a class='btn' href='https://classroom.google.com'>📖 Google Classroom</a>" +
+                   "<a class='btn' href='https://parents.education.gov.il'>🏫 משרד החינוך</a>" +
+                   "</div>" +
+                   "</div>" +
+                   "</body>" +
+                   "</html>";
         }
 
         private static bool IsProxyCurrentlyEnforced()
@@ -626,6 +1019,146 @@ namespace SchoolFilter.Controller
                 connKey.SetValue(valueName, blob, RegistryValueKind.Binary);
             }
             catch {}
+        }
+    }
+
+    /// <summary>
+    /// Top-most Hebrew notification overlay displayed over the browser when a student attempts
+    /// to visit a blocked HTTPS website or launch an installed game during class.
+    /// </summary>
+    internal sealed class ClassroomBlockNotificationForm : Form
+    {
+        private System.Windows.Forms.Timer closeTimer;
+
+        public ClassroomBlockNotificationForm(string targetName, bool isGame)
+        {
+            this.Text = "SchoolFilter - חסימת גלישה בזמן שיעור";
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.StartPosition = FormStartPosition.Manual;
+            this.Size = new Size(480, 215);
+            this.TopMost = true;
+            this.ShowInTaskbar = false;
+            this.BackColor = Color.FromArgb(220, 38, 38); // Red border frame
+            this.RightToLeft = RightToLeft.Yes;
+            this.RightToLeftLayout = true;
+
+            // Position at top-center of primary screen (right over the browser content area)
+            Rectangle workingArea = Screen.PrimaryScreen.WorkingArea;
+            this.Location = new Point(
+                workingArea.Left + (workingArea.Width - this.Width) / 2,
+                workingArea.Top + 75
+            );
+
+            Panel contentPanel = new Panel
+            {
+                Location = new Point(3, 6),
+                Size = new Size(this.Width - 6, this.Height - 9),
+                BackColor = Color.White
+            };
+
+            Label badgeLabel = new Label
+            {
+                Text = "📚 מצב שיעור פעיל בכיתה",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(146, 64, 14),
+                BackColor = Color.FromArgb(254, 243, 199),
+                AutoSize = false,
+                Size = new Size(190, 26),
+                Location = new Point((contentPanel.Width - 190) / 2, 14),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            Label titleLabel = new Label
+            {
+                Text = isGame
+                    ? "🛑 המשחק נחסם ונסגר — כעת מתקיים שיעור!"
+                    : "🛑 האתר נחסם לצפייה — כעת מתקיים שיעור!",
+                Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(220, 38, 38),
+                AutoSize = false,
+                Size = new Size(contentPanel.Width - 24, 32),
+                Location = new Point(12, 46),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            Label targetLabel = new Label
+            {
+                Text = isGame
+                    ? "המשחק שנחסם: " + targetName
+                    : "האתר שנחסם: " + targetName,
+                Font = new Font("Segoe UI Semibold", 10.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(30, 41, 59),
+                AutoSize = false,
+                Size = new Size(contentPanel.Width - 24, 24),
+                Location = new Point(12, 80),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            Label descLabel = new Label
+            {
+                Text = "בזמן השיעור ניתן לגלוש אך ורק לאתרי הלימוד שאושרו על ידי המורה.",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(71, 85, 105),
+                AutoSize = false,
+                Size = new Size(contentPanel.Width - 24, 24),
+                Location = new Point(12, 108),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            Button openPortalBtn = new Button
+            {
+                Text = "🎓 פתח בדפדפן את אתרי השיעור המותרים",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Size = new Size(265, 36),
+                Location = new Point(25, 145),
+                BackColor = Color.FromArgb(37, 99, 235),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            openPortalBtn.FlatAppearance.BorderSize = 0;
+            openPortalBtn.Click += (s, e) =>
+            {
+                try
+                {
+                    string url = "http://127.0.0.1:9999/?site=" + Uri.EscapeDataString(targetName);
+                    Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                }
+                catch {}
+                this.Close();
+            };
+
+            Button closeBtn = new Button
+            {
+                Text = "הבנתי, סגור",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                Size = new Size(140, 36),
+                Location = new Point(305, 145),
+                BackColor = Color.FromArgb(241, 245, 249),
+                ForeColor = Color.FromArgb(51, 65, 85),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            closeBtn.FlatAppearance.BorderColor = Color.FromArgb(203, 213, 225);
+            closeBtn.Click += (s, e) => this.Close();
+
+            contentPanel.Controls.Add(badgeLabel);
+            contentPanel.Controls.Add(titleLabel);
+            contentPanel.Controls.Add(targetLabel);
+            contentPanel.Controls.Add(descLabel);
+            contentPanel.Controls.Add(openPortalBtn);
+            contentPanel.Controls.Add(closeBtn);
+            this.Controls.Add(contentPanel);
+
+            // Automatically close after 6.5 seconds so it never stays stuck
+            closeTimer = new System.Windows.Forms.Timer();
+            closeTimer.Interval = 6500;
+            closeTimer.Tick += (s, e) =>
+            {
+                closeTimer.Stop();
+                this.Close();
+            };
+            closeTimer.Start();
         }
     }
 }

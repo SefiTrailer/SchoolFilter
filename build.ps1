@@ -55,7 +55,7 @@ $CtlArgs = @(
     "/optimize+",
     "/platform:anycpu",
     "/out:$CtlExe",
-    "/reference:System.dll,System.Core.dll",
+    "/reference:System.Windows.Forms.dll,System.Drawing.dll,System.dll,System.Core.dll",
     "$CtlSource"
 )
 & "$FoundCsc" $CtlArgs
