@@ -30,7 +30,7 @@ namespace SchoolFilter.Setup
 
         public override string ToString()
         {
-            return InstitutionName + " — " + RoomName + "  (" + RoomId + ")";
+            return RoomName + "  (" + RoomId + ")";
         }
     }
 
@@ -61,9 +61,9 @@ namespace SchoolFilter.Setup
             bool isUninstall = false;
             InstallRole role = InstallRole.Student;
             bool roleExplicitlySet = false;
-            string roomId = "yeshiva-lab1";
-            string roomName = "חדר מחשבים ראשי";
-            string institutionName = "הישיבה שלנו";
+            string roomId = "yeshiva-lab";
+            string roomName = "ישיבת נשמת התורה - חדר מחשבים";
+            string institutionName = "ישיבת נשמת התורה";
 
             foreach (string rawArg in args)
             {
@@ -614,9 +614,9 @@ namespace SchoolFilter.Setup
         public RoleSelectionForm()
         {
             SelectedRole = InstallRole.Student;
-            SelectedRoomId = "yeshiva-lab1";
-            SelectedRoomName = "חדר מחשבים ראשי";
-            SelectedInstitutionName = "הישיבה שלנו";
+            SelectedRoomId = "yeshiva-lab";
+            SelectedRoomName = "ישיבת נשמת התורה - חדר מחשבים";
+            SelectedInstitutionName = "ישיבת נשמת התורה";
             InitializeComponent();
         }
 
@@ -815,9 +815,9 @@ namespace SchoolFilter.Setup
 
             if (options.Count == 0)
             {
-                options.Add(new RoomOption { RoomId = "yeshiva-lab1", RoomName = "חדר מחשבים ראשי", InstitutionName = "הישיבה שלנו" });
-                options.Add(new RoomOption { RoomId = "yeshiva-cart1", RoomName = "עגלת מחשבים ניידים 1", InstitutionName = "הישיבה שלנו" });
-                options.Add(new RoomOption { RoomId = "yeshiva-cart2", RoomName = "עגלת מחשבים ניידים 2", InstitutionName = "הישיבה שלנו" });
+                options.Add(new RoomOption { RoomId = "yeshiva-lab", RoomName = "ישיבת נשמת התורה - חדר מחשבים", InstitutionName = "ישיבת נשמת התורה" });
+                options.Add(new RoomOption { RoomId = "yeshiva-cart", RoomName = "ישיבת נשמת התורה - עגלת מחשבים", InstitutionName = "ישיבת נשמת התורה" });
+                options.Add(new RoomOption { RoomId = "mechina-cart", RoomName = "מכינה נשמת התורה - עגלת מחשבים", InstitutionName = "ישיבת נשמת התורה" });
             }
 
             foreach (RoomOption opt in options)

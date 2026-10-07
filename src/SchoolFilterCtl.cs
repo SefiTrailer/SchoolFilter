@@ -18,7 +18,7 @@ namespace SchoolFilter.Controller
     internal static class Program
     {
         private const string DefaultFirebaseProjectId = "school-filter-2026";
-        private const string DefaultRoomId = "yeshiva-lab1";
+        private const string DefaultRoomId = "yeshiva-lab";
         private const int SinkholePort = 9999;
 
         private static readonly string InstallDir = Path.Combine(
@@ -36,7 +36,18 @@ namespace SchoolFilter.Controller
 
         // Dynamic Room State served by local Sinkhole + PAC Server on 127.0.0.1:9999
         private static volatile string CurrentPacScript = null;
-        private static volatile string CurrentRoomDisplayLabel = "מצב שיעור פעיל בכיתה";
+        private static volatile string CurrentRoomDisplayLabel = "ישיבת נשמת התורה — חדר מחשבים";
+        private static List<string> CurrentRoomWhitelist = new List<string>
+        {
+            "one-class.co.il",
+            "gemini.google.com",
+            "copilot.microsoft.com",
+            "classroom.google.com",
+            "edu.gov.il",
+            "education.gov.il",
+            "docs.google.com",
+            "drive.google.com"
+        };
 
         // Background telemetry/CDN domains that browsers request automatically without user navigation.
         private static readonly string[] SilentTelemetryDomains = new string[]
@@ -177,7 +188,8 @@ namespace SchoolFilter.Controller
                     string targetName = (args.Length > 1) ? args[1] : "אתר לא מורשה";
                     string isGame = (args.Length > 2) ? args[2] : "web";
                     string roomLabel = (args.Length > 3) ? args[3] : GetConfiguredRoomDisplayLabel();
-                    Application.Run(new ClassroomBlockNotificationForm(targetName, isGame == "game", roomLabel));
+                    string csvWhitelist = (args.Length > 4) ? args[4] : "one-class.co.il,gemini.google.com,copilot.microsoft.com,classroom.google.com,edu.gov.il";
+                    Application.Run(new ClassroomBlockNotificationForm(targetName, isGame == "game", roomLabel, csvWhitelist));
                     return 0;
                 }
                 else if (action == "watchdog")
@@ -265,9 +277,8 @@ namespace SchoolFilter.Controller
 
         private static string GetConfiguredRoomDisplayLabel()
         {
-            string inst = GetConfigValue("InstitutionName", "הישיבה שלנו");
-            string room = GetConfigValue("RoomName", "חדר מחשבים");
-            return inst + " — " + room;
+            string room = GetConfigValue("RoomName", "ישיבת נשמת התורה - חדר מחשבים");
+            return room;
         }
 
         private static string GetLocalPacEndpointUrl(long cacheBuster)
@@ -286,17 +297,9 @@ namespace SchoolFilter.Controller
         private static void RefreshPacSettings(long cacheBuster)
         {
             string pacUrl = GetLocalPacEndpointUrl(cacheBuster);
-
-            // Apply to current session via WinINet API
             SetWinInetPac(true, pacUrl);
-
-            // Apply directly to HKEY_CURRENT_USER
             ApplyPacToRegistryRoot(Registry.CurrentUser, true, pacUrl);
-
-            // Apply to ALL logged-in user hives in HKEY_USERS
             ApplyPacToAllLoadedUsers(true, pacUrl);
-
-            // Broadcast settings change
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
         }
@@ -438,14 +441,47 @@ namespace SchoolFilter.Controller
             return GenerateDynamicPacScript(true, new List<string>
             {
                 "one-class.co.il", "*.one-class.co.il",
+                "gemini.google.com", "*.gemini.google.com",
+                "copilot.microsoft.com", "*.copilot.microsoft.com",
                 "edu.gov.il", "*.edu.gov.il",
                 "education.gov.il", "*.education.gov.il",
                 "classroom.google.com", "docs.google.com", "drive.google.com", "accounts.google.com"
             });
         }
 
-        private static string GenerateDynamicPacScript(bool filterEnabled, List<string> whitelist)
+        private static string GenerateDynamicPacScript(bool filterEnabled, List<string> userWhitelist)
         {
+            List<string> effectiveList = new List<string>(userWhitelist);
+
+            // If Google Gemini or Google Classroom is in the whitelist, include required Google static/auth sub-resources
+            bool hasGoogle = effectiveList.Contains("gemini.google.com") || effectiveList.Contains("classroom.google.com");
+            if (hasGoogle)
+            {
+                string[] googleHelpers = new string[]
+                {
+                    "accounts.google.com", "*.gstatic.com", "*.googleapis.com",
+                    "*.googleusercontent.com", "*.clients6.google.com", "apis.google.com", "ogs.google.com"
+                };
+                foreach (string h in googleHelpers)
+                {
+                    if (!effectiveList.Contains(h)) effectiveList.Add(h);
+                }
+            }
+
+            // If Microsoft Copilot is in the whitelist, include required Copilot/Bing/Microsoft auth sub-resources
+            if (effectiveList.Contains("copilot.microsoft.com"))
+            {
+                string[] copilotHelpers = new string[]
+                {
+                    "sydney.bing.com", "edgeservices.bing.com", "*.bing.net",
+                    "login.live.com", "login.microsoftonline.com", "*.msauth.net", "*.msftauth.net"
+                };
+                foreach (string h in copilotHelpers)
+                {
+                    if (!effectiveList.Contains(h)) effectiveList.Add(h);
+                }
+            }
+
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("function FindProxyForURL(url, host) {");
             sb.AppendLine("    host = host.toLowerCase();");
@@ -455,10 +491,10 @@ namespace SchoolFilter.Controller
             sb.AppendLine("        return \"DIRECT\";");
             sb.AppendLine("    }");
             sb.AppendLine("    var whitelist = [");
-            for (int i = 0; i < whitelist.Count; i++)
+            for (int i = 0; i < effectiveList.Count; i++)
             {
-                string item = whitelist[i].Replace("\"", "").Trim().ToLowerInvariant();
-                string comma = (i < whitelist.Count - 1) ? "," : "";
+                string item = effectiveList[i].Replace("\"", "").Trim().ToLowerInvariant();
+                string comma = (i < effectiveList.Count - 1) ? "," : "";
                 sb.AppendLine("        \"" + item + "\"" + comma);
             }
             sb.AppendLine("    ];");
@@ -475,6 +511,23 @@ namespace SchoolFilter.Controller
             return sb.ToString();
         }
 
+        private static List<string> ExtractCleanBaseDomains(List<string> rawWhitelist)
+        {
+            List<string> baseDomains = new List<string>();
+            if (rawWhitelist == null) return baseDomains;
+            foreach (string item in rawWhitelist)
+            {
+                string clean = item.Trim().ToLowerInvariant();
+                if (clean.StartsWith("*.")) clean = clean.Substring(2);
+                if (string.IsNullOrEmpty(clean) || clean == "accounts.google.com") continue;
+                if (!baseDomains.Contains(clean))
+                {
+                    baseDomains.Add(clean);
+                }
+            }
+            return baseDomains;
+        }
+
         private static bool ParseFirestoreRoomJson(string json, out bool filterEnabled, out List<string> whitelist, out string roomLabel)
         {
             filterEnabled = true;
@@ -485,30 +538,20 @@ namespace SchoolFilter.Controller
 
             try
             {
-                // 1. Parse filterEnabled booleanValue
                 Match boolMatch = Regex.Match(json, "\"filterEnabled\"\\s*:\\s*\\{\\s*\"booleanValue\"\\s*:\\s*(true|false)", RegexOptions.IgnoreCase);
                 if (boolMatch.Success)
                 {
                     filterEnabled = string.Equals(boolMatch.Groups[1].Value, "true", StringComparison.OrdinalIgnoreCase);
                 }
 
-                // 2. Parse room name and institutionName
                 string rName = "";
-                string iName = "";
                 Match rMatch = Regex.Match(json, "\"name\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
                 if (rMatch.Success) rName = rMatch.Groups[1].Value;
-                Match iMatch = Regex.Match(json, "\"institutionName\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
-                if (iMatch.Success) iName = iMatch.Groups[1].Value;
-                if (!string.IsNullOrEmpty(rName) && !string.IsNullOrEmpty(iName))
-                {
-                    roomLabel = iName + " — " + rName;
-                }
-                else if (!string.IsNullOrEmpty(rName))
+                if (!string.IsNullOrEmpty(rName))
                 {
                     roomLabel = rName;
                 }
 
-                // 3. Parse whitelist arrayValue
                 int wlIdx = json.IndexOf("\"whitelist\"", StringComparison.OrdinalIgnoreCase);
                 if (wlIdx >= 0)
                 {
@@ -532,7 +575,14 @@ namespace SchoolFilter.Controller
 
                 if (whitelist.Count == 0)
                 {
-                    whitelist.AddRange(new string[] { "one-class.co.il", "*.one-class.co.il", "edu.gov.il", "*.edu.gov.il", "classroom.google.com" });
+                    whitelist.AddRange(new string[]
+                    {
+                        "one-class.co.il", "*.one-class.co.il",
+                        "gemini.google.com", "*.gemini.google.com",
+                        "copilot.microsoft.com", "*.copilot.microsoft.com",
+                        "edu.gov.il", "*.edu.gov.il",
+                        "classroom.google.com"
+                    });
                 }
 
                 return true;
@@ -559,8 +609,6 @@ namespace SchoolFilter.Controller
                 TcpListener listener = null;
                 bool running = true;
 
-                // Background watcher thread:
-                // Polls Firebase Firestore for THIS room's settings every 5 seconds & enforces desktop game blocking every 2.5 seconds.
                 Thread cloudSyncThread = new Thread(() =>
                 {
                     string lastGeneratedPac = null;
@@ -575,7 +623,6 @@ namespace SchoolFilter.Controller
                     {
                         try
                         {
-                            // Poll Firebase Firestore every 5 seconds (every 2 ticks of 2.5s)
                             if (tickCounter % 2 == 0)
                             {
                                 string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
@@ -586,9 +633,9 @@ namespace SchoolFilter.Controller
                                                       "?nocache=" + ticks;
 
                                 HttpWebRequest req = (HttpWebRequest)WebRequest.Create(firestoreUrl);
-                                req.Proxy = null; // Direct connection to Firebase Cloud, bypassing local proxy
+                                req.Proxy = null;
                                 req.Timeout = 4000;
-                                req.UserAgent = "SchoolFilter-RoomDaemon/3.0";
+                                req.UserAgent = "SchoolFilter-RoomDaemon/3.1";
 
                                 using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                                 using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
@@ -601,6 +648,7 @@ namespace SchoolFilter.Controller
                                     if (ParseFirestoreRoomJson(json, out cloudFilterEnabled, out whitelist, out roomLabel))
                                     {
                                         CurrentRoomDisplayLabel = roomLabel;
+                                        CurrentRoomWhitelist = ExtractCleanBaseDomains(whitelist);
                                         string newPac = GenerateDynamicPacScript(cloudFilterEnabled, whitelist);
                                         CurrentPacScript = newPac;
 
@@ -710,7 +758,6 @@ namespace SchoolFilter.Controller
                                     return;
                                 }
 
-                                // Check if Windows/Browser is requesting the room's PAC file: GET /filter.pac
                                 if (req.StartsWith("GET /filter.pac", StringComparison.OrdinalIgnoreCase) ||
                                     req.StartsWith("HEAD /filter.pac", StringComparison.OrdinalIgnoreCase))
                                 {
@@ -736,7 +783,7 @@ namespace SchoolFilter.Controller
                                     MaybeShowBrowserBlockNotification(blockedDomain);
                                 }
 
-                                string htmlBody = BuildHebrewBlockPageHtml(blockedDomain, CurrentRoomDisplayLabel);
+                                string htmlBody = BuildHebrewBlockPageHtml(blockedDomain, CurrentRoomDisplayLabel, CurrentRoomWhitelist);
                                 byte[] bodyBytes = Encoding.UTF8.GetBytes(htmlBody);
                                 string statusCode = isDirectInfoPage ? "200 OK" : "403 Forbidden";
                                 string header = "HTTP/1.1 " + statusCode + "\r\n" +
@@ -942,7 +989,8 @@ namespace SchoolFilter.Controller
                 string exePath = Assembly.GetExecutingAssembly().Location;
                 string safeArg = targetName.Replace("\"", "");
                 string safeRoom = (CurrentRoomDisplayLabel ?? "").Replace("\"", "");
-                ProcessStartInfo psi = new ProcessStartInfo(exePath, "notify \"" + safeArg + "\" " + (isGame ? "game" : "web") + " \"" + safeRoom + "\"")
+                string csvWhitelist = string.Join(",", CurrentRoomWhitelist.ToArray()).Replace("\"", "");
+                ProcessStartInfo psi = new ProcessStartInfo(exePath, "notify \"" + safeArg + "\" " + (isGame ? "game" : "web") + " \"" + safeRoom + "\" \"" + csvWhitelist + "\"")
                 {
                     UseShellExecute = false,
                     CreateNoWindow = true
@@ -952,10 +1000,33 @@ namespace SchoolFilter.Controller
             catch {}
         }
 
-        private static string BuildHebrewBlockPageHtml(string blockedDomain, string roomLabel)
+        private static string GetFriendlySiteLabel(string domain)
+        {
+            if (domain == "one-class.co.il") return "🎓 One-Class (one-class.co.il)";
+            if (domain == "gemini.google.com") return "✨ Google Gemini AI";
+            if (domain == "copilot.microsoft.com") return "🤖 Microsoft Copilot AI";
+            if (domain == "classroom.google.com") return "📖 Google Classroom";
+            if (domain == "docs.google.com") return "📝 Google Docs";
+            if (domain == "drive.google.com") return "📁 Google Drive";
+            if (domain == "edu.gov.il" || domain == "education.gov.il") return "🏫 משרד החינוך (" + domain + ")";
+            return "🌐 " + domain;
+        }
+
+        private static string BuildHebrewBlockPageHtml(string blockedDomain, string roomLabel, List<string> allowedDomains)
         {
             string displayDomain = string.IsNullOrEmpty(blockedDomain) ? "אתר לא מורשה" : WebUtility.HtmlEncode(blockedDomain);
             string displayRoom = string.IsNullOrEmpty(roomLabel) ? "כעת מתקיים שיעור בכיתה" : WebUtility.HtmlEncode(roomLabel);
+
+            StringBuilder linksHtml = new StringBuilder();
+            if (allowedDomains != null && allowedDomains.Count > 0)
+            {
+                foreach (string dom in allowedDomains)
+                {
+                    string safeDom = WebUtility.HtmlEncode(dom);
+                    string label = WebUtility.HtmlEncode(GetFriendlySiteLabel(dom));
+                    linksHtml.Append("<a class='btn' href='https://" + safeDom + "'>" + label + "</a>");
+                }
+            }
 
             return "<!DOCTYPE html>" +
                    "<html dir='rtl' lang='he'>" +
@@ -966,15 +1037,16 @@ namespace SchoolFilter.Controller
                    "<style>" +
                    "*{box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}" +
                    "body{margin:0;min-height:100vh;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#0f172a;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center}" +
-                   ".card{background:#ffffff;max-width:560px;width:100%;border-radius:20px;padding:38px 32px;box-shadow:0 20px 50px rgba(0,0,0,0.35);border-top:8px solid #dc2626}" +
-                   ".icon{width:72px;height:72px;background:#fef2f2;color:#dc2626;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:16px;border:2px solid #fecaca}" +
-                   "h1{color:#dc2626;margin:0 0 10px 0;font-size:26px;font-weight:800}" +
-                   ".lesson-badge{display:inline-block;background:#fef3c7;color:#92400e;font-weight:700;padding:6px 16px;border-radius:999px;font-size:15px;margin-bottom:18px;border:1px solid #fde68a}" +
-                   ".domain-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 16px;margin:12px 0 20px 0;font-family:Consolas,monospace;font-size:16px;color:#334155;direction:ltr;font-weight:600}" +
-                   "p{color:#475569;font-size:16px;line-height:1.6;margin:0 0 22px 0}" +
-                   ".links-title{font-size:14px;font-weight:700;color:#64748b;margin-bottom:12px}" +
-                   ".links{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}" +
-                   ".btn{text-decoration:none;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:10px 18px;border-radius:10px;font-weight:700;font-size:14px;transition:all 0.15s}" +
+                   ".card{background:#ffffff;max-width:620px;width:100%;border-radius:20px;padding:34px 30px;box-shadow:0 20px 50px rgba(0,0,0,0.35);border-top:8px solid #dc2626}" +
+                   ".icon{width:68px;height:68px;background:#fef2f2;color:#dc2626;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:14px;border:2px solid #fecaca}" +
+                   "h1{color:#dc2626;margin:0 0 10px 0;font-size:25px;font-weight:800}" +
+                   ".lesson-badge{display:inline-block;background:#fef3c7;color:#92400e;font-weight:700;padding:6px 16px;border-radius:999px;font-size:14px;margin-bottom:14px;border:1px solid #fde68a}" +
+                   ".domain-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:9px 16px;margin:10px 0 16px 0;font-family:Consolas,monospace;font-size:15px;color:#334155;direction:ltr;font-weight:600}" +
+                   "p{color:#475569;font-size:15px;line-height:1.6;margin:0 0 18px 0}" +
+                   ".wl-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:16px;text-align:center}" +
+                   ".links-title{font-size:14px;font-weight:800;color:#166534;margin-bottom:12px}" +
+                   ".links{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}" +
+                   ".btn{text-decoration:none;background:#ffffff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 14px;border-radius:10px;font-weight:700;font-size:13px;transition:all 0.15s;box-shadow:0 1px 2px rgba(0,0,0,0.04)}" +
                    ".btn:hover{background:#2563eb;color:#ffffff}" +
                    "</style>" +
                    "</head>" +
@@ -984,12 +1056,10 @@ namespace SchoolFilter.Controller
                    "<h1>הגלישה לאתר זה נחסמה</h1>" +
                    "<div class='lesson-badge'>📚 מצב שיעור פעיל: " + displayRoom + "</div>" +
                    "<div class='domain-box'>" + displayDomain + "</div>" +
-                   "<p>הכניסה לאתר זה חסומה כעת מאחר שהמחשב נמצא <strong>במצב שיעור</strong>.<br>בזמן השיעור ניתן לגלוש אך ורק לאתרי הלימוד שאושרו על ידי המורה לחדר זה.</p>" +
-                   "<div class='links-title'>מעבר מהיר לאתרי השיעור המותרים:</div>" +
-                   "<div class='links'>" +
-                   "<a class='btn' href='https://one-class.co.il'>🎓 One-Class</a>" +
-                   "<a class='btn' href='https://classroom.google.com'>📖 Google Classroom</a>" +
-                   "<a class='btn' href='https://parents.education.gov.il'>🏫 משרד החינוך</a>" +
+                   "<p>הכניסה לאתר זה חסומה כעת מאחר שהמחשב נמצא <strong>במצב שיעור</strong>.<br>להלן <strong>הרשימה הלבנה</strong> של האתרים המותרים כעת בחדר שלך:</p>" +
+                   "<div class='wl-box'>" +
+                   "<div class='links-title'>✅ הרשימה הלבנה שלך לשיעור (לחץ על אתר לכניסה):</div>" +
+                   "<div class='links'>" + linksHtml.ToString() + "</div>" +
                    "</div>" +
                    "</div>" +
                    "</body>" +
@@ -1168,12 +1238,12 @@ namespace SchoolFilter.Controller
     {
         private System.Windows.Forms.Timer closeTimer;
 
-        public ClassroomBlockNotificationForm(string targetName, bool isGame, string roomLabel)
+        public ClassroomBlockNotificationForm(string targetName, bool isGame, string roomLabel, string csvWhitelist)
         {
             this.Text = "SchoolFilter - חסימת גלישה בזמן שיעור";
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.Manual;
-            this.Size = new Size(490, 220);
+            this.Size = new Size(540, 320);
             this.TopMost = true;
             this.ShowInTaskbar = false;
             this.BackColor = Color.FromArgb(220, 38, 38);
@@ -1183,7 +1253,7 @@ namespace SchoolFilter.Controller
             Rectangle workingArea = Screen.PrimaryScreen.WorkingArea;
             this.Location = new Point(
                 workingArea.Left + (workingArea.Width - this.Width) / 2,
-                workingArea.Top + 75
+                workingArea.Top + 65
             );
 
             Panel contentPanel = new Panel
@@ -1195,13 +1265,13 @@ namespace SchoolFilter.Controller
 
             Label badgeLabel = new Label
             {
-                Text = "📚 מצב שיעור: " + (string.IsNullOrEmpty(roomLabel) ? "חדר מחשבים" : roomLabel),
+                Text = "📚 מצב שיעור: " + (string.IsNullOrEmpty(roomLabel) ? "ישיבת נשמת התורה" : roomLabel),
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(146, 64, 14),
                 BackColor = Color.FromArgb(254, 243, 199),
                 AutoSize = false,
-                Size = new Size(contentPanel.Width - 40, 26),
-                Location = new Point(20, 14),
+                Size = new Size(contentPanel.Width - 36, 26),
+                Location = new Point(18, 12),
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
@@ -1213,8 +1283,8 @@ namespace SchoolFilter.Controller
                 Font = new Font("Segoe UI", 13.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(220, 38, 38),
                 AutoSize = false,
-                Size = new Size(contentPanel.Width - 24, 32),
-                Location = new Point(12, 46),
+                Size = new Size(contentPanel.Width - 24, 30),
+                Location = new Point(12, 42),
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
@@ -1223,31 +1293,68 @@ namespace SchoolFilter.Controller
                 Text = isGame
                     ? "המשחק שנחסם: " + targetName
                     : "האתר שנחסם: " + targetName,
-                Font = new Font("Segoe UI Semibold", 10.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI Semibold", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(30, 41, 59),
                 AutoSize = false,
-                Size = new Size(contentPanel.Width - 24, 24),
-                Location = new Point(12, 80),
+                Size = new Size(contentPanel.Width - 24, 22),
+                Location = new Point(12, 74),
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
-            Label descLabel = new Label
+            Label wlTitleLabel = new Label
             {
-                Text = "בזמן השיעור ניתן לגלוש אך ורק לאתרי הלימוד שאושרו על ידי המורה לחדר זה.",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
-                ForeColor = Color.FromArgb(71, 85, 105),
+                Text = "✅ הרשימה הלבנה שלך בחדר זה (לחץ על אתר לכניסה):",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(22, 101, 52),
                 AutoSize = false,
-                Size = new Size(contentPanel.Width - 24, 24),
-                Location = new Point(12, 108),
+                Size = new Size(contentPanel.Width - 24, 22),
+                Location = new Point(12, 100),
                 TextAlign = ContentAlignment.MiddleCenter
             };
+
+            FlowLayoutPanel sitesFlow = new FlowLayoutPanel
+            {
+                Location = new Point(18, 125),
+                Size = new Size(contentPanel.Width - 36, 125),
+                BackColor = Color.FromArgb(240, 253, 244),
+                BorderStyle = BorderStyle.FixedSingle,
+                AutoScroll = true,
+                Padding = new Padding(6)
+            };
+
+            string[] domains = (csvWhitelist ?? "").Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string rawDom in domains)
+            {
+                string dom = rawDom.Trim();
+                if (string.IsNullOrEmpty(dom)) continue;
+                Button siteBtn = new Button
+                {
+                    Text = dom,
+                    Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                    AutoSize = true,
+                    Height = 28,
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(29, 78, 216),
+                    FlatStyle = FlatStyle.Flat,
+                    Cursor = Cursors.Hand,
+                    Margin = new Padding(3)
+                };
+                siteBtn.FlatAppearance.BorderColor = Color.FromArgb(191, 219, 254);
+                string targetUrl = "https://" + dom;
+                siteBtn.Click += (s, e) =>
+                {
+                    try { Process.Start(new ProcessStartInfo(targetUrl) { UseShellExecute = true }); } catch {}
+                    this.Close();
+                };
+                sitesFlow.Controls.Add(siteBtn);
+            }
 
             Button openPortalBtn = new Button
             {
-                Text = "🎓 פתח בדפדפן את אתרי השיעור המותרים",
+                Text = "📋 פתח רשימה מלאה בדפדפן",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Size = new Size(270, 36),
-                Location = new Point(25, 148),
+                Size = new Size(260, 36),
+                Location = new Point(30, 260),
                 BackColor = Color.FromArgb(37, 99, 235),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -1269,8 +1376,8 @@ namespace SchoolFilter.Controller
             {
                 Text = "הבנתי, סגור",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
-                Size = new Size(140, 36),
-                Location = new Point(310, 148),
+                Size = new Size(195, 36),
+                Location = new Point(305, 260),
                 BackColor = Color.FromArgb(241, 245, 249),
                 ForeColor = Color.FromArgb(51, 65, 85),
                 FlatStyle = FlatStyle.Flat,
@@ -1282,13 +1389,14 @@ namespace SchoolFilter.Controller
             contentPanel.Controls.Add(badgeLabel);
             contentPanel.Controls.Add(titleLabel);
             contentPanel.Controls.Add(targetLabel);
-            contentPanel.Controls.Add(descLabel);
+            contentPanel.Controls.Add(wlTitleLabel);
+            contentPanel.Controls.Add(sitesFlow);
             contentPanel.Controls.Add(openPortalBtn);
             contentPanel.Controls.Add(closeBtn);
             this.Controls.Add(contentPanel);
 
             closeTimer = new System.Windows.Forms.Timer();
-            closeTimer.Interval = 6500;
+            closeTimer.Interval = 9000;
             closeTimer.Tick += (s, e) =>
             {
                 closeTimer.Stop();
