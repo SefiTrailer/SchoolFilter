@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="SchoolFilter">
-    <title>SchoolFilter Cloud - מערכת ניהול חדרי מחשבים ומוסדות</title>
+    <title>SchoolFilter - מערכת ניהול חדרי מחשבים ומוסדות</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='100%25' stop-color='%231e3a8a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M32 4L8 14v18c0 16.5 10.2 31.6 24 36 13.8-4.4 24-19.5 24-36V14L32 4z' fill='url(%23g)' stroke='%2360a5fa' stroke-width='2'/%3E%3Cpath d='M26 33l-6-6-3.5 3.5L26 40l18-18-3.5-3.5L26 33z' fill='%23ffffff'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231e3a8a'/%3E%3Cpath d='M32 8L12 16.5v15c0 13.8 8.5 26.3 20 30 11.5-3.7 20-16.2 20-30v-15L32 8z' fill='%232563eb' stroke='%2393c5fd' stroke-width='2'/%3E%3Cpath d='M27 34l-5-5-3 3 8 8 15-15-3-3-12 12z' fill='%23ffffff'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -48,17 +48,16 @@
 
         header {
             background: #ffffff;
-            border-bottom: 1px solid var(--border);
-            padding: 14px 24px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 24px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 12px;
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            box-shadow: var(--shadow);
         }
 
         .header-title {
@@ -626,25 +625,28 @@
 </head>
 <body>
 
-    <header>
-        <div class="header-title">
-            <div class="logo-icon">🛡️</div>
-            <div>
-                <h1>SchoolFilter Cloud v3.0</h1>
-                <div class="subtitle">ניהול חדרי מחשבים, עגלות ניידים ומוסדות לימוד</div>
-            </div>
-        </div>
-        <div class="user-status">
-            <span id="userRoleBadge" class="badge badge-role" style="display: none;"></span>
-            <span id="statusBadge" class="badge badge-offline">
-                <span class="status-dot"></span>
-                לא מחובר
-            </span>
-            <button id="btnLogout" class="btn btn-outline" style="display: none; padding: 6px 12px; font-size: 13px;" onclick="logoutUser()">התנתק</button>
-        </div>
-    </header>
-
     <div class="container">
+
+        <header>
+            <div class="header-title">
+                <div class="logo-icon">🛡️</div>
+                <div>
+                    <h1>SchoolFilter</h1>
+                    <div class="subtitle">ניהול חדרי מחשבים, עגלות ניידים ומוסדות לימוד</div>
+                </div>
+            </div>
+            <div class="user-status">
+                <a href="dist/SchoolFilter_Setup.exe" download="SchoolFilter_Setup.exe" class="btn btn-primary" style="padding: 8px 14px; font-size: 13.5px; text-decoration: none; border-radius: 10px;">
+                    📥 הורד תוכנת התקנה
+                </a>
+                <span id="userRoleBadge" class="badge badge-role" style="display: none;"></span>
+                <span id="statusBadge" class="badge badge-offline">
+                    <span class="status-dot"></span>
+                    לא מחובר
+                </span>
+                <button id="btnLogout" class="btn btn-outline" style="display: none; padding: 6px 12px; font-size: 13px;" onclick="logoutUser()">התנתק</button>
+            </div>
+        </header>
 
         <!-- מסך התחברות עם Google -->
         <div id="authCard" class="card" style="max-width: 540px; margin: 20px auto; text-align: center;">
@@ -729,6 +731,55 @@
                                 👁️ תצוגת מסך תלמיד בזמן חסימה
                             </button>
                         </div>
+                    </div>
+
+                    <!-- שליטה מרחוק על תחנות הקצה בחדר (עדכון והסרה מרחוק כולל הרשאת מנהל) -->
+                    <div style="margin-top: 16px; padding-top: 14px; border-top: 1px dashed #bfdbfe; display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="font-size: 13.5px; font-weight: 700; color: #1e3a8a; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span>📡 תחזוקת מחשבים מרחוק בחדר זה (פועל בהרשאת SYSTEM / מנהל):</span>
+                                <span id="remoteCommandBadge" class="badge" style="display: none; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 12px;"></span>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-outline" style="padding: 8px 14px; font-size: 13px; border-color: #93c5fd; color: #1d4ed8;" onclick="triggerRemoteRoomCommand('update')">
+                                    🔄 עדכון תוכנה מרחוק בחדר זה
+                                </button>
+                                <button class="btn btn-danger" style="padding: 8px 14px; font-size: 13px;" onclick="triggerRemoteRoomCommand('uninstall')">
+                                    🗑️ הסרת התוכנה מרחוק בחדר זה
+                                </button>
+                                <button id="btnClearRemoteCmd" class="btn btn-outline" style="display: none; padding: 8px 12px; font-size: 12.5px;" onclick="clearRemoteRoomCommand()">
+                                    ✕ בטל פקודה מרחוק
+                                </button>
+                            </div>
+                        </div>
+                        <details style="background: rgba(255,255,255,0.7); border: 1px solid #bfdbfe; border-radius: 10px; padding: 8px 12px; font-size: 12.5px; color: #1e3a8a;">
+                            <summary style="cursor: pointer; font-weight: 600; user-select: none;">
+                                🔑 הגדרת הרשאות מנהל מקומי למשתמשי סטודנט (אופציונלי — למחשבים שבהם שירות ה-SYSTEM טרם הותקן)
+                            </summary>
+                            <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+                                <div style="color: #475569; line-height: 1.4;">
+                                    בגרסה העדכנית, ההתקנה רושמת אוטומטית שירות רקע ברמת <strong>SYSTEM (מנהל מערכת מלא)</strong> כך שעדכון והסרה מרחוק רצים אוטומטית גם בחשבון סטודנט ללא צורך בסיסמה. אם במחשב מותקנת גרסה קודמת ללא שירות SYSTEM, ניתן להזין כאן את שם המשתמש והסיסמה של חשבון המנהל במחשב:
+                                </div>
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <input type="text" id="remoteAdminUserInput" placeholder="שם משתמש מנהל (למשל: Administrator)" style="flex: 1; min-width: 180px; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; direction: ltr;">
+                                    <input type="password" id="remoteAdminPassInput" placeholder="סיסמת מנהל במחשב" style="flex: 1; min-width: 180px; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; direction: ltr;">
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+
+                    <!-- רשימת המחשבים שעליהם מותקנת תוכנת הסינון בחדר זה -->
+                    <div style="margin-top: 16px; padding-top: 14px; border-top: 1px dashed #bfdbfe;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                            <div style="font-size: 14px; font-weight: 800; color: #1e3a8a; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span>💻 מחשבים שעליהם מותקנת תוכנת הסינון בחדר זה:</span>
+                                <span id="roomComputersCountBadge" class="badge" style="background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; font-size: 12px; padding: 3px 10px;">0 מחשבים</span>
+                            </div>
+                            <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12.5px; border-color: #93c5fd; color: #1d4ed8;" onclick="refreshRoomComputers()">
+                                🔄 רענן רשימת מחשבים
+                            </button>
+                        </div>
+                        <div id="roomComputersList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;"></div>
                     </div>
                 </div>
 
@@ -856,7 +907,7 @@
     </div>
 
     <footer>
-        SchoolFilter Cloud v3.0 &copy; מערכת ניהול סינון אינטרנט לחדרי מחשבים ועגלות ניידים | מופעל על גבי Google Firebase
+        SchoolFilter &copy; מערכת ניהול סינון אינטרנט לחדרי מחשבים ועגלות ניידים | מופעל על גבי Google Firebase
     </footer>
 
     <!-- Firebase SDKs -->
@@ -883,8 +934,10 @@
         let institutions = [];
         let allRooms = [];
         let allUsers = [];
+        let allComputers = [];
         let selectedInstitutionId = "yeshiva";
         let selectedRoomId = "yeshiva-lab";
+        let computersRefreshInterval = null;
 
         const coreSites = [
             "one-class.co.il", "*.one-class.co.il",
@@ -957,6 +1010,10 @@
 
         async function logoutUser() {
             localStorage.removeItem('sf_backup_admin_email');
+            if (computersRefreshInterval) {
+                clearInterval(computersRefreshInterval);
+                computersRefreshInterval = null;
+            }
             try { await auth.signOut(); } catch (e) {}
             currentUser = null;
             document.getElementById('authCard').style.display = 'block';
@@ -1013,9 +1070,65 @@
                 renderRoomsGrid();
                 renderActiveRoomPanel();
                 renderAdminTables();
+
+                if (computersRefreshInterval) clearInterval(computersRefreshInterval);
+                computersRefreshInterval = setInterval(async () => {
+                    if (currentUser) {
+                        await fetchComputersFromCloud();
+                        renderRoomsGrid();
+                        const room = getCurrentRoom();
+                        if (room) renderRoomComputersList(room);
+                    }
+                }, 15000);
             } catch (e) {
                 console.error(e);
                 alert('שגיאה בטעינת נתוני המערכת מהענן: ' + e.message);
+            }
+        }
+
+        async function fetchComputersFromCloud() {
+            try {
+                const compRes = await fetch(`${FIRESTORE_BASE}/computers?pageSize=500`);
+                if (!compRes.ok) return;
+                const compJson = await compRes.json();
+                allComputers = (compJson.documents || []).map(doc => ({
+                    docId: doc.name.split('/').pop(),
+                    computerName: getStr(doc, 'computerName') || doc.name.split('/').pop(),
+                    userName: getStr(doc, 'userName') || '',
+                    roomId: getStr(doc, 'roomId') || 'yeshiva-lab',
+                    roomName: getStr(doc, 'roomName') || '',
+                    institutionName: getStr(doc, 'institutionName') || '',
+                    filterActive: getBool(doc, 'filterActive', true),
+                    installedAt: getStr(doc, 'installedAt') || '',
+                    lastSeen: getStr(doc, 'lastSeen') || ''
+                }));
+            } catch (e) {
+                console.warn('Could not load computers:', e);
+            }
+        }
+
+        async function refreshRoomComputers() {
+            await fetchComputersFromCloud();
+            renderRoomsGrid();
+            const room = getCurrentRoom();
+            if (room) renderRoomComputersList(room);
+            showToast('🔄 רשימת המחשבים בחדר רועננה מהענן');
+        }
+
+        async function removeComputerFromRoom(docId, computerName) {
+            if (!confirm(`האם להסיר את המחשב '${computerName}' מרשימת המחשבים הרשומים בחדר זה?`)) return;
+            try {
+                await fetch(`${FIRESTORE_BASE}/computers/${encodeURIComponent(docId)}`, {
+                    method: 'DELETE',
+                    headers: await getWriteHeaders()
+                });
+                allComputers = allComputers.filter(c => c.docId !== docId);
+                renderRoomsGrid();
+                const room = getCurrentRoom();
+                if (room) renderRoomComputersList(room);
+                showToast(`המחשב '${computerName}' הוסר מהרשימה.`);
+            } catch (e) {
+                alert('שגיאה בהסרת המחשב מהרשימה: ' + e.message);
             }
         }
 
@@ -1040,6 +1153,8 @@
                 institutionName: getStr(doc, 'institutionName') || 'הישיבה שלנו',
                 filterEnabled: getBool(doc, 'filterEnabled', true),
                 whitelist: getStrArray(doc, 'whitelist', coreSites),
+                remoteCommand: getStr(doc, 'remoteCommand') || 'none',
+                remoteCommandId: getStr(doc, 'remoteCommandId') || '0',
                 updatedBy: getStr(doc, 'updatedBy')
             }));
 
@@ -1053,6 +1168,9 @@
                 institutionId: getStr(doc, 'institutionId') || 'yeshiva',
                 institutionName: getStr(doc, 'institutionName') || 'הישיבה שלנו'
             }));
+
+            // 4. Fetch Installed Computers
+            await fetchComputersFromCloud();
         }
 
         function setupInstitutionSelector() {
@@ -1118,6 +1236,7 @@
                 const statusBadge = r.filterEnabled
                     ? `<span class="badge badge-offline" style="font-size: 11px; padding: 3px 8px;">🔒 נעול לשיעור</span>`
                     : `<span class="badge badge-online" style="font-size: 11px; padding: 3px 8px;">🔓 אינטרנט פתוח</span>`;
+                const roomComputersCount = allComputers.filter(c => c.roomId.toLowerCase() === r.roomId.toLowerCase()).length;
 
                 return `
                     <div class="room-tab ${isActive ? 'active' : ''}" onclick="selectRoom('${r.roomId}')">
@@ -1125,9 +1244,10 @@
                             <span class="room-tab-title">${r.icon} ${r.name}</span>
                             ${statusBadge}
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 6px; flex-wrap: wrap;">
                             <span class="room-tab-code">${r.roomId}</span>
-                            <span style="font-size: 12px; color: var(--text-muted);">${CountBaseDomains(r.whitelist)} אתרים מותרים</span>
+                            <span style="font-size: 12px; color: #1d4ed8; font-weight: 700;">💻 ${roomComputersCount} מחשבים</span>
+                            <span style="font-size: 12px; color: var(--text-muted);">${CountBaseDomains(r.whitelist)} אתרים</span>
                         </div>
                     </div>
                 `;
@@ -1157,7 +1277,71 @@
                 badge.textContent = '🔓 אינטרנט חופשי פעיל בחדר זה';
             }
 
+            const remoteBadge = document.getElementById('remoteCommandBadge');
+            const btnClearRemote = document.getElementById('btnClearRemoteCmd');
+            if (room.remoteCommand === 'uninstall') {
+                remoteBadge.style.display = 'inline-flex';
+                remoteBadge.textContent = '🗑️ פקודת הסרה מרחוק פעילה בחדר זה';
+                btnClearRemote.style.display = 'inline-flex';
+            } else if (room.remoteCommand === 'update') {
+                remoteBadge.style.display = 'inline-flex';
+                remoteBadge.textContent = '🔄 פקודת עדכון מרחוק פעילה בחדר זה';
+                btnClearRemote.style.display = 'inline-flex';
+            } else {
+                remoteBadge.style.display = 'none';
+                btnClearRemote.style.display = 'none';
+            }
+
+            renderRoomComputersList(room);
             renderSitesList(room);
+        }
+
+        function renderRoomComputersList(room) {
+            const container = document.getElementById('roomComputersList');
+            const countBadge = document.getElementById('roomComputersCountBadge');
+            if (!container || !room) return;
+
+            const roomComputers = allComputers
+                .filter(c => c.roomId.toLowerCase() === room.roomId.toLowerCase())
+                .sort((a, b) => a.computerName.localeCompare(b.computerName));
+
+            if (countBadge) {
+                countBadge.textContent = `${roomComputers.length} מחשבים מותקנים`;
+            }
+
+            if (roomComputers.length === 0) {
+                container.innerHTML = `
+                    <div style="grid-column: 1/-1; background: rgba(255,255,255,0.75); border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #64748b; text-align: center;">
+                        עדיין לא נרשמו מחשבים בחדר זה (<code>${room.roomId}</code>). מיד עם התקנת התוכנה או הפעלת מחשב משויך לחדר זה, שמו יופיע כאן אוטומטית.
+                    </div>
+                `;
+                return;
+            }
+
+            const nowMs = Date.now();
+            container.innerHTML = roomComputers.map(c => {
+                const seenMs = c.lastSeen ? Date.parse(c.lastSeen) : 0;
+                const isOnlineNow = seenMs > 0 && (nowMs - seenMs) < 90000; // active within last 90s
+                const statusColor = isOnlineNow ? '#16a34a' : '#94a3b8';
+                const statusText = isOnlineNow
+                    ? (c.filterActive ? 'מחובר כעת (נעול לשיעור)' : 'מחובר כעת (אינטרנט פתוח)')
+                    : 'מותקן (לא דווח בדקה האחרונה)';
+
+                return `
+                    <div style="background: #ffffff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        <div style="min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor}; display: inline-block; flex-shrink: 0;"></span>
+                                <strong style="font-size: 13.5px; color: #0f172a; direction: ltr; display: inline-block; word-break: break-all;">🖥️ ${c.computerName}</strong>
+                            </div>
+                            <div style="font-size: 11.5px; color: #64748b; margin-top: 3px;">
+                                ${c.userName ? `משתמש: <span style="direction:ltr;display:inline-block;">${c.userName}</span> • ` : ''}${statusText}
+                            </div>
+                        </div>
+                        <button onclick="removeComputerFromRoom('${c.docId}', '${c.computerName.replace(/'/g, "\\'")}')" title="הסר מחשב מהרשימה" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font-size: 12px; font-weight: bold; flex-shrink: 0;">✕</button>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderSitesList(room) {
@@ -1218,12 +1402,52 @@
             const room = getCurrentRoom();
             if (!room) return;
             room.filterEnabled = enableBlock;
+            room.remoteCommand = 'none';
             renderActiveRoomPanel();
             renderRoomsGrid();
             await saveRoomDocument(room);
             showToast(enableBlock
                 ? `🔒 ${room.name} ננעל למצב שיעור! מתעדכן במחשבי החדר תוך 5 שניות.`
                 : `🔓 האינטרנט ב-${room.name} נפתח לגלישה חופשית!`);
+        }
+
+        async function triggerRemoteRoomCommand(cmd) {
+            const room = getCurrentRoom();
+            if (!room) return;
+
+            if (cmd === 'uninstall') {
+                const ok = confirm(`האם אתה בטוח שברצונך להסיר מרחוק את תוכנת SchoolFilter מכל המחשבים הפעילים בחדר '${room.name}'?\n\nכל מחשב דלוק בחדר זה יסיר את התוכנה אוטומטית תוך 5 שניות וישחזר גישה מלאה לאינטרנט.`);
+                if (!ok) return;
+                room.filterEnabled = false;
+            } else if (cmd === 'update') {
+                const ok = confirm(`האם לשלוח פקודת עדכון תוכנה מרחוק לכל המחשבים הפעילים בחדר '${room.name}'?\n\nכל מחשב בחדר יוריד ויתקין ברקע את הגרסה העדכנית ביותר אוטומטית תוך מספר שניות.`);
+                if (!ok) return;
+            }
+
+            const adminUserEl = document.getElementById('remoteAdminUserInput');
+            const adminPassEl = document.getElementById('remoteAdminPassInput');
+            room.remoteAdminUser = adminUserEl ? adminUserEl.value.trim() : '';
+            room.remoteAdminPass = adminPassEl ? adminPassEl.value : '';
+            room.remoteCommand = cmd;
+            room.remoteCommandId = Date.now().toString();
+            renderActiveRoomPanel();
+            renderRoomsGrid();
+            await saveRoomDocument(room);
+
+            showToast(cmd === 'uninstall'
+                ? `🗑️ פקודת הסרה מרחוק נשלחה ל-${room.name}! המחשבים מסירים את התוכנה כעת.`
+                : `🔄 פקודת עדכון מרחוק נשלחה ל-${room.name}! המחשבים מתעדכנים ברקע כעת.`);
+        }
+
+        async function clearRemoteRoomCommand() {
+            const room = getCurrentRoom();
+            if (!room) return;
+            room.remoteCommand = 'none';
+            room.remoteAdminUser = '';
+            room.remoteAdminPass = '';
+            renderActiveRoomPanel();
+            await saveRoomDocument(room);
+            showToast(`✅ הפקודה מרחוק עבור '${room.name}' בוטלה.`);
         }
 
         async function saveCurrentRoomToCloud() {
@@ -1280,6 +1504,10 @@
                             values: room.whitelist.map(s => ({ stringValue: s }))
                         }
                     },
+                    remoteCommand: { stringValue: room.remoteCommand || 'none' },
+                    remoteCommandId: { stringValue: room.remoteCommandId || '0' },
+                    remoteAdminUser: { stringValue: room.remoteAdminUser || '' },
+                    remoteAdminPass: { stringValue: room.remoteAdminPass || '' },
                     updatedAt: { stringValue: new Date().toISOString() },
                     updatedBy: { stringValue: currentUser ? currentUser.email : '' }
                 }

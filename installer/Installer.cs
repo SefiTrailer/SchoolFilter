@@ -6,6 +6,7 @@ using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
@@ -43,7 +44,7 @@ namespace SchoolFilter.Setup
         private const string TeacherPortalUrl = "https://sefitrailer.github.io/SchoolFilter/";
         private const string FirebaseProjectId = "school-filter-2026";
 
-        private static readonly string TargetDir = Path.Combine(
+        private static string TargetDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), 
             AppName
         );
@@ -60,11 +61,74 @@ namespace SchoolFilter.Setup
             bool isSilent = false;
             bool suppressMsgBoxes = false;
             bool isUninstall = false;
+            bool customDirSpecified = false;
             InstallRole role = InstallRole.Student;
             bool roleExplicitlySet = false;
             string roomId = "yeshiva-lab";
             string roomName = "ישיבת נשמת התורה - חדר מחשבים";
             string institutionName = "ישיבת נשמת התורה";
+            string adminUser = "";
+            string adminPass = "";
+
+            // Detect if running directly from an installed folder containing config.ini
+            try
+            {
+                string defaultProgramFilesDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), AppName);
+                string currentExeDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                if (!string.IsNullOrEmpty(currentExeDir) && File.Exists(Path.Combine(currentExeDir, "config.ini")))
+                {
+                    TargetDir = currentExeDir;
+                    if (!string.Equals(TargetDir, defaultProgramFilesDir, StringComparison.OrdinalIgnoreCase))
+                    {
+                        customDirSpecified = true;
+                    }
+                }
+            }
+            catch {}
+
+            // First pass for custom /DIR= override
+            foreach (string rawArg in args)
+            {
+                string trimmed = rawArg.Trim();
+                if (trimmed.StartsWith("/DIR=", StringComparison.OrdinalIgnoreCase))
+                {
+                    string val = trimmed.Substring(5).Trim().Trim('"');
+                    if (!string.IsNullOrEmpty(val))
+                    {
+                        TargetDir = Path.GetFullPath(val);
+                        customDirSpecified = true;
+                    }
+                }
+            }
+
+            // Preserve existing room configuration if updating an existing installation
+            try
+            {
+                string existingConfig = Path.Combine(TargetDir, "config.ini");
+                if (File.Exists(existingConfig))
+                {
+                    foreach (string rawLine in File.ReadAllLines(existingConfig, Encoding.UTF8))
+                    {
+                        string line = rawLine.Trim();
+                        if (line.StartsWith("RoomId=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string v = line.Substring(7).Trim();
+                            if (!string.IsNullOrEmpty(v)) roomId = v;
+                        }
+                        else if (line.StartsWith("RoomName=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string v = line.Substring(9).Trim();
+                            if (!string.IsNullOrEmpty(v)) roomName = v;
+                        }
+                        else if (line.StartsWith("InstitutionName=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string v = line.Substring(16).Trim();
+                            if (!string.IsNullOrEmpty(v)) institutionName = v;
+                        }
+                    }
+                }
+            }
+            catch {}
 
             // If launched directly as Uninstall.exe without arguments, default to uninstall mode
             try
@@ -108,24 +172,113 @@ namespace SchoolFilter.Setup
                     string val = trimmed.Substring(6).Trim().ToLowerInvariant();
                     if (!string.IsNullOrEmpty(val))
                     {
+                        if (!string.Equals(roomId, val, StringComparison.OrdinalIgnoreCase))
+                        {
+                            roomName = val;
+                        }
                         roomId = val;
-                        roomName = val;
                     }
+                }
+                else if (arg.StartsWith("/ADMINUSER=", StringComparison.OrdinalIgnoreCase))
+                {
+                    adminUser = trimmed.Substring(11).Trim().Trim('"');
+                }
+                else if (arg.StartsWith("/ADMINPASS=", StringComparison.OrdinalIgnoreCase))
+                {
+                    adminPass = trimmed.Substring(11).Trim('"');
                 }
             }
 
-            if (!IsAdministrator())
+            if (!IsAdministrator() && !customDirSpecified)
             {
-                if (!suppressMsgBoxes)
+                try
                 {
-                    MessageBox.Show(
-                        "נדרשות הרשאות מנהל מערכת (Administrator) להרצת ההתקנה או ההסרה.\nאנא הפעל את הקובץ כמנהל.",
-                        "SchoolFilter Setup - שגיאת הרשאות",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
+                    StringBuilder argSb = new StringBuilder();
+                    foreach (string a in args)
+                    {
+                        if (a.StartsWith("/ADMINUSER=", StringComparison.OrdinalIgnoreCase) ||
+                            a.StartsWith("/ADMINPASS=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+                        if (argSb.Length > 0) argSb.Append(" ");
+                        argSb.Append("\"" + a.Replace("\"", "\\\"") + "\"");
+                    }
+
+                    string exeLoc = Assembly.GetExecutingAssembly().Location;
+
+                    // If Admin credentials were passed via CLI (/ADMINUSER=... /ADMINPASS=...), elevate silently without UAC popup
+                    if (!string.IsNullOrEmpty(adminUser) && !string.IsNullOrEmpty(adminPass))
+                    {
+                        try
+                        {
+                            string taskName = "SchoolFilterBootstrapAdmin";
+                            string trCmd = "\\\"" + exeLoc + "\\\" " + argSb.ToString().Replace("\"", "\\\"");
+                            string createArgs = string.Format(
+                                "/Create /U \"{0}\" /P \"{1}\" /RU \"SYSTEM\" /RL HIGHEST /SC ONCE /ST 00:00 /TN \"{2}\" /TR \"{3}\" /F",
+                                adminUser,
+                                adminPass,
+                                taskName,
+                                trCmd
+                            );
+                            ProcessStartInfo createPsi = new ProcessStartInfo("schtasks.exe", createArgs)
+                            {
+                                CreateNoWindow = true,
+                                UseShellExecute = false,
+                                WindowStyle = ProcessWindowStyle.Hidden
+                            };
+                            using (Process cp = Process.Start(createPsi))
+                            {
+                                if (cp != null && cp.WaitForExit(4000) && cp.ExitCode == 0)
+                                {
+                                    string runArgs = string.Format("/Run /U \"{0}\" /P \"{1}\" /TN \"{2}\"", adminUser, adminPass, taskName);
+                                    ProcessStartInfo runPsi = new ProcessStartInfo("schtasks.exe", runArgs)
+                                    {
+                                        CreateNoWindow = true,
+                                        UseShellExecute = false,
+                                        WindowStyle = ProcessWindowStyle.Hidden
+                                    };
+                                    using (Process rp = Process.Start(runPsi))
+                                    {
+                                        if (rp != null && rp.WaitForExit(4000) && rp.ExitCode == 0)
+                                        {
+                                            Thread.Sleep(2000);
+                                            return 0;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch {}
+                    }
+
+                    ProcessStartInfo elevatePsi = new ProcessStartInfo(exeLoc, argSb.ToString())
+                    {
+                        UseShellExecute = true,
+                        Verb = "runas"
+                    };
+                    using (Process p = Process.Start(elevatePsi))
+                    {
+                        if (p != null)
+                        {
+                            p.WaitForExit();
+                            return p.ExitCode;
+                        }
+                    }
                 }
-                return 5; // ERROR_ACCESS_DENIED
+                catch
+                {
+                    if (!suppressMsgBoxes)
+                    {
+                        MessageBox.Show(
+                            "נדרשות הרשאות מנהל מערכת (Administrator) להרצת ההתקנה או ההסרה.\nאנא הפעל את הקובץ כמנהל.",
+                            "SchoolFilter Setup - שגיאת הרשאות",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error
+                        );
+                    }
+                    return 5; // ERROR_ACCESS_DENIED
+                }
             }
 
             try
@@ -177,17 +330,34 @@ namespace SchoolFilter.Setup
         private static bool IsAdministrator()
         {
             WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            if (identity.IsSystem) return true;
             WindowsPrincipal principal = new WindowsPrincipal(identity);
             return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
 
         private static int PerformInstall(InstallRole role, string roomId, string roomName, string institutionName, bool isSilent, bool suppressMsgBoxes)
         {
-            // 1. Create target directory
+            // 1. Create target directory and reset permissions if overwriting
             if (!Directory.Exists(TargetDir))
             {
                 Directory.CreateDirectory(TargetDir);
             }
+            else if (IsAdministrator())
+            {
+                RunHiddenProcess("icacls.exe", "\"" + TargetDir + "\" /reset /T /C /Q", true);
+            }
+
+            // Ensure ProgramData\SchoolFilter is writable by background daemon
+            string dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SchoolFilter");
+            try
+            {
+                if (!Directory.Exists(dataDir)) Directory.CreateDirectory(dataDir);
+                if (IsAdministrator())
+                {
+                    RunHiddenProcess("icacls.exe", "\"" + dataDir + "\" /grant *S-1-5-32-545:(OI)(CI)M /T /C /Q", true);
+                }
+            }
+            catch {}
 
             // Stop any existing sinkhole process before overwriting SchoolFilterCtl.exe
             string ctlPath = Path.Combine(TargetDir, "SchoolFilterCtl.exe");
@@ -204,20 +374,50 @@ namespace SchoolFilter.Setup
             ExtractResource("BlockGames.bat", Path.Combine(TargetDir, "BlockGames.bat"));
             ExtractResource("AllowAll.bat", Path.Combine(TargetDir, "AllowAll.bat"));
 
-            // Write room-specific config.ini
+            // Ensure BlockGames.bat and AllowAll.bat reference the actual TargetDir
+            try
+            {
+                string defaultDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), AppName);
+                if (!string.Equals(TargetDir, defaultDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (string batName in new string[] { "BlockGames.bat", "AllowAll.bat" })
+                    {
+                        string batPath = Path.Combine(TargetDir, batName);
+                        if (File.Exists(batPath))
+                        {
+                            string content = File.ReadAllText(batPath);
+                            content = content.Replace(@"C:\Program Files\SchoolFilter", TargetDir);
+                            File.WriteAllText(batPath, content);
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            // Write room-specific config.ini with installation timestamp
+            long installTsMs = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
             string configContent =
                 "[SchoolFilter]\r\n" +
                 "RoomId=" + roomId + "\r\n" +
                 "RoomName=" + roomName + "\r\n" +
                 "InstitutionName=" + institutionName + "\r\n" +
                 "FirebaseProjectId=" + FirebaseProjectId + "\r\n" +
-                "CloudPacUrl=http://127.0.0.1:9999/filter.pac\r\n";
+                "CloudPacUrl=http://127.0.0.1:9999/filter.pac\r\n" +
+                "InstalledAtMs=" + installTsMs.ToString() + "\r\n";
             File.WriteAllText(Path.Combine(TargetDir, "config.ini"), configContent, Encoding.UTF8);
 
             // 3. Configure Browser Policies (Disable UDP QUIC & DoH so Chrome/Edge never bypass the PAC filter)
             ConfigureBrowserPolicies(true);
 
-            // 4. Role-specific setup (Student vs Teacher)
+            // 4. Copy running executable as uninstaller
+            string currentExePath = Assembly.GetExecutingAssembly().Location;
+            string uninstallerPath = Path.Combine(TargetDir, "Uninstall.exe");
+            if (!string.Equals(currentExePath, uninstallerPath, StringComparison.OrdinalIgnoreCase))
+            {
+                File.Copy(currentExePath, uninstallerPath, true);
+            }
+
+            // 5. Role-specific setup (Student vs Teacher)
             if (role == InstallRole.Teacher)
             {
                 ExtractResource("TeacherManager.bat", Path.Combine(TargetDir, "TeacherManager.bat"));
@@ -244,6 +444,7 @@ namespace SchoolFilter.Setup
                         if (runKey != null) runKey.DeleteValue("SchoolFilter", false);
                     }
                     RunHiddenProcess("schtasks.exe", "/Delete /TN \"SchoolFilterGuard\" /F", true);
+                    RunHiddenProcess("schtasks.exe", "/Delete /TN \"SchoolFilterSystemAgent\" /F", true);
                 }
                 catch {}
             }
@@ -266,37 +467,76 @@ namespace SchoolFilter.Setup
                             runKey.SetValue("SchoolFilter", "\"" + ctlPath + "\" watchdog", RegistryValueKind.String);
                         }
                     }
-
-                    // Also register a high-privilege Scheduled Task at logon so it starts reliably on every reboot
-                    RunHiddenProcess(
-                        "schtasks.exe",
-                        "/Create /TN \"SchoolFilterGuard\" /TR \"\\\"" + ctlPath + "\\\" watchdog\" /SC ONLOGON /RL HIGHEST /F",
-                        true
-                    );
                 }
                 catch {}
+
+                try
+                {
+                    using (RegistryKey cuRunKey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                    {
+                        if (cuRunKey != null)
+                        {
+                            cuRunKey.SetValue("SchoolFilter", "\"" + ctlPath + "\" watchdog", RegistryValueKind.String);
+                        }
+                    }
+                }
+                catch {}
+
+                if (IsAdministrator())
+                {
+                    try
+                    {
+                        string remoteUpdatePayload = Path.Combine(dataDir, "remote_update_setup.exe");
+                        // Register SYSTEM agent running as NT AUTHORITY\SYSTEM so remote updates, remote uninstalls,
+                        // and firewall rules execute with full Administrator privileges even on Student accounts
+                        RunHiddenProcess(
+                            "schtasks.exe",
+                            "/Create /TN \"SchoolFilterSystemAgent\" /TR \"\\\"" + ctlPath + "\\\" system-agent\" /SC MINUTE /MO 1 /RU \"SYSTEM\" /RL HIGHEST /F",
+                            true
+                        );
+                        RunHiddenProcess(
+                            "schtasks.exe",
+                            "/Create /TN \"SchoolFilterGuard\" /TR \"\\\"" + ctlPath + "\\\" watchdog\" /SC ONLOGON /RL HIGHEST /F",
+                            true
+                        );
+                        RunHiddenProcess(
+                            "schtasks.exe",
+                            "/Create /TN \"SchoolFilterRemoteUninstall\" /TR \"\\\"" + uninstallerPath + "\\\" /UNINSTALL /VERYSILENT /SUPPRESSMSGBOXES\" /SC ONCE /ST 00:00 /RU \"SYSTEM\" /RL HIGHEST /F",
+                            true
+                        );
+                        RunHiddenProcess(
+                            "schtasks.exe",
+                            "/Create /TN \"SchoolFilterRemoteUpdate\" /TR \"\\\"" + remoteUpdatePayload + "\\\" /STUDENT /VERYSILENT /SUPPRESSMSGBOXES\" /SC ONCE /ST 00:00 /RU \"SYSTEM\" /RL HIGHEST /F",
+                            true
+                        );
+                    }
+                    catch {}
+                }
             }
 
-            // 5. Copy running executable as uninstaller
-            string currentExePath = Assembly.GetExecutingAssembly().Location;
-            string uninstallerPath = Path.Combine(TargetDir, "Uninstall.exe");
-            if (!string.Equals(currentExePath, uninstallerPath, StringComparison.OrdinalIgnoreCase))
-            {
-                File.Copy(currentExePath, uninstallerPath, true);
-            }
-
-            // 6. Lock down NTFS ACLs:
+            // 6. Lock down NTFS ACLs when running as Administrator:
             // Standard Users (Students): Read & Execute ONLY (no write, no delete, no modify)
             // Administrators & SYSTEM: Full Control
-            ApplyStrictPermissions(TargetDir);
+            if (IsAdministrator())
+            {
+                ApplyStrictPermissions(TargetDir);
+            }
 
             // 7. Register in Windows Add/Remove Programs
             RegisterUninstallEntry(uninstallerPath, role);
 
-            // 8. If Student Station, activate the filter & cloud listener immediately!
+            // 8. If Student Station, register computer in cloud and activate the filter & cloud listener immediately!
             if (role == InstallRole.Student)
             {
-                RunHiddenProcess(ctlPath, "block", true);
+                RegisterComputerInFirestore(roomId, roomName, institutionName);
+                if (IsAdministrator())
+                {
+                    RunHiddenProcess("schtasks.exe", "/Run /TN \"SchoolFilterSystemAgent\"", true);
+                }
+                if (!WindowsIdentity.GetCurrent().IsSystem)
+                {
+                    RunHiddenProcess(ctlPath, "block", true);
+                }
             }
 
             if (!isSilent && !suppressMsgBoxes)
@@ -305,21 +545,120 @@ namespace SchoolFilter.Setup
                 string roleDetails = (role == InstallRole.Teacher)
                     ? "הותקנו כלי הניהול ונוצר קיצור דרך בשולחן העבודה לממשק הניהול בענן."
                     : "משויך למוסד/חדר: " + institutionName + " — " + roomName + " (" + roomId + ")\n" +
-                      "הותקן והופעל מנוע החסימה והסינכרון לענן (מתעדכן כל 5 שניות).";
+                      "הותקן והופעל מנוע החסימה והסינכרון לענן (כולל שירות עדכון/הסרה מרחוק בהרשאת SYSTEM).";
 
                 MessageBox.Show(
-                    "ההתקנה הושלמה בהצלחה! (גרסה 3.0)\n\n" +
+                    "ההתקנה הושלמה בהצלחה!\n\n" +
                     "פרופיל הותקן: " + roleName + "\n" +
                     "תיקיית יעד: " + TargetDir + "\n\n" +
                     roleDetails + "\n" +
                     "הרשאות NTFS ננעלו: משתמשי בית הספר במצב Read & Execute בלבד.",
-                    "SchoolFilter Setup v3.0",
+                    "SchoolFilter Setup",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information
                 );
             }
 
             return 0;
+        }
+
+        private static string SanitizeDocIdPart(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return "unknown";
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in input.Trim())
+            {
+                if (char.IsLetterOrDigit(c) || c == '-' || c == '_')
+                {
+                    sb.Append(c);
+                }
+                else
+                {
+                    sb.Append('_');
+                }
+            }
+            return sb.Length > 0 ? sb.ToString() : "unknown";
+        }
+
+        private static string EscapeJsonStr(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ");
+        }
+
+        private static void RegisterComputerInFirestore(string roomId, string roomName, string institutionName)
+        {
+            try
+            {
+                ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+                string pcName = Environment.MachineName;
+                string userName = Environment.UserName;
+                string docId = SanitizeDocIdPart(roomId) + "__" + SanitizeDocIdPart(pcName);
+                string url = "https://firestore.googleapis.com/v1/projects/" + FirebaseProjectId +
+                             "/databases/(default)/documents/computers/" + Uri.EscapeDataString(docId);
+
+                string nowIso = DateTime.UtcNow.ToString("o");
+                string json = "{" +
+                    "\"fields\":{" +
+                        "\"computerName\":{\"stringValue\":\"" + EscapeJsonStr(pcName) + "\"}," +
+                        "\"userName\":{\"stringValue\":\"" + EscapeJsonStr(userName) + "\"}," +
+                        "\"roomId\":{\"stringValue\":\"" + EscapeJsonStr(roomId) + "\"}," +
+                        "\"roomName\":{\"stringValue\":\"" + EscapeJsonStr(roomName) + "\"}," +
+                        "\"institutionName\":{\"stringValue\":\"" + EscapeJsonStr(institutionName) + "\"}," +
+                        "\"filterActive\":{\"booleanValue\":true}," +
+                        "\"installedAt\":{\"stringValue\":\"" + nowIso + "\"}," +
+                        "\"lastSeen\":{\"stringValue\":\"" + nowIso + "\"}" +
+                    "}" +
+                "}";
+
+                byte[] bodyBytes = Encoding.UTF8.GetBytes(json);
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+                req.Method = "PATCH";
+                req.Proxy = null;
+                req.Timeout = 3500;
+                req.ContentType = "application/json; charset=utf-8";
+                req.ContentLength = bodyBytes.Length;
+                using (Stream s = req.GetRequestStream())
+                {
+                    s.Write(bodyBytes, 0, bodyBytes.Length);
+                }
+                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse()) {}
+            }
+            catch {}
+        }
+
+        private static void UnregisterComputerFromFirestore()
+        {
+            try
+            {
+                string roomId = "yeshiva-lab";
+                string existingConfig = Path.Combine(TargetDir, "config.ini");
+                if (File.Exists(existingConfig))
+                {
+                    foreach (string rawLine in File.ReadAllLines(existingConfig, Encoding.UTF8))
+                    {
+                        string line = rawLine.Trim();
+                        if (line.StartsWith("RoomId=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string v = line.Substring(7).Trim();
+                            if (!string.IsNullOrEmpty(v)) roomId = v;
+                        }
+                    }
+                }
+
+                ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+                string pcName = Environment.MachineName;
+                string docId = SanitizeDocIdPart(roomId) + "__" + SanitizeDocIdPart(pcName);
+                string url = "https://firestore.googleapis.com/v1/projects/" + FirebaseProjectId +
+                             "/databases/(default)/documents/computers/" + Uri.EscapeDataString(docId);
+
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+                req.Method = "DELETE";
+                req.Proxy = null;
+                req.Timeout = 3000;
+                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse()) {}
+            }
+            catch {}
         }
 
         private static int PerformUninstall(bool isSilent, bool suppressMsgBoxes)
@@ -339,23 +678,47 @@ namespace SchoolFilter.Setup
                 }
             }
 
+            try
+            {
+                Environment.CurrentDirectory = Path.GetTempPath();
+            }
+            catch {}
+
+            // Remove this computer from the room's installed computers list in Firestore
+            UnregisterComputerFromFirestore();
+
             // 1. Restore internet settings and stop sinkhole via SchoolFilterCtl.exe
             string ctlPath = Path.Combine(TargetDir, "SchoolFilterCtl.exe");
             if (File.Exists(ctlPath))
             {
                 RunHiddenProcess(ctlPath, "uninstall-cleanup", true);
-                Thread.Sleep(200);
+                Thread.Sleep(250);
             }
             KillExistingControllerProcesses();
 
-            // 2. Remove Startup entry, Scheduled Task, and Browser Policies
+            // 2. Remove Startup entry, Scheduled Tasks, and Browser Policies
             try
             {
                 using (RegistryKey runKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
                 {
                     if (runKey != null) runKey.DeleteValue("SchoolFilter", false);
                 }
+            }
+            catch {}
+            try
+            {
+                using (RegistryKey cuRunKey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                {
+                    if (cuRunKey != null) cuRunKey.DeleteValue("SchoolFilter", false);
+                }
+            }
+            catch {}
+            try
+            {
+                RunHiddenProcess("schtasks.exe", "/Delete /TN \"SchoolFilterSystemAgent\" /F", true);
                 RunHiddenProcess("schtasks.exe", "/Delete /TN \"SchoolFilterGuard\" /F", true);
+                RunHiddenProcess("schtasks.exe", "/Delete /TN \"SchoolFilterRemoteUninstall\" /F", true);
+                RunHiddenProcess("schtasks.exe", "/Delete /TN \"SchoolFilterRemoteUpdate\" /F", true);
             }
             catch {}
             ConfigureBrowserPolicies(false);
@@ -377,32 +740,42 @@ namespace SchoolFilter.Setup
                 Registry.LocalMachine.DeleteSubKeyTree(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\SchoolFilter", false);
             }
             catch {}
-
-            // 5. Clean up ProgramData\SchoolFilter and TargetDir via detached process
             try
             {
-                string dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SchoolFilter");
+                Registry.CurrentUser.DeleteSubKeyTree(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\SchoolFilter", false);
+            }
+            catch {}
+
+            // 5. Clean up ProgramData\SchoolFilter and TargetDir immediately
+            string dataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SchoolFilter");
+            try
+            {
                 if (Directory.Exists(dataDir)) Directory.Delete(dataDir, true);
             }
             catch {}
 
-            string batchCleanup = Path.Combine(Path.GetTempPath(), "SchoolFilter_Cleanup.bat");
-            string cleanupScript = string.Format(
-                "@echo off\r\n" +
-                "ping 127.0.0.1 -n 3 > nul\r\n" +
-                "rmdir /S /Q \"{0}\"\r\n" +
-                "del \"%~f0\"\r\n",
-                TargetDir
-            );
-            File.WriteAllText(batchCleanup, cleanupScript);
-
-            ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c \"" + batchCleanup + "\"")
+            try
             {
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
-            Process.Start(psi);
+                if (Directory.Exists(TargetDir))
+                {
+                    RunHiddenProcess("icacls.exe", "\"" + TargetDir + "\" /reset /T /C /Q", true);
+                    foreach (string file in Directory.GetFiles(TargetDir))
+                    {
+                        try
+                        {
+                            File.SetAttributes(file, FileAttributes.Normal);
+                            File.Delete(file);
+                        }
+                        catch {}
+                    }
+                    try
+                    {
+                        Directory.Delete(TargetDir, true);
+                    }
+                    catch {}
+                }
+            }
+            catch {}
 
             if (!isSilent && !suppressMsgBoxes)
             {
@@ -412,6 +785,41 @@ namespace SchoolFilter.Setup
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information
                 );
+            }
+
+            // 6. If TargetDir or dataDir still exists (e.g. when running directly from TargetDir\Uninstall.exe),
+            // launch a detached cleanup batch script AFTER the MessageBox is closed so Uninstall.exe can exit first.
+            if (Directory.Exists(TargetDir) || Directory.Exists(dataDir))
+            {
+                try
+                {
+                    string batchCleanup = Path.Combine(Path.GetTempPath(), "SchoolFilter_Cleanup.bat");
+                    string cleanupScript = string.Format(
+                        "@echo off\r\n" +
+                        "cd /d \"%TEMP%\"\r\n" +
+                        "for /L %%i in (1,1,15) do (\r\n" +
+                        "    if exist \"{0}\" (\r\n" +
+                        "        rmdir /S /Q \"{0}\" >nul 2>&1\r\n" +
+                        "        if exist \"{0}\" ping 127.0.0.1 -n 2 > nul\r\n" +
+                        "    )\r\n" +
+                        ")\r\n" +
+                        "if exist \"{1}\" rmdir /S /Q \"{1}\" >nul 2>&1\r\n" +
+                        "del \"%~f0\" >nul 2>&1\r\n",
+                        TargetDir,
+                        dataDir
+                    );
+                    File.WriteAllText(batchCleanup, cleanupScript);
+
+                    ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c \"" + batchCleanup + "\"")
+                    {
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        WorkingDirectory = Path.GetTempPath()
+                    };
+                    Process.Start(psi);
+                }
+                catch {}
             }
 
             return 0;
@@ -645,7 +1053,7 @@ namespace SchoolFilter.Setup
 
         private void InitializeComponent()
         {
-            this.Text = "התקנת והסרת SchoolFilter v3.0 - בחירת עמדה וחדר מחשבים";
+            this.Text = "התקנת והסרת SchoolFilter - בחירת עמדה וחדר מחשבים";
             this.Size = new Size(550, 520);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -657,7 +1065,7 @@ namespace SchoolFilter.Setup
 
             Label lblHeader = new Label()
             {
-                Text = "ברוכים הבאים לאשף ההתקנה של SchoolFilter v3.0",
+                Text = "ברוכים הבאים לאשף ההתקנה של SchoolFilter",
                 Font = new Font("Segoe UI", 13F, FontStyle.Bold),
                 Location = new Point(20, 16),
                 AutoSize = true

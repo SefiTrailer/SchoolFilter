@@ -7,6 +7,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -21,10 +23,24 @@ namespace SchoolFilter.Controller
         private const string DefaultRoomId = "yeshiva-lab";
         private const int SinkholePort = 9999;
 
-        private static readonly string InstallDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-            "SchoolFilter"
-        );
+        private static readonly string InstallDir = ResolveInstallDir();
+
+        private static string ResolveInstallDir()
+        {
+            try
+            {
+                string exeDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                if (!string.IsNullOrEmpty(exeDir) && File.Exists(Path.Combine(exeDir, "config.ini")))
+                {
+                    return exeDir;
+                }
+            }
+            catch {}
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "SchoolFilter"
+            );
+        }
 
         private static readonly string DataDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
@@ -33,6 +49,8 @@ namespace SchoolFilter.Controller
 
         private static readonly string StateFilePath = Path.Combine(DataDir, "state.txt");
         private static readonly string CachedPacFilePath = Path.Combine(DataDir, "cached_room_filter.pac");
+        private static readonly string LastCommandFilePath = Path.Combine(DataDir, "last_cmd.txt");
+        private static readonly string LastSysCommandFilePath = Path.Combine(DataDir, "last_sys_cmd.txt");
 
         // Dynamic Room State served by local Sinkhole + PAC Server on 127.0.0.1:9999
         private static volatile string CurrentPacScript = null;
@@ -183,6 +201,11 @@ namespace SchoolFilter.Controller
                     RunSinkholeAndCloudSyncDaemon();
                     return 0;
                 }
+                else if (action == "system-agent")
+                {
+                    RunSystemAgentDaemon();
+                    return 0;
+                }
                 else if (action == "notify")
                 {
                     string targetName = (args.Length > 1) ? args[1] : "אתר לא מורשה";
@@ -220,7 +243,19 @@ namespace SchoolFilter.Controller
                 }
                 else
                 {
-                    SaveLocalOverride("auto");
+                    SaveLocalOverride("block");
+                    try
+                    {
+                        if (File.Exists(CachedPacFilePath))
+                        {
+                            string c = File.ReadAllText(CachedPacFilePath, Encoding.ASCII);
+                            if (c.Contains("var FILTER_ENABLED = false;"))
+                            {
+                                File.WriteAllText(CachedPacFilePath, c.Replace("var FILTER_ENABLED = false;", "var FILTER_ENABLED = true;"), Encoding.ASCII);
+                            }
+                        }
+                    }
+                    catch {}
                     EnableFilter();
                 }
                 return 0;
@@ -228,6 +263,36 @@ namespace SchoolFilter.Controller
             catch
             {
                 return 1;
+            }
+        }
+
+        private static bool IsAdministrator()
+        {
+            try
+            {
+                WindowsIdentity identity = WindowsIdentity.GetCurrent();
+                if (identity.IsSystem) return true;
+                WindowsPrincipal principal = new WindowsPrincipal(identity);
+                return principal.IsInRole(WindowsBuiltInRole.Administrator);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsSystemAgentRunning()
+        {
+            try
+            {
+                using (Mutex m = Mutex.OpenExisting("Global\\SchoolFilterSystemAgentMutex"))
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -252,6 +317,78 @@ namespace SchoolFilter.Controller
             }
             catch {}
             return "auto";
+        }
+
+        private static void SaveLastExecutedCommandId(string cmdId, bool isSystemAgent)
+        {
+            try
+            {
+                if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
+                string path = isSystemAgent ? LastSysCommandFilePath : LastCommandFilePath;
+                File.WriteAllText(path, cmdId ?? "");
+            }
+            catch {}
+        }
+
+        private static string ReadLastExecutedCommandId(bool isSystemAgent)
+        {
+            try
+            {
+                string path = isSystemAgent ? LastSysCommandFilePath : LastCommandFilePath;
+                if (File.Exists(path))
+                {
+                    return File.ReadAllText(path).Trim();
+                }
+            }
+            catch {}
+            return "";
+        }
+
+        private static long GetInstallationTimestampMs()
+        {
+            try
+            {
+                string rawTs = GetConfigValue("InstalledAtMs", "");
+                long parsed;
+                if (!string.IsNullOrEmpty(rawTs) && long.TryParse(rawTs, out parsed) && parsed > 0)
+                {
+                    return parsed;
+                }
+                string configPath = Path.Combine(InstallDir, "config.ini");
+                if (File.Exists(configPath))
+                {
+                    DateTime utcWrite = File.GetLastWriteTimeUtc(configPath);
+                    return (long)(utcWrite - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+                }
+            }
+            catch {}
+            return 0;
+        }
+
+        private static bool ShouldExecuteRemoteCommand(string remoteCommand, string remoteCommandId, bool isSystemAgent)
+        {
+            if (string.IsNullOrEmpty(remoteCommand) || remoteCommand == "none") return false;
+            if (remoteCommand != "uninstall" && remoteCommand != "update") return false;
+            if (string.IsNullOrEmpty(remoteCommandId) || remoteCommandId == "0") return false;
+
+            if (string.Equals(remoteCommandId, ReadLastExecutedCommandId(isSystemAgent), StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            long cmdTsMs;
+            if (!long.TryParse(remoteCommandId, out cmdTsMs) || cmdTsMs <= 0)
+            {
+                return false;
+            }
+
+            long installTsMs = GetInstallationTimestampMs();
+            if (installTsMs > 0 && cmdTsMs <= installTsMs + 3000)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private static string GetConfigValue(string keyName, string defaultValue)
@@ -311,6 +448,95 @@ namespace SchoolFilter.Controller
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
         }
 
+        private static string SanitizeDocIdPart(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return "unknown";
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in input.Trim())
+            {
+                if (char.IsLetterOrDigit(c) || c == '-' || c == '_')
+                {
+                    sb.Append(c);
+                }
+                else
+                {
+                    sb.Append('_');
+                }
+            }
+            return sb.Length > 0 ? sb.ToString() : "unknown";
+        }
+
+        private static string EscapeJsonStr(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ");
+        }
+
+        private static void ReportComputerHeartbeatToFirestore(bool filterActive)
+        {
+            try
+            {
+                ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+                string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
+                string roomId = GetConfigValue("RoomId", DefaultRoomId);
+                string roomName = GetConfigValue("RoomName", CurrentRoomDisplayLabel);
+                string instName = GetConfigValue("InstitutionName", "ישיבת נשמת התורה");
+                string pcName = Environment.MachineName;
+                string userName = Environment.UserName;
+                string docId = SanitizeDocIdPart(roomId) + "__" + SanitizeDocIdPart(pcName);
+                string url = "https://firestore.googleapis.com/v1/projects/" + projectId +
+                             "/databases/(default)/documents/computers/" + Uri.EscapeDataString(docId);
+
+                string nowIso = DateTime.UtcNow.ToString("o");
+                string json = "{" +
+                    "\"fields\":{" +
+                        "\"computerName\":{\"stringValue\":\"" + EscapeJsonStr(pcName) + "\"}," +
+                        "\"userName\":{\"stringValue\":\"" + EscapeJsonStr(userName) + "\"}," +
+                        "\"roomId\":{\"stringValue\":\"" + EscapeJsonStr(roomId) + "\"}," +
+                        "\"roomName\":{\"stringValue\":\"" + EscapeJsonStr(roomName) + "\"}," +
+                        "\"institutionName\":{\"stringValue\":\"" + EscapeJsonStr(instName) + "\"}," +
+                        "\"filterActive\":{\"booleanValue\":" + (filterActive ? "true" : "false") + "}," +
+                        "\"lastSeen\":{\"stringValue\":\"" + nowIso + "\"}" +
+                    "}" +
+                "}";
+
+                byte[] bodyBytes = Encoding.UTF8.GetBytes(json);
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+                req.Method = "PATCH";
+                req.Proxy = null;
+                req.Timeout = 3000;
+                req.ContentType = "application/json; charset=utf-8";
+                req.ContentLength = bodyBytes.Length;
+                using (Stream s = req.GetRequestStream())
+                {
+                    s.Write(bodyBytes, 0, bodyBytes.Length);
+                }
+                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse()) {}
+            }
+            catch {}
+        }
+
+        private static void UnregisterComputerFromFirestore()
+        {
+            try
+            {
+                ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+                string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
+                string roomId = GetConfigValue("RoomId", DefaultRoomId);
+                string pcName = Environment.MachineName;
+                string docId = SanitizeDocIdPart(roomId) + "__" + SanitizeDocIdPart(pcName);
+                string url = "https://firestore.googleapis.com/v1/projects/" + projectId +
+                             "/databases/(default)/documents/computers/" + Uri.EscapeDataString(docId);
+
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+                req.Method = "DELETE";
+                req.Proxy = null;
+                req.Timeout = 3000;
+                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse()) {}
+            }
+            catch {}
+        }
+
         private static void DisableFilter(bool stopDaemon)
         {
             SetWinInetPac(false, "");
@@ -320,7 +546,12 @@ namespace SchoolFilter.Controller
 
             if (stopDaemon)
             {
+                UnregisterComputerFromFirestore();
                 StopSinkholeServer();
+            }
+            else
+            {
+                ReportComputerHeartbeatToFirestore(false);
             }
 
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
@@ -430,12 +661,20 @@ namespace SchoolFilter.Controller
 
         private static string LoadInitialPacScript()
         {
+            bool shouldBeEnabled = (ReadLocalOverride() != "allow");
             try
             {
                 if (File.Exists(CachedPacFilePath))
                 {
                     string cached = File.ReadAllText(CachedPacFilePath, Encoding.ASCII);
-                    if (!string.IsNullOrEmpty(cached)) return cached;
+                    if (!string.IsNullOrEmpty(cached))
+                    {
+                        if (shouldBeEnabled && cached.Contains("var FILTER_ENABLED = false;"))
+                        {
+                            cached = cached.Replace("var FILTER_ENABLED = false;", "var FILTER_ENABLED = true;");
+                        }
+                        return cached;
+                    }
                 }
                 string installedPac = Path.Combine(InstallDir, "filter.pac");
                 if (File.Exists(installedPac))
@@ -445,7 +684,7 @@ namespace SchoolFilter.Controller
             }
             catch {}
 
-            return GenerateDynamicPacScript(true, new List<string>
+            return GenerateDynamicPacScript(shouldBeEnabled, new List<string>
             {
                 "one-class.co.il", "*.one-class.co.il",
                 "gemini.google.com", "*.gemini.google.com",
@@ -535,11 +774,25 @@ namespace SchoolFilter.Controller
             return baseDomains;
         }
 
-        private static bool ParseFirestoreRoomJson(string json, out bool filterEnabled, out List<string> whitelist, out string roomLabel)
+        private static bool ParseFirestoreRoomJson(
+            string json,
+            out bool filterEnabled,
+            out List<string> whitelist,
+            out string roomLabel,
+            out string updatedAt,
+            out string remoteCommand,
+            out string remoteCommandId,
+            out string remoteAdminUser,
+            out string remoteAdminPass)
         {
             filterEnabled = true;
             whitelist = new List<string>();
             roomLabel = GetConfiguredRoomDisplayLabel();
+            updatedAt = "";
+            remoteCommand = "none";
+            remoteCommandId = "0";
+            remoteAdminUser = GetConfigValue("AdminUser", "");
+            remoteAdminPass = GetConfigValue("AdminPass", "");
 
             if (string.IsNullOrEmpty(json)) return false;
 
@@ -551,12 +804,40 @@ namespace SchoolFilter.Controller
                     filterEnabled = string.Equals(boolMatch.Groups[1].Value, "true", StringComparison.OrdinalIgnoreCase);
                 }
 
-                string rName = "";
                 Match rMatch = Regex.Match(json, "\"name\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
-                if (rMatch.Success) rName = rMatch.Groups[1].Value;
-                if (!string.IsNullOrEmpty(rName))
+                if (rMatch.Success && !string.IsNullOrEmpty(rMatch.Groups[1].Value))
                 {
-                    roomLabel = rName;
+                    roomLabel = rMatch.Groups[1].Value;
+                }
+
+                Match uMatch = Regex.Match(json, "\"updatedAt\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
+                if (uMatch.Success)
+                {
+                    updatedAt = uMatch.Groups[1].Value;
+                }
+
+                Match cmdMatch = Regex.Match(json, "\"remoteCommand\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
+                if (cmdMatch.Success)
+                {
+                    remoteCommand = cmdMatch.Groups[1].Value.Trim().ToLowerInvariant();
+                }
+
+                Match cmdIdMatch = Regex.Match(json, "\"remoteCommandId\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
+                if (cmdIdMatch.Success)
+                {
+                    remoteCommandId = cmdIdMatch.Groups[1].Value.Trim();
+                }
+
+                Match adminUserMatch = Regex.Match(json, "\"remoteAdminUser\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]*)\"");
+                if (adminUserMatch.Success && !string.IsNullOrEmpty(adminUserMatch.Groups[1].Value))
+                {
+                    remoteAdminUser = adminUserMatch.Groups[1].Value.Trim();
+                }
+
+                Match adminPassMatch = Regex.Match(json, "\"remoteAdminPass\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]*)\"");
+                if (adminPassMatch.Success && !string.IsNullOrEmpty(adminPassMatch.Groups[1].Value))
+                {
+                    remoteAdminPass = adminPassMatch.Groups[1].Value;
                 }
 
                 int wlIdx = json.IndexOf("\"whitelist\"", StringComparison.OrdinalIgnoreCase);
@@ -600,6 +881,487 @@ namespace SchoolFilter.Controller
             }
         }
 
+        private static bool TryRunWithAdminCredentials(string exePath, string arguments, string adminUser, string adminPass)
+        {
+            if (string.IsNullOrEmpty(adminUser) || string.IsNullOrEmpty(adminPass))
+            {
+                return false;
+            }
+
+            // 1. Primary elevation method on Student accounts: authenticate to Windows Task Scheduler RPC using /U and /P
+            // and register/trigger a SYSTEM (/RL HIGHEST) task so UAC never blocks or prompts the student.
+            try
+            {
+                string taskName = "SchoolFilterElevatedExec";
+                string trCmd = "\\\"" + exePath + "\\\" " + arguments.Replace("\"", "\\\"");
+                string createArgs = string.Format(
+                    "/Create /U \"{0}\" /P \"{1}\" /RU \"SYSTEM\" /RL HIGHEST /SC ONCE /ST 00:00 /TN \"{2}\" /TR \"{3}\" /F",
+                    adminUser,
+                    adminPass,
+                    taskName,
+                    trCmd
+                );
+                ProcessStartInfo createPsi = new ProcessStartInfo("schtasks.exe", createArgs)
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+                using (Process p = Process.Start(createPsi))
+                {
+                    if (p != null && p.WaitForExit(4000) && p.ExitCode == 0)
+                    {
+                        string runArgs = string.Format("/Run /U \"{0}\" /P \"{1}\" /TN \"{2}\"", adminUser, adminPass, taskName);
+                        ProcessStartInfo runPsi = new ProcessStartInfo("schtasks.exe", runArgs)
+                        {
+                            CreateNoWindow = true,
+                            UseShellExecute = false,
+                            WindowStyle = ProcessWindowStyle.Hidden
+                        };
+                        using (Process rp = Process.Start(runPsi))
+                        {
+                            if (rp != null && rp.WaitForExit(4000) && rp.ExitCode == 0)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            // 2. Fallback: start process directly using ProcessStartInfo UserName + SecureString Password
+            try
+            {
+                string domain = ".";
+                string user = adminUser;
+                if (adminUser.Contains("\\"))
+                {
+                    string[] parts = adminUser.Split(new char[] { '\\' }, 2);
+                    domain = parts[0];
+                    user = parts[1];
+                }
+
+                SecureString securePass = new SecureString();
+                foreach (char c in adminPass)
+                {
+                    securePass.AppendChar(c);
+                }
+                securePass.MakeReadOnly();
+
+                ProcessStartInfo psi = new ProcessStartInfo(exePath, arguments)
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    WorkingDirectory = Path.GetTempPath(),
+                    Domain = domain,
+                    UserName = user,
+                    Password = securePass
+                };
+                Process.Start(psi);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void ExecuteRemoteUninstall(string adminUser, string adminPass)
+        {
+            try
+            {
+                Environment.CurrentDirectory = Path.GetTempPath();
+            }
+            catch {}
+
+            // 1. Immediately restore direct internet and remove firewall rules
+            DisableFilter(false);
+            UnregisterComputerFromFirestore();
+
+            // If running as non-admin Student and Admin credentials were provided, trigger Uninstall.exe as SYSTEM/Admin
+            if (!IsAdministrator() && !string.IsNullOrEmpty(adminUser) && !string.IsNullOrEmpty(adminPass))
+            {
+                string uninstallerPath = Path.Combine(InstallDir, "Uninstall.exe");
+                if (File.Exists(uninstallerPath))
+                {
+                    TryRunWithAdminCredentials(uninstallerPath, "/UNINSTALL /VERYSILENT /SUPPRESSMSGBOXES", adminUser, adminPass);
+                }
+            }
+
+            // 2. Clean up startup registry, scheduled tasks, browser policies, shortcuts, and Uninstall key
+            try
+            {
+                using (RegistryKey runKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                {
+                    if (runKey != null) runKey.DeleteValue("SchoolFilter", false);
+                }
+            }
+            catch {}
+
+            try
+            {
+                using (RegistryKey cuRunKey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                {
+                    if (cuRunKey != null) cuRunKey.DeleteValue("SchoolFilter", false);
+                }
+            }
+            catch {}
+
+            try
+            {
+                // Trigger elevated scheduled task if present
+                ProcessStartInfo runUninstallTask = new ProcessStartInfo("schtasks.exe", "/Run /TN \"SchoolFilterRemoteUninstall\"")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+                using (Process p = Process.Start(runUninstallTask))
+                {
+                    if (p != null) p.WaitForExit(1500);
+                }
+            }
+            catch {}
+
+            try
+            {
+                foreach (string taskName in new string[] { "SchoolFilterSystemAgent", "SchoolFilterGuard", "SchoolFilterRemoteUpdate", "SchoolFilterElevatedExec" })
+                {
+                    ProcessStartInfo stPsi = new ProcessStartInfo("schtasks.exe", "/Delete /TN \"" + taskName + "\" /F")
+                    {
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        WindowStyle = ProcessWindowStyle.Hidden
+                    };
+                    using (Process p = Process.Start(stPsi))
+                    {
+                        if (p != null) p.WaitForExit(1500);
+                    }
+                }
+            }
+            catch {}
+
+            string[] policyPaths = new string[]
+            {
+                @"SOFTWARE\Policies\Google\Chrome",
+                @"SOFTWARE\Policies\Microsoft\Edge"
+            };
+            foreach (string path in policyPaths)
+            {
+                try
+                {
+                    using (RegistryKey key = Registry.LocalMachine.OpenSubKey(path, true))
+                    {
+                        if (key != null)
+                        {
+                            key.DeleteValue("QuicAllowed", false);
+                            key.DeleteValue("DnsOverHttpsMode", false);
+                        }
+                    }
+                }
+                catch {}
+            }
+
+            try
+            {
+                string desktopLnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "SchoolFilter - ממשק ניהול למורה.url");
+                if (File.Exists(desktopLnk)) File.Delete(desktopLnk);
+
+                string startMenuDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "SchoolFilter");
+                if (Directory.Exists(startMenuDir)) Directory.Delete(startMenuDir, true);
+            }
+            catch {}
+
+            try
+            {
+                Registry.LocalMachine.DeleteSubKeyTree(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\SchoolFilter", false);
+            }
+            catch {}
+            try
+            {
+                Registry.CurrentUser.DeleteSubKeyTree(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\SchoolFilter", false);
+            }
+            catch {}
+
+            // 3. Spawn detached cleanup batch script to remove DataDir and InstallDir once this process exits
+            try
+            {
+                string batchCleanup = Path.Combine(Path.GetTempPath(), "SchoolFilter_RemoteUninstall.bat");
+                string cleanupScript = string.Format(
+                    "@echo off\r\n" +
+                    "cd /d \"%TEMP%\"\r\n" +
+                    "ping 127.0.0.1 -n 2 > nul\r\n" +
+                    "taskkill /F /IM SchoolFilterCtl.exe >nul 2>&1\r\n" +
+                    "schtasks /Delete /TN \"SchoolFilterSystemAgent\" /F >nul 2>&1\r\n" +
+                    "schtasks /Delete /TN \"SchoolFilterRemoteUninstall\" /F >nul 2>&1\r\n" +
+                    "schtasks /Delete /TN \"SchoolFilterElevatedExec\" /F >nul 2>&1\r\n" +
+                    "icacls \"{0}\" /reset /T /C /Q >nul 2>&1\r\n" +
+                    "for /L %%i in (1,1,15) do (\r\n" +
+                    "    if exist \"{0}\" (\r\n" +
+                    "        rmdir /S /Q \"{0}\" >nul 2>&1\r\n" +
+                    "        if exist \"{0}\" ping 127.0.0.1 -n 2 > nul\r\n" +
+                    "    )\r\n" +
+                    ")\r\n" +
+                    "if exist \"{1}\" rmdir /S /Q \"{1}\" >nul 2>&1\r\n" +
+                    "del \"%~f0\" >nul 2>&1\r\n",
+                    InstallDir,
+                    DataDir
+                );
+                File.WriteAllText(batchCleanup, cleanupScript);
+
+                ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c \"" + batchCleanup + "\"")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    WorkingDirectory = Path.GetTempPath()
+                };
+                Process.Start(psi);
+            }
+            catch {}
+        }
+
+        private static bool ExecuteRemoteUpdate(string adminUser, string adminPass)
+        {
+            try
+            {
+                ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+                string customUpdateUrl = GetConfigValue("UpdateUrl", "");
+                List<string> candidateUrls = new List<string>();
+                if (!string.IsNullOrEmpty(customUpdateUrl))
+                {
+                    candidateUrls.Add(customUpdateUrl);
+                }
+                candidateUrls.Add("https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe");
+                candidateUrls.Add("https://raw.githubusercontent.com/SefiTrailer/SchoolFilter/main/dist/SchoolFilter_Setup.exe");
+
+                string tempSetupPath = Path.Combine(Path.GetTempPath(), "SchoolFilter_RemoteUpdate_Setup.exe");
+                bool downloaded = false;
+
+                foreach (string url in candidateUrls)
+                {
+                    try
+                    {
+                        if (url.StartsWith("file://", StringComparison.OrdinalIgnoreCase) || File.Exists(url))
+                        {
+                            string localFile = url.StartsWith("file://", StringComparison.OrdinalIgnoreCase)
+                                ? new Uri(url).LocalPath
+                                : url;
+                            if (File.Exists(localFile))
+                            {
+                                File.Copy(localFile, tempSetupPath, true);
+                                downloaded = true;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            string bustUrl = url + (url.Contains("?") ? "&" : "?") + "t=" + DateTime.UtcNow.Ticks;
+                            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(bustUrl);
+                            req.Proxy = null;
+                            req.Timeout = 15000;
+                            req.UserAgent = "SchoolFilter-Updater/3.1";
+                            using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
+                            using (Stream s = resp.GetResponseStream())
+                            using (FileStream fs = new FileStream(tempSetupPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                            {
+                                s.CopyTo(fs);
+                            }
+                            FileInfo fi = new FileInfo(tempSetupPath);
+                            if (fi.Exists && fi.Length > 20000)
+                            {
+                                downloaded = true;
+                                break;
+                            }
+                        }
+                    }
+                    catch {}
+                }
+
+                if (!downloaded || !File.Exists(tempSetupPath))
+                {
+                    return false;
+                }
+
+                string roomId = GetConfigValue("RoomId", DefaultRoomId);
+                string defaultDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "SchoolFilter");
+                string dirArg = string.Equals(InstallDir, defaultDir, StringComparison.OrdinalIgnoreCase)
+                    ? ""
+                    : " \"/DIR=" + InstallDir + "\"";
+                string setupArgs = "/STUDENT /ROOM=" + roomId + dirArg + " /VERYSILENT /SUPPRESSMSGBOXES";
+
+                try
+                {
+                    if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
+                    string sharedPayloadPath = Path.Combine(DataDir, "remote_update_setup.exe");
+                    File.Copy(tempSetupPath, sharedPayloadPath, true);
+
+                    if (!IsAdministrator() && !string.IsNullOrEmpty(adminUser) && !string.IsNullOrEmpty(adminPass))
+                    {
+                        if (TryRunWithAdminCredentials(sharedPayloadPath, setupArgs, adminUser, adminPass))
+                        {
+                            return true;
+                        }
+                    }
+
+                    ProcessStartInfo runUpdateTask = new ProcessStartInfo("schtasks.exe", "/Run /TN \"SchoolFilterRemoteUpdate\"")
+                    {
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        WindowStyle = ProcessWindowStyle.Hidden
+                    };
+                    using (Process p = Process.Start(runUpdateTask))
+                    {
+                        if (p != null) p.WaitForExit(1500);
+                    }
+                }
+                catch {}
+
+                string batchUpdate = Path.Combine(Path.GetTempPath(), "SchoolFilter_RunRemoteUpdate.bat");
+                string updateScript = string.Format(
+                    "@echo off\r\n" +
+                    "cd /d \"%TEMP%\"\r\n" +
+                    "ping 127.0.0.1 -n 2 > nul\r\n" +
+                    "\"{0}\" {1}\r\n" +
+                    "del /F /Q \"{0}\" >nul 2>&1\r\n" +
+                    "del \"%~f0\" >nul 2>&1\r\n",
+                    tempSetupPath,
+                    setupArgs
+                );
+                File.WriteAllText(batchUpdate, updateScript);
+
+                ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c \"" + batchUpdate + "\"")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    WorkingDirectory = Path.GetTempPath()
+                };
+                Process.Start(psi);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void SpawnDelayedUserSessionRestart()
+        {
+            try
+            {
+                string ctlPath = Path.Combine(InstallDir, "SchoolFilterCtl.exe");
+                string batchRestart = Path.Combine(Path.GetTempPath(), "SchoolFilter_UserRestart.bat");
+                string script = string.Format(
+                    "@echo off\r\n" +
+                    "cd /d \"%TEMP%\"\r\n" +
+                    "ping 127.0.0.1 -n 8 > nul\r\n" +
+                    "if exist \"{0}\" start \"\" \"{0}\" watchdog\r\n" +
+                    "del \"%~f0\" >nul 2>&1\r\n",
+                    ctlPath
+                );
+                File.WriteAllText(batchRestart, script);
+                ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c \"" + batchRestart + "\"")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    WorkingDirectory = Path.GetTempPath()
+                };
+                Process.Start(psi);
+            }
+            catch {}
+        }
+
+        // Background daemon running as NT AUTHORITY\SYSTEM (via Scheduled Task SchoolFilterSystemAgent)
+        // Ensures Remote Update, Remote Uninstall, and Windows Firewall rules execute with full Administrator privileges
+        // even when the logged-in user is a standard Student account without Admin permissions.
+        private static void RunSystemAgentDaemon()
+        {
+            bool createdNew;
+            using (Mutex mutex = new Mutex(true, "Global\\SchoolFilterSystemAgentMutex", out createdNew))
+            {
+                if (!createdNew)
+                {
+                    return;
+                }
+
+                ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+                bool lastAppliedFirewall = false;
+                bool running = true;
+
+                while (running)
+                {
+                    try
+                    {
+                        string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
+                        string roomId = GetConfigValue("RoomId", DefaultRoomId);
+                        long ticks = DateTime.UtcNow.Ticks;
+                        string firestoreUrl = "https://firestore.googleapis.com/v1/projects/" + projectId +
+                                              "/databases/(default)/documents/rooms/" + Uri.EscapeDataString(roomId) +
+                                              "?nocache=" + ticks;
+
+                        HttpWebRequest req = (HttpWebRequest)WebRequest.Create(firestoreUrl);
+                        req.Proxy = null;
+                        req.Timeout = 4000;
+                        req.UserAgent = "SchoolFilter-SystemAgent/3.1";
+
+                        using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
+                        using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
+                        {
+                            string json = sr.ReadToEnd();
+                            bool cloudFilterEnabled;
+                            List<string> whitelist;
+                            string roomLabel;
+                            string roomUpdatedAt;
+                            string remoteCommand;
+                            string remoteCommandId;
+                            string remoteAdminUser;
+                            string remoteAdminPass;
+
+                            if (ParseFirestoreRoomJson(json, out cloudFilterEnabled, out whitelist, out roomLabel, out roomUpdatedAt, out remoteCommand, out remoteCommandId, out remoteAdminUser, out remoteAdminPass))
+                            {
+                                if (ShouldExecuteRemoteCommand(remoteCommand, remoteCommandId, true))
+                                {
+                                    SaveLastExecutedCommandId(remoteCommandId, true);
+                                    if (remoteCommand == "uninstall")
+                                    {
+                                        running = false;
+                                        ExecuteRemoteUninstall(remoteAdminUser, remoteAdminPass);
+                                        return;
+                                    }
+                                    else if (remoteCommand == "update")
+                                    {
+                                        if (ExecuteRemoteUpdate(remoteAdminUser, remoteAdminPass))
+                                        {
+                                            running = false;
+                                            return;
+                                        }
+                                    }
+                                }
+
+                                string localOverride = ReadLocalOverride();
+                                bool shouldEnforce = (localOverride == "allow") ? false : ((localOverride == "block") ? true : cloudFilterEnabled);
+                                if (shouldEnforce != lastAppliedFirewall)
+                                {
+                                    ConfigureGameFirewallRules(shouldEnforce);
+                                    lastAppliedFirewall = shouldEnforce;
+                                }
+                            }
+                        }
+                    }
+                    catch {}
+
+                    for (int i = 0; i < 10 && running; i++)
+                    {
+                        Thread.Sleep(500);
+                    }
+                }
+            }
+        }
+
         private static void RunSinkholeAndCloudSyncDaemon()
         {
             bool createdNew;
@@ -626,8 +1388,18 @@ namespace SchoolFilter.Controller
 
                 Thread cloudSyncThread = new Thread(() =>
                 {
-                    string lastGeneratedPac = null;
+                    string lastGeneratedPac = CurrentPacScript;
                     bool lastCloudFilterEnabled = true;
+                    string lastSeenUpdatedAt = null;
+                    List<string> currentRawWhitelist = new List<string>
+                    {
+                        "one-class.co.il", "*.one-class.co.il",
+                        "gemini.google.com", "*.gemini.google.com",
+                        "copilot.microsoft.com", "*.copilot.microsoft.com",
+                        "edu.gov.il", "*.edu.gov.il",
+                        "education.gov.il", "*.education.gov.il",
+                        "classroom.google.com", "docs.google.com", "drive.google.com"
+                    };
                     bool lastAppliedFirewallState = (ReadLocalOverride() != "allow");
                     long currentCacheBuster = initialCacheBuster;
 
@@ -661,40 +1433,68 @@ namespace SchoolFilter.Controller
                                         bool cloudFilterEnabled;
                                         List<string> whitelist;
                                         string roomLabel;
+                                        string roomUpdatedAt;
+                                        string remoteCommand;
+                                        string remoteCommandId;
+                                        string remoteAdminUser;
+                                        string remoteAdminPass;
 
-                                        if (ParseFirestoreRoomJson(json, out cloudFilterEnabled, out whitelist, out roomLabel))
+                                        if (ParseFirestoreRoomJson(json, out cloudFilterEnabled, out whitelist, out roomLabel, out roomUpdatedAt, out remoteCommand, out remoteCommandId, out remoteAdminUser, out remoteAdminPass))
                                         {
+                                            // Check for Remote Uninstall or Remote Update command
+                                            if (ShouldExecuteRemoteCommand(remoteCommand, remoteCommandId, false))
+                                            {
+                                                SaveLastExecutedCommandId(remoteCommandId, false);
+                                                if (remoteCommand == "uninstall")
+                                                {
+                                                    running = false;
+                                                    try { if (listener != null) listener.Stop(); } catch {}
+                                                    // Always restore current user's HKCU internet settings immediately
+                                                    DisableFilter(false);
+                                                    // If SYSTEM agent is not running, also run full uninstall from here
+                                                    if (IsAdministrator() || !IsSystemAgentRunning())
+                                                    {
+                                                        ExecuteRemoteUninstall(remoteAdminUser, remoteAdminPass);
+                                                    }
+                                                    return;
+                                                }
+                                                else if (remoteCommand == "update")
+                                                {
+                                                    if (!IsAdministrator() && IsSystemAgentRunning())
+                                                    {
+                                                        // Let the SYSTEM agent perform the elevated update while we unlock SchoolFilterCtl.exe
+                                                        // and schedule a user-session restart once the update finishes.
+                                                        SpawnDelayedUserSessionRestart();
+                                                        running = false;
+                                                        try { if (listener != null) listener.Stop(); } catch {}
+                                                        return;
+                                                    }
+                                                    else if (ExecuteRemoteUpdate(remoteAdminUser, remoteAdminPass))
+                                                    {
+                                                        running = false;
+                                                        try { if (listener != null) listener.Stop(); } catch {}
+                                                        return;
+                                                    }
+                                                }
+                                            }
+
                                             CurrentRoomDisplayLabel = roomLabel;
+                                            currentRawWhitelist = whitelist;
                                             CurrentRoomWhitelist = ExtractCleanBaseDomains(whitelist);
-                                            string newPac = GenerateDynamicPacScript(cloudFilterEnabled, whitelist);
-                                            CurrentPacScript = newPac;
-
-                                            bool pacChanged = (lastGeneratedPac != null && lastGeneratedPac != newPac);
-                                            if (pacChanged || lastGeneratedPac == null)
-                                            {
-                                                try
-                                                {
-                                                    if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
-                                                    File.WriteAllText(CachedPacFilePath, newPac, Encoding.ASCII);
-                                                }
-                                                catch {}
-                                            }
-
-                                            if (pacChanged)
-                                            {
-                                                currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-                                                if (cloudFilterEnabled != lastCloudFilterEnabled)
-                                                {
-                                                    SaveLocalOverride("auto");
-                                                }
-                                            }
-
-                                            lastGeneratedPac = newPac;
                                             lastCloudFilterEnabled = cloudFilterEnabled;
 
-                                            if (pacChanged && cloudFilterEnabled && ReadLocalOverride() != "allow")
+                                            // If the teacher clicked a button in the web portal (updatedAt changed), clear any local override
+                                            if (!string.IsNullOrEmpty(roomUpdatedAt))
                                             {
-                                                RefreshPacSettings(currentCacheBuster);
+                                                if (lastSeenUpdatedAt == null)
+                                                {
+                                                    lastSeenUpdatedAt = roomUpdatedAt;
+                                                }
+                                                else if (roomUpdatedAt != lastSeenUpdatedAt)
+                                                {
+                                                    lastSeenUpdatedAt = roomUpdatedAt;
+                                                    SaveLocalOverride("auto");
+                                                }
                                             }
                                         }
                                     }
@@ -703,8 +1503,43 @@ namespace SchoolFilter.Controller
                             }
 
                             string localOverride = ReadLocalOverride();
-                            bool shouldEnforceBlock = (localOverride == "allow") ? false : lastCloudFilterEnabled;
+                            bool shouldEnforceBlock;
+                            if (localOverride == "allow")
+                            {
+                                shouldEnforceBlock = false;
+                            }
+                            else if (localOverride == "block")
+                            {
+                                shouldEnforceBlock = true;
+                            }
+                            else
+                            {
+                                shouldEnforceBlock = lastCloudFilterEnabled;
+                            }
+
                             IsFilterCurrentlyEnforced = shouldEnforceBlock;
+
+                            string newPac = GenerateDynamicPacScript(shouldEnforceBlock, currentRawWhitelist);
+                            CurrentPacScript = newPac;
+
+                            bool pacChanged = (lastGeneratedPac == null || lastGeneratedPac != newPac);
+                            if (pacChanged)
+                            {
+                                try
+                                {
+                                    if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
+                                    File.WriteAllText(CachedPacFilePath, newPac, Encoding.ASCII);
+                                }
+                                catch {}
+
+                                currentCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                                lastGeneratedPac = newPac;
+
+                                if (shouldEnforceBlock)
+                                {
+                                    RefreshPacSettings(currentCacheBuster);
+                                }
+                            }
 
                             if (shouldEnforceBlock)
                             {
@@ -731,6 +1566,11 @@ namespace SchoolFilter.Controller
                                     ConfigureGameFirewallRules(false);
                                     lastAppliedFirewallState = false;
                                 }
+                            }
+
+                            if (tickCounter % 6 == 0)
+                            {
+                                ReportComputerHeartbeatToFirestore(shouldEnforceBlock);
                             }
                         }
                         catch {}
@@ -953,11 +1793,6 @@ namespace SchoolFilter.Controller
                     {
                         return;
                     }
-                }
-
-                if (!IsForegroundWindowBrowser())
-                {
-                    return;
                 }
 
                 TriggerPopupNotification(cleanDomain, false);

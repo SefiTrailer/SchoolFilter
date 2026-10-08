@@ -42,7 +42,7 @@ if (-not $FoundCsc) {
 }
 
 Write-Host "====================================================" -ForegroundColor Cyan
-Write-Host " Building SchoolFilter v2.0 Controller & Installer" -ForegroundColor Cyan
+Write-Host " Building SchoolFilter Controller & Installer" -ForegroundColor Cyan
 Write-Host "====================================================" -ForegroundColor Cyan
 
 # Step 1: Compile SchoolFilterCtl.exe (Native WinINet + Sinkhole Controller)
@@ -99,7 +99,7 @@ if ($LASTEXITCODE -ne 0) {
 if (Test-Path $OutputExe) {
     $FileItem = Get-Item $OutputExe
     $Hash = (Get-FileHash $OutputExe -Algorithm SHA256).Hash
-    Write-Host "`n[SUCCESS] Installer v2.0 built successfully!" -ForegroundColor Green
+    Write-Host "`n[SUCCESS] SchoolFilter Installer built successfully!" -ForegroundColor Green
     Write-Host " Output Binary: $($FileItem.FullName)" -ForegroundColor White
     Write-Host " Size: $([math]::Round($FileItem.Length / 1KB, 2)) KB" -ForegroundColor White
     Write-Host " SHA256: $Hash" -ForegroundColor Gray
