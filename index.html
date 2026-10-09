@@ -2,10 +2,10 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#1e3a8a">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SchoolFilter">
     <title>SchoolFilter — מערכת בקרה וסינון לחדרי מחשבים</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='100%25' stop-color='%231e3a8a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M32 4L8 14v18c0 16.5 10.2 31.6 24 36 13.8-4.4 24-19.5 24-36V14L32 4z' fill='url(%23g)' stroke='%2360a5fa' stroke-width='2'/%3E%3Cpath d='M26 33l-6-6-3.5 3.5L26 40l18-18-3.5-3.5L26 33z' fill='%23ffffff'/%3E%3C/svg%3E">
@@ -55,12 +55,14 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* ====== ZERO-SCROLL SINGLE VIEWPORT LOCK ====== */
+        /* ====== ZERO-SCROLL SINGLE VIEWPORT LOCK (Desktop & Mobile) ====== */
         html, body {
             height: 100vh;
-            max-height: 100vh;
+            height: 100dvh;
+            max-height: 100dvh;
             width: 100vw;
             overflow: hidden !important;
+            overscroll-behavior: none;
             background-color: var(--bg);
             background-image:
                 radial-gradient(at 95% 0%, rgba(37, 99, 235, 0.08) 0px, transparent 45%),
@@ -70,12 +72,13 @@
             line-height: 1.35;
         }
 
-        /* ====== MAIN CONTAINER (100vh Flex Column) ====== */
+        /* ====== MAIN CONTAINER (100dvh Flex Column) ====== */
         .container {
             max-width: 1180px;
             width: 100%;
             height: 100vh;
-            max-height: 100vh;
+            height: 100dvh;
+            max-height: 100dvh;
             margin: 0 auto;
             padding: 10px 18px 6px;
             display: flex;
@@ -104,12 +107,14 @@
             display: flex;
             align-items: center;
             gap: 14px;
+            min-width: 0;
         }
 
         .header-brand {
             display: flex;
             align-items: center;
             gap: 10px;
+            min-width: 0;
         }
 
         .logo-icon {
@@ -142,9 +147,12 @@
             font-size: 11px;
             color: var(--text-muted);
             font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* Integrated Header Navigation Tabs */
+        /* Integrated Header Navigation Tabs (Desktop) */
         .nav-tabs {
             display: none;
             align-items: center;
@@ -182,6 +190,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-shrink: 0;
         }
 
         .btn-download-header {
@@ -273,7 +282,7 @@
         }
 
         .btn:active {
-            transform: scale(0.98);
+            transform: scale(0.97);
         }
 
         .btn-primary {
@@ -330,6 +339,7 @@
         input[type="text"],
         input[type="password"],
         input[type="email"],
+        input[type="url"],
         select {
             padding: 7px 11px;
             border: 1.5px solid var(--border);
@@ -350,7 +360,7 @@
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
         }
 
-        /* ====== AUTH / HOME HERO SCREEN (Centered in 100vh) ====== */
+        /* ====== AUTH / HOME HERO SCREEN (Centered in 100dvh) ====== */
         .auth-wrapper {
             flex: 1;
             min-height: 0;
@@ -468,10 +478,35 @@
             min-height: 0;
             display: none;
             flex-direction: column;
+            gap: 8px;
             overflow: hidden;
         }
 
-        /* Tab 1: 2-Column Cockpit Grid */
+        /* Mobile-only elements hidden on desktop */
+        .mobile-top-room-bar,
+        .mobile-bottom-nav,
+        .mobile-remote-hero,
+        .mobile-admin-subtabs {
+            display: none;
+        }
+
+        /* Desktop Tab Switching via attribute */
+        @media (min-width: 821px) {
+            #dashboard[data-desktop-tab="rooms"] #tabRoomsContent {
+                display: grid;
+            }
+            #dashboard[data-desktop-tab="rooms"] #tabUsersContent {
+                display: none;
+            }
+            #dashboard[data-desktop-tab="users"] #tabRoomsContent {
+                display: none;
+            }
+            #dashboard[data-desktop-tab="users"] #tabUsersContent {
+                display: grid;
+            }
+        }
+
+        /* Tab 1: 2-Column Cockpit Grid (Desktop) */
         .cockpit-grid {
             flex: 1;
             min-height: 0;
@@ -720,7 +755,7 @@
         }
 
         .btn-mode-active-ring {
-            box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.18), 0 4px 10px rgba(15, 23, 42, 0.12);
+            box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.2), 0 6px 14px rgba(15, 23, 42, 0.14);
         }
 
         /* Workspace Lower Split (Computers + Whitelist side-by-side) */
@@ -782,8 +817,8 @@
             color: #94a3b8;
             border: 1px solid var(--border);
             border-radius: 5px;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             cursor: pointer;
             font-size: 10px;
             font-weight: bold;
@@ -924,19 +959,17 @@
         }
 
         .table-list th, .table-list td {
-            padding: 9px 12px;
+            padding: 8px 10px;
             border-bottom: 1px solid var(--border);
             text-align: right;
-            font-size: 13px;
+            font-size: 12.5px;
         }
 
         .table-list th {
             background: var(--surface-muted);
             color: var(--text-muted);
             font-weight: 700;
-            font-size: 12px;
-            position: sticky;
-            top: 0;
+            font-size: 11.5px;
         }
 
         /* ====== MODALS & TOAST ====== */
@@ -966,7 +999,7 @@
 
         .toast {
             position: fixed;
-            bottom: 18px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(15, 23, 42, 0.94);
@@ -980,6 +1013,7 @@
             display: none;
             z-index: 10000;
             text-align: center;
+            max-width: 92vw;
         }
 
         .alert-box {
@@ -1000,6 +1034,481 @@
             color: var(--text-muted);
             flex-shrink: 0;
             padding: 2px 0;
+        }
+
+        /* =====================================================================
+           📱 NATIVE MOBILE APP UI/UX MODE (Smartphones & Compact Screens <= 820px)
+           Zero-Scroll 100dvh App Architecture with Bottom Tab Bar & Room Pills
+           ===================================================================== */
+        @media (max-width: 820px) {
+            .container {
+                padding: 8px 10px calc(6px + env(safe-area-inset-bottom, 0px));
+                gap: 7px;
+            }
+
+            /* Compact Mobile App Header */
+            header {
+                padding: 8px 11px;
+                border-radius: 14px;
+                gap: 8px;
+            }
+
+            .logo-icon {
+                width: 34px;
+                height: 34px;
+                border-radius: 10px;
+            }
+
+            .brand-text h1 {
+                font-size: 16px;
+            }
+
+            .brand-subtitle {
+                display: none;
+            }
+
+            /* Hide desktop top nav tabs & role badge on mobile to keep header clean */
+            #headerNavTabs,
+            #userRoleBadge,
+            footer {
+                display: none !important;
+            }
+
+            .btn-download-header {
+                padding: 6px 10px;
+                font-size: 11.5px;
+                border-radius: 9px;
+            }
+
+            .btn-download-header span {
+                display: none;
+            }
+
+            .btn-download-header::after {
+                content: 'הורדה';
+            }
+
+            #statusBadge {
+                max-width: 115px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-size: 10.5px;
+                padding: 4px 8px;
+            }
+
+            #btnLogout {
+                padding: 5px 8px;
+                font-size: 11px;
+            }
+
+            /* Mobile Auth / Home Screen */
+            .auth-card {
+                padding: 18px 16px 16px;
+                border-radius: 20px;
+            }
+
+            .auth-emblem {
+                width: 44px;
+                height: 44px;
+                font-size: 22px;
+                margin-bottom: 6px;
+            }
+
+            .auth-card h2 {
+                font-size: 19px !important;
+            }
+
+            .auth-card p {
+                font-size: 12.5px !important;
+                margin-bottom: 12px !important;
+            }
+
+            .features-grid-mini {
+                grid-template-columns: 1fr;
+                gap: 6px;
+                margin-top: 10px;
+            }
+
+            .feature-pill-box {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 7px 10px;
+            }
+
+            .feature-pill-box strong {
+                margin-bottom: 0;
+                white-space: nowrap;
+                font-size: 11.5px;
+            }
+
+            .feature-pill-box span {
+                font-size: 11px;
+            }
+
+            .quick-install-strip {
+                padding: 8px 10px;
+                margin-top: 8px;
+            }
+
+            /* Mobile Top Room Switcher Strip */
+            .mobile-top-room-bar {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                background: #ffffff;
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 7px 10px;
+                box-shadow: var(--shadow-xs);
+                flex-shrink: 0;
+            }
+
+            .mobile-inst-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 6px;
+            }
+
+            .mobile-room-pills {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                overflow-x: auto;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                padding-bottom: 1px;
+            }
+
+            .mobile-room-pills::-webkit-scrollbar {
+                display: none;
+            }
+
+            .mobile-room-pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 6px 12px;
+                border-radius: 999px;
+                border: 1.5px solid var(--border);
+                background: var(--surface-muted);
+                color: var(--text-secondary);
+                font-size: 12.5px;
+                font-weight: 800;
+                white-space: nowrap;
+                cursor: pointer;
+                flex-shrink: 0;
+                transition: var(--transition);
+            }
+
+            .mobile-room-pill.active {
+                background: var(--primary);
+                color: #ffffff;
+                border-color: var(--primary);
+                box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+            }
+
+            .mobile-room-pill .pill-dot {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+            }
+
+            .mobile-add-room-pill {
+                padding: 6px 11px;
+                border-radius: 999px;
+                border: 1.5px dashed #93c5fd;
+                background: #eff6ff;
+                color: var(--primary);
+                font-size: 12px;
+                font-weight: 800;
+                white-space: nowrap;
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+
+            /* Mobile Single-View Viewport Controller */
+            #roomsSidebarPanel {
+                display: none !important;
+            }
+
+            .cockpit-grid {
+                display: flex !important;
+                flex-direction: column;
+                flex: 1;
+                min-height: 0;
+            }
+
+            .workspace-col {
+                flex: 1;
+                min-height: 0;
+            }
+
+            /* View 1: Mobile Room Remote Control (Default) */
+            #dashboard[data-mobile-view="control"] #tabRoomsContent {
+                display: flex !important;
+            }
+            #dashboard[data-mobile-view="control"] #tabUsersContent {
+                display: none !important;
+            }
+            #dashboard[data-mobile-view="control"] .workspace-split {
+                display: none !important;
+            }
+            #dashboard[data-mobile-view="control"] #activeRoomCommandCard {
+                flex: 1;
+                min-height: 0;
+                display: flex !important;
+                flex-direction: column;
+                justify-content: space-between;
+                align-items: stretch;
+                padding: 18px 16px;
+                border-radius: 20px;
+                text-align: center;
+            }
+
+            /* Mobile Remote Control Hero Visual inside Command Card */
+            .mobile-remote-hero {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+                margin: 4px 0;
+            }
+
+            .mobile-status-orb {
+                width: 74px;
+                height: 74px;
+                border-radius: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 36px;
+                background: #fee2e2;
+                border: 2px solid #fca5a5;
+                box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.3);
+                transition: var(--transition);
+            }
+
+            .command-center-card.room-open-mode .mobile-status-orb {
+                background: #d1fae5;
+                border-color: #6ee7b7;
+                box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.3);
+            }
+
+            .mobile-quick-stats {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                width: 100%;
+                margin-top: 6px;
+            }
+
+            .mobile-stat-Tile {
+                background: rgba(255, 255, 255, 0.88);
+                border: 1px solid var(--border-strong);
+                border-radius: 12px;
+                padding: 8px 10px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                cursor: pointer;
+            }
+
+            .mobile-stat-Tile strong {
+                font-size: 15px;
+                font-weight: 900;
+                color: var(--text-main);
+            }
+
+            .mobile-stat-Tile span {
+                font-size: 11px;
+                color: var(--text-muted);
+                font-weight: 700;
+            }
+
+            #dashboard[data-mobile-view="control"] .room-hero-info {
+                align-items: center;
+                gap: 6px;
+            }
+
+            #dashboard[data-mobile-view="control"] .room-hero-info > div:first-child {
+                justify-content: center;
+            }
+
+            #dashboard[data-mobile-view="control"] .master-control-buttons {
+                flex-direction: column;
+                width: 100%;
+                gap: 9px;
+            }
+
+            #dashboard[data-mobile-view="control"] .btn-lock-action {
+                width: 100%;
+                padding: 14px 16px;
+                font-size: 15px;
+                border-radius: 14px;
+            }
+
+            /* View 2: Mobile Allowed Sites (Whitelist) */
+            #dashboard[data-mobile-view="sites"] #tabRoomsContent {
+                display: flex !important;
+            }
+            #dashboard[data-mobile-view="sites"] #tabUsersContent,
+            #dashboard[data-mobile-view="sites"] #activeRoomCommandCard,
+            #dashboard[data-mobile-view="sites"] #computersPanelCard {
+                display: none !important;
+            }
+            #dashboard[data-mobile-view="sites"] .workspace-split {
+                display: flex !important;
+                flex-direction: column;
+                flex: 1;
+            }
+            #dashboard[data-mobile-view="sites"] #whitelistPanelCard {
+                flex: 1;
+                display: flex !important;
+            }
+
+            /* View 3: Mobile Computers & Remote Maintenance */
+            #dashboard[data-mobile-view="computers"] #tabRoomsContent {
+                display: flex !important;
+            }
+            #dashboard[data-mobile-view="computers"] #tabUsersContent,
+            #dashboard[data-mobile-view="computers"] #activeRoomCommandCard,
+            #dashboard[data-mobile-view="computers"] #whitelistPanelCard {
+                display: none !important;
+            }
+            #dashboard[data-mobile-view="computers"] .workspace-split {
+                display: flex !important;
+                flex-direction: column;
+                flex: 1;
+            }
+            #dashboard[data-mobile-view="computers"] #computersPanelCard {
+                flex: 1;
+                display: flex !important;
+            }
+
+            .computers-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            /* View 4: Mobile Admin (Teachers & Institutions) */
+            #dashboard[data-mobile-view="admin"] #tabRoomsContent,
+            #dashboard[data-mobile-view="admin"] .mobile-top-room-bar {
+                display: none !important;
+            }
+            #dashboard[data-mobile-view="admin"] #tabUsersContent {
+                display: flex !important;
+                flex-direction: column;
+                flex: 1;
+                min-height: 0;
+            }
+
+            .mobile-admin-subtabs {
+                display: flex;
+                gap: 6px;
+                background: #e2e8f0;
+                padding: 4px;
+                border-radius: 11px;
+                flex-shrink: 0;
+            }
+
+            .mobile-admin-subbtn {
+                flex: 1;
+                padding: 7px 10px;
+                border: none;
+                border-radius: 8px;
+                background: transparent;
+                font-size: 12.5px;
+                font-weight: 800;
+                color: #475569;
+                cursor: pointer;
+            }
+
+            .mobile-admin-subbtn.active {
+                background: #ffffff;
+                color: var(--primary);
+                box-shadow: var(--shadow-xs);
+            }
+
+            #dashboard[data-mobile-admin-sub="users"] #institutionsAdminCard {
+                display: none !important;
+            }
+            #dashboard[data-mobile-admin-sub="users"] #usersAdminCard {
+                display: flex !important;
+                flex: 1;
+            }
+            #dashboard[data-mobile-admin-sub="insts"] #usersAdminCard {
+                display: none !important;
+            }
+            #dashboard[data-mobile-admin-sub="insts"] #institutionsAdminCard {
+                display: flex !important;
+                flex: 1;
+            }
+
+            /* Native App Fixed Bottom Tab Navigation Bar */
+            .mobile-bottom-nav {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 4px;
+                background: rgba(255, 255, 255, 0.96);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid var(--border-strong);
+                border-radius: 16px;
+                padding: 5px;
+                box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.06);
+                flex-shrink: 0;
+            }
+
+            .mobile-bottom-nav.has-admin {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .mobile-nav-item {
+                border: none;
+                background: transparent;
+                border-radius: 12px;
+                padding: 6px 4px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 2px;
+                color: var(--text-muted);
+                font-size: 11px;
+                font-weight: 800;
+                cursor: pointer;
+                transition: var(--transition);
+            }
+
+            .mobile-nav-item .nav-icon {
+                font-size: 17px;
+                line-height: 1.1;
+            }
+
+            .mobile-nav-item.active {
+                background: var(--primary-soft);
+                color: var(--primary);
+            }
+
+            /* Bottom-Sheet Style Modals on Mobile */
+            .modal-backdrop {
+                align-items: flex-end;
+                padding: 0;
+            }
+
+            .modal-box {
+                max-width: 100%;
+                border-radius: 24px 24px 0 0;
+                padding: 20px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+            }
+
+            .toast {
+                bottom: 74px;
+                font-size: 12.5px;
+                padding: 9px 16px;
+            }
         }
     </style>
 </head>
@@ -1023,7 +1532,7 @@
                     </div>
                 </div>
 
-                <!-- טאבים משולבים ב-Header לחיסכון בגובה ומניעת גלילה -->
+                <!-- טאבים משולבים ב-Header למחשב שולחני -->
                 <div id="headerNavTabs" class="nav-tabs">
                     <button id="tabBtnRooms" class="nav-tab-btn active" onclick="switchMainTab('rooms')">🖥️ חדרי מחשבים ועגלות</button>
                     <button id="tabBtnUsers" class="nav-tab-btn" onclick="switchMainTab('users')" style="display: none;">👥 מורים ומוסדות</button>
@@ -1032,7 +1541,7 @@
 
             <div class="header-toolbar">
                 <a href="dist/SchoolFilter_Setup.exe" download="SchoolFilter_Setup.exe" class="btn-download-header">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     <span>הורד תוכנת התקנה</span>
                 </a>
                 <span id="userRoleBadge" class="badge badge-role" style="display: none;"></span>
@@ -1050,7 +1559,7 @@
                 <div class="auth-emblem">🛡️</div>
                 <h2 style="font-size: 22px; font-weight: 900; color: var(--text-main); margin-bottom: 6px;">כניסת מורים ומנהלי מוסדות</h2>
                 <p style="color: var(--text-muted); font-size: 14px; max-width: 440px; margin: 0 auto 18px;">
-                    התחבר באמצעות חשבון Google כדי לנעול או לפתוח חדרי מחשבים בזמן אמת, לנהל רשימות לבנות ולצפות במחשבי התלמידים.
+                    התחבר מהמחשב או מהטלפון הנייד באמצעות חשבון Google כדי לנעול או לפתוח חדרי מחשבים בזמן אמת.
                 </p>
 
                 <button class="btn btn-google" onclick="signInWithGoogle()">
@@ -1070,8 +1579,8 @@
                         <span>חסימת משחקים ואתרים זרים בכל החדר בלחיצה.</span>
                     </div>
                     <div class="feature-pill-box">
-                        <strong>🌐 רשימה לבנה לחדר</strong>
-                        <span>פתיחת אתרי לימוד ייעודיים לכל חדר בנפרד.</span>
+                        <strong>📱 שליטה מהנייד</strong>
+                        <span>ממשק שלט-רחוק מלא למורה מהסמארטפון בכיתה.</span>
                     </div>
                     <div class="feature-pill-box">
                         <strong>💻 ניטור ותחזוקה</strong>
@@ -1081,16 +1590,16 @@
 
                 <div class="quick-install-strip">
                     <div>
-                        <div style="font-size: 13px; font-weight: 800; color: #1e3a8a;">📥 התקנה מהירה על מחשב תלמיד</div>
-                        <div style="font-size: 11.5px; color: var(--text-secondary);">הורד והפעל במחשב התלמיד (קוד חדר ברירת מחדל: <code>yeshiva-lab</code>)</div>
+                        <div style="font-size: 12.5px; font-weight: 800; color: #1e3a8a;">📥 התקנה על מחשב תלמיד</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">קוד חדר ברירת מחדל: <code>yeshiva-lab</code></div>
                     </div>
                     <a href="dist/SchoolFilter_Setup.exe" download="SchoolFilter_Setup.exe" class="btn btn-outline btn-sm" style="border-color: #93c5fd; color: #1d4ed8; text-decoration: none; font-weight: 800;">
                         הורד תוכנה
                     </a>
                 </div>
 
-                <details style="margin-top: 12px; text-align: right; border-top: 1px solid var(--border); padding-top: 10px;">
-                    <summary style="cursor: pointer; font-size: 12px; color: var(--text-muted); font-weight: 600;">🔑 כניסת גיבוי למנהל מערכת (GitHub Token)</summary>
+                <details style="margin-top: 10px; text-align: right; border-top: 1px solid var(--border); padding-top: 8px;">
+                    <summary style="cursor: pointer; font-size: 11.5px; color: var(--text-muted); font-weight: 600;">🔑 כניסת גיבוי למנהל מערכת (GitHub Token)</summary>
                     <div style="display: flex; gap: 8px; margin-top: 8px;">
                         <input type="password" id="backupTokenInput" placeholder="הדבק GitHub Token של SefiTrailer..." style="flex: 1; direction: ltr; font-size: 13px;">
                         <button class="btn btn-primary btn-sm" onclick="signInWithBackupToken()">כניסה</button>
@@ -1099,14 +1608,20 @@
             </div>
         </div>
 
-        <!-- לוח בקרה ראשי — מותאם ל-100vh ללא גלילת עמוד -->
-        <div id="dashboard">
+        <!-- לוח בקרה ראשי — מותאם ל-100dvh ללא גלילת עמוד במחשב ובנייד -->
+        <div id="dashboard" data-desktop-tab="rooms" data-mobile-view="control" data-mobile-admin-sub="users">
 
-            <!-- טאב 1: קוקפיט שליטה בחדרי מחשבים (2 עמודות ללא גלילת עמוד) -->
+            <!-- 📱 סרגל החלפת חדרים אופקי מהיר (מוצג בנייד בלבד) -->
+            <div class="mobile-top-room-bar">
+                <select id="mobileInstitutionSelect" onchange="onMobileInstitutionChange()" style="width: 100%; font-weight: 700; font-size: 12.5px; padding: 5px 10px; display: none;"></select>
+                <div id="mobileRoomsStrip" class="mobile-room-pills"></div>
+            </div>
+
+            <!-- טאב 1: קוקפיט שליטה בחדרי מחשבים -->
             <div id="tabRoomsContent" class="cockpit-grid">
 
-                <!-- עמודה ימנית: בחירת מוסד ורשימת חדרי מחשבים -->
-                <div class="panel-card">
+                <!-- עמודה ימנית (במחשב): בחירת מוסד ורשימת חדרי מחשבים -->
+                <div id="roomsSidebarPanel" class="panel-card">
                     <div class="panel-header">
                         <div class="panel-title">🏫 חדרי מחשבים</div>
                         <button class="btn btn-primary btn-sm" onclick="openAddRoomModal()">➕ חדר חדש</button>
@@ -1131,8 +1646,15 @@
                 <!-- עמודה שמאלית: סביבת העבודה של החדר הנבחר -->
                 <div class="workspace-col">
 
-                    <!-- סרגל עליון: מצב החדר הנבחר ומתגי נעילה/פתיחה -->
+                    <!-- כרטיס שליטה מרכזי בחדר (במחשב: סרגל עליון | בנייד: מסך שלט-רחוק מלא) -->
                     <div id="activeRoomCommandCard" class="command-center-card">
+
+                        <!-- אלמנט חיווי מרכזי שמעוצב במיוחד למסך השלט-רחוק בנייד -->
+                        <div class="mobile-remote-hero">
+                            <div id="mobileStatusOrb" class="mobile-status-orb">🔒</div>
+                            <div style="font-size: 11.5px; font-weight: 800; color: var(--text-muted);">שלט רחוק לחדר מחשבים בזמן אמת</div>
+                        </div>
+
                         <div class="room-hero-info">
                             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                 <span id="activeRoomTitle" style="font-size: 18px; font-weight: 900; color: #0f172a;">🖥️ ישיבת נשמת התורה - חדר מחשבים</span>
@@ -1144,17 +1666,31 @@
                                 <code id="activeRoomCodeBadge">yeshiva-lab</code>
                                 <button type="button" class="btn-copy-code" onclick="copyActiveRoomCode()">📋 העתק</button>
                             </div>
+
+                            <!-- אריחי ניווט מהיר בנייד (לחיצה מעבירה למחשבים או לאתרים) -->
+                            <div class="mobile-remote-hero" style="width: 100%; margin-top: 6px;">
+                                <div class="mobile-quick-stats">
+                                    <div class="mobile-stat-Tile" onclick="switchMobileView('computers')">
+                                        <strong id="mobileStatComputers">💻 0</strong>
+                                        <span>מחשבים בחדר ⬅️</span>
+                                    </div>
+                                    <div class="mobile-stat-Tile" onclick="switchMobileView('sites')">
+                                        <strong id="mobileStatSites">🌐 0</strong>
+                                        <span>אתרים מותרים ⬅️</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="master-control-buttons">
                             <button id="btnLockRoomAction" class="btn btn-lock-action btn-mode-lock" onclick="setRoomFilterMode(true)">
-                                🔒 נעל חדר לשיעור
+                                🔒 נעל חדר לשיעור (חסימת משחקים)
                             </button>
                             <button id="btnOpenRoomAction" class="btn btn-lock-action btn-mode-open" onclick="setRoomFilterMode(false)">
-                                🔓 פתח אינטרנט מלא
+                                🔓 פתח אינטרנט חופשי בחדר
                             </button>
                             <button class="btn btn-outline btn-lock-action" style="background: #ffffff; color: #1e3a8a; border-color: #93c5fd;" onclick="openStudentBlockPreview()">
-                                👁️ מסך תלמיד
+                                👁️ תצוגת מסך תלמיד
                             </button>
                         </div>
                     </div>
@@ -1163,7 +1699,7 @@
                     <div class="workspace-split">
 
                         <!-- פאנל מחשבים מותקנים בחדר + תחזוקה מרחוק -->
-                        <div class="panel-card">
+                        <div id="computersPanelCard" class="panel-card">
                             <div class="panel-header">
                                 <div class="panel-title">
                                     <span>💻 מחשבים מותקנים בחדר</span>
@@ -1196,7 +1732,7 @@
                         </div>
 
                         <!-- פאנל רשימה לבנה של אתרים מותרים בחדר -->
-                        <div class="panel-card">
+                        <div id="whitelistPanelCard" class="panel-card">
                             <div class="panel-header">
                                 <div class="panel-title">
                                     <span>🌐 אתרים מותרים (<span id="whitelistRoomLabel" style="color: var(--primary);">חדר מחשבים</span>)</span>
@@ -1212,7 +1748,7 @@
                             </div>
 
                             <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-shrink: 0;">
-                                <input type="text" id="newSiteInput" placeholder="הקלד כתובת אתר (למשל: kahoot.it או cet.ac.il)..." style="flex: 1;" onkeypress="if(event.key === 'Enter') addSiteToRoom()">
+                                <input type="url" inputmode="url" id="newSiteInput" placeholder="הקלד כתובת אתר (למשל: kahoot.it או cet.ac.il)..." style="flex: 1; direction: ltr; text-align: right;" onkeypress="if(event.key === 'Enter') addSiteToRoom()">
                                 <button class="btn btn-primary btn-sm" onclick="addSiteToRoom()">+ הוסף אתר</button>
                             </div>
 
@@ -1236,7 +1772,13 @@
             </div>
 
             <!-- טאב 2: ניהול מורים ומוסדות לימוד (ללא גלילת עמוד) -->
-            <div id="tabUsersContent" class="admin-split-grid" style="display: none;">
+            <div id="tabUsersContent" class="admin-split-grid">
+
+                <!-- מתג פנימי בנייד בין מורים למוסדות -->
+                <div id="mobileAdminSubtabs" class="mobile-admin-subtabs" style="display: none;">
+                    <button id="subBtnAdminUsers" class="mobile-admin-subbtn active" onclick="switchMobileAdminSub('users')">👩‍🏫 מורים מורשים</button>
+                    <button id="subBtnAdminInsts" class="mobile-admin-subbtn" onclick="switchMobileAdminSub('insts')">🏢 מוסדות לימוד</button>
+                </div>
 
                 <!-- ניהול מוסדות לימוד -->
                 <div id="institutionsAdminCard" class="panel-card" style="display: none;">
@@ -1265,15 +1807,15 @@
                 </div>
 
                 <!-- ניהול מורים ומשתמשים מורשים -->
-                <div class="panel-card" style="grid-column: span 1;">
+                <div id="usersAdminCard" class="panel-card" style="grid-column: span 1;">
                     <div class="panel-header">
-                        <div class="panel-title">👩‍🏫 מורים ומנהלים מורשים (התחברות באמצעות Google)</div>
+                        <div class="panel-title">👩‍🏫 מורים ומנהלים מורשים (Google)</div>
                     </div>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0;">
-                        <input type="email" id="newUserEmail" placeholder="כתובת Gmail..." style="flex: 1.2; min-width: 150px; direction: ltr;">
-                        <input type="text" id="newUserName" placeholder="שם המורה..." style="flex: 1; min-width: 120px;">
-                        <select id="newUserInstSelect" style="min-width: 120px;"></select>
-                        <select id="newUserRoleSelect" style="min-width: 130px;">
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0;">
+                        <input type="email" id="newUserEmail" placeholder="כתובת Gmail..." style="flex: 1.2; min-width: 140px; direction: ltr;">
+                        <input type="text" id="newUserName" placeholder="שם המורה..." style="flex: 1; min-width: 110px;">
+                        <select id="newUserInstSelect" style="min-width: 110px;"></select>
+                        <select id="newUserRoleSelect" style="min-width: 115px;">
                             <option value="teacher">מורה</option>
                             <option value="inst_admin">מנהל מוסד</option>
                             <option value="superadmin">מנהל על</option>
@@ -1298,6 +1840,26 @@
                 </div>
 
             </div>
+
+            <!-- 📱 סרגל ניווט תחתון קבוע של אפליקציית המובייל -->
+            <nav id="mobileBottomNav" class="mobile-bottom-nav" aria-label="ניווט בנייד">
+                <button type="button" id="mNavControl" class="mobile-nav-item active" onclick="switchMobileView('control')">
+                    <span class="nav-icon">🎛️</span>
+                    <span>שליטה בחדר</span>
+                </button>
+                <button type="button" id="mNavSites" class="mobile-nav-item" onclick="switchMobileView('sites')">
+                    <span class="nav-icon">🌐</span>
+                    <span>אתרים מותרים</span>
+                </button>
+                <button type="button" id="mNavComputers" class="mobile-nav-item" onclick="switchMobileView('computers')">
+                    <span class="nav-icon">💻</span>
+                    <span>מחשבים</span>
+                </button>
+                <button type="button" id="mNavAdmin" class="mobile-nav-item" style="display: none;" onclick="switchMobileView('admin')">
+                    <span class="nav-icon">👥</span>
+                    <span>ניהול צוות</span>
+                </button>
+            </nav>
 
         </div>
 
@@ -1361,23 +1923,22 @@
 
     <!-- חלונית תצוגה מקדימה: מה התלמיד רואה בזמן חסימה -->
     <div id="studentPreviewModal" class="modal-backdrop" onclick="if(event.target===this) closeStudentBlockPreview()">
-        <div style="background:#ffffff; max-width:600px; width:100%; border-radius:22px; padding:26px 24px; box-shadow:0 25px 60px rgba(0,0,0,0.4); border-top:7px solid #dc2626; text-align:center; position:relative;">
+        <div class="modal-box" style="max-width:600px; border-top:7px solid #dc2626; text-align:center;">
             <button onclick="closeStudentBlockPreview()" style="position:absolute; top:14px; left:14px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:50%; width:34px; height:34px; font-size:15px; cursor:pointer; font-weight:bold; color:#334155;">✕</button>
-            <div style="font-size:12px; font-weight:700; color:#64748b; margin-bottom:8px;">👁️ תצוגה מקדימה — כך בדיוק נראה מסך התלמיד כשהוא מנסה להיכנס לאתר או משחק חסום:</div>
-            <div style="width:56px; height:56px; background:#fef2f2; color:#dc2626; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:28px; margin-bottom:10px; border:2px solid #fecaca;">🛑</div>
-            <h2 style="color:#dc2626; margin:0 0 8px 0; font-size:22px; font-weight:900;">הגלישה לאתר זה נחסמה</h2>
-            <div id="previewRoomBadge" style="display:inline-block; background:#fef3c7; color:#92400e; font-weight:700; padding:5px 14px; border-radius:999px; font-size:13px; margin-bottom:10px; border:1px solid #fde68a;">📚 מצב שיעור פעיל: ישיבת נשמת התורה - חדר מחשבים</div>
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:7px 12px; margin:4px 0 12px 0; font-family:Consolas,monospace; font-size:13.5px; color:#334155; direction:ltr; font-weight:700;">www.youtube.com / RobloxPlayerBeta.exe</div>
-            <p style="color:#475569; font-size:13.5px; line-height:1.5; margin:0 0 14px 0;">
-                הכניסה לאתר או למשחק זה חסומה כעת מאחר שהמחשב נמצא <strong>במצב שיעור</strong>.<br>
-                להלן <strong>הרשימה הלבנה</strong> של האתרים המותרים כעת בחדר שלך:
+            <div style="font-size:12px; font-weight:700; color:#64748b; margin-bottom:8px;">👁️ תצוגה מקדימה — מסך התלמיד בזמן חסימה:</div>
+            <div style="width:52px; height:52px; background:#fef2f2; color:#dc2626; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:26px; margin-bottom:8px; border:2px solid #fecaca;">🛑</div>
+            <h2 style="color:#dc2626; margin:0 0 8px 0; font-size:20px; font-weight:900;">הגלישה לאתר זה נחסמה</h2>
+            <div id="previewRoomBadge" style="display:inline-block; background:#fef3c7; color:#92400e; font-weight:700; padding:4px 12px; border-radius:999px; font-size:12px; margin-bottom:8px; border:1px solid #fde68a;">📚 מצב שיעור פעיל: ישיבת נשמת התורה - חדר מחשבים</div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:6px 10px; margin:4px 0 10px 0; font-family:Consolas,monospace; font-size:12.5px; color:#334155; direction:ltr; font-weight:700;">www.youtube.com / RobloxPlayerBeta.exe</div>
+            <p style="color:#475569; font-size:12.5px; line-height:1.45; margin:0 0 12px 0;">
+                הכניסה לאתר או למשחק זה חסומה כעת מאחר שהמחשב נמצא <strong>במצב שיעור</strong>.
             </p>
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:14px; padding:14px; text-align:center;">
-                <div style="font-size:13px; font-weight:800; color:#166534; margin-bottom:10px;">✅ הרשימה הלבנה שלך לשיעור (לחיצה של התלמיד פותחת את האתר):</div>
-                <div id="previewWhitelistLinks" style="display:flex; flex-wrap:wrap; gap:7px; justify-content:center;"></div>
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:14px; padding:12px; text-align:center;">
+                <div style="font-size:12px; font-weight:800; color:#166534; margin-bottom:8px;">✅ הרשימה הלבנה לשיעור (לחיצה פותחת את האתר):</div>
+                <div id="previewWhitelistLinks" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center;"></div>
             </div>
-            <div style="margin-top:16px;">
-                <button class="btn btn-primary" onclick="closeStudentBlockPreview()" style="min-width:160px;">סגור תצוגה מקדימה</button>
+            <div style="margin-top:14px;">
+                <button class="btn btn-primary" onclick="closeStudentBlockPreview()" style="min-width:150px;">סגור תצוגה מקדימה</button>
             </div>
         </div>
     </div>
@@ -1539,6 +2100,23 @@
                 document.getElementById('tabBtnUsers').style.display = canManageUsers ? 'inline-block' : 'none';
                 document.getElementById('institutionsAdminCard').style.display = (currentUser.role === 'superadmin') ? 'flex' : 'none';
 
+                // Mobile Admin tab visibility
+                const mNavAdmin = document.getElementById('mNavAdmin');
+                const mBottomNav = document.getElementById('mobileBottomNav');
+                if (canManageUsers) {
+                    mNavAdmin.style.display = 'flex';
+                    mBottomNav.classList.add('has-admin');
+                } else {
+                    mNavAdmin.style.display = 'none';
+                    mBottomNav.classList.remove('has-admin');
+                }
+
+                // Mobile Superadmin sub-switch visibility
+                const mAdminSubtabs = document.getElementById('mobileAdminSubtabs');
+                if (mAdminSubtabs) {
+                    mAdminSubtabs.style.display = (currentUser.role === 'superadmin') ? 'flex' : 'none';
+                }
+
                 setupInstitutionSelector();
                 renderRoomsGrid();
                 renderActiveRoomPanel();
@@ -1644,22 +2222,24 @@
 
         function setupInstitutionSelector() {
             const sel = document.getElementById('institutionSelect');
+            const mSel = document.getElementById('mobileInstitutionSelect');
             const allowedInsts = (currentUser.role === 'superadmin' || currentUser.institutionId === 'all')
                 ? institutions
                 : institutions.filter(i => i.code === currentUser.institutionId);
 
-            sel.innerHTML = allowedInsts.map(i => `<option value="${i.code}">🏫 מוסד: ${i.name}</option>`).join('');
+            const optionsHtml = allowedInsts.map(i => `<option value="${i.code}">🏫 מוסד: ${i.name}</option>`).join('');
+            sel.innerHTML = optionsHtml;
+            if (mSel) mSel.innerHTML = optionsHtml;
 
-            if (allowedInsts.length > 1 || currentUser.role === 'superadmin') {
-                sel.style.display = 'block';
-            } else {
-                sel.style.display = 'none';
-            }
+            const showInstSelect = (allowedInsts.length > 1 || currentUser.role === 'superadmin');
+            sel.style.display = showInstSelect ? 'block' : 'none';
+            if (mSel) mSel.style.display = showInstSelect ? 'block' : 'none';
 
             if (allowedInsts.length > 0 && !allowedInsts.some(i => i.code === selectedInstitutionId)) {
                 selectedInstitutionId = allowedInsts[0].code;
             }
             sel.value = selectedInstitutionId;
+            if (mSel) mSel.value = selectedInstitutionId;
 
             const instRooms = getRoomsForSelectedInstitution();
             if (instRooms.length > 0 && !instRooms.some(r => r.roomId === selectedRoomId)) {
@@ -1669,6 +2249,20 @@
 
         function onInstitutionChange() {
             selectedInstitutionId = document.getElementById('institutionSelect').value;
+            const mSel = document.getElementById('mobileInstitutionSelect');
+            if (mSel) mSel.value = selectedInstitutionId;
+            const instRooms = getRoomsForSelectedInstitution();
+            if (instRooms.length > 0) {
+                selectedRoomId = instRooms[0].roomId;
+            }
+            renderRoomsGrid();
+            renderActiveRoomPanel();
+        }
+
+        function onMobileInstitutionChange() {
+            selectedInstitutionId = document.getElementById('mobileInstitutionSelect').value;
+            const sel = document.getElementById('institutionSelect');
+            if (sel) sel.value = selectedInstitutionId;
             const instRooms = getRoomsForSelectedInstitution();
             if (instRooms.length > 0) {
                 selectedRoomId = instRooms[0].roomId;
@@ -1713,11 +2307,15 @@
 
         function renderRoomsGrid() {
             const container = document.getElementById('roomsGrid');
+            const mobileStrip = document.getElementById('mobileRoomsStrip');
             const rooms = getRoomsForSelectedInstitution();
             updateKpiStrip();
 
             if (rooms.length === 0) {
                 container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">אין חדרי מחשבים במוסד זה. לחץ על '➕ חדר חדש'.</div>`;
+                if (mobileStrip) {
+                    mobileStrip.innerHTML = `<button type="button" class="mobile-add-room-pill" onclick="openAddRoomModal()">➕ הקם חדר ראשון</button>`;
+                }
                 return;
             }
 
@@ -1742,6 +2340,21 @@
                     </div>
                 `;
             }).join('');
+
+            // Render Horizontal Room Switcher Strip for Mobile App mode
+            if (mobileStrip) {
+                const pillsHtml = rooms.map(r => {
+                    const isActive = (r.roomId === selectedRoomId);
+                    const stateEmoji = r.filterEnabled ? '🔒' : '🔓';
+                    return `
+                        <button type="button" class="mobile-room-pill ${isActive ? 'active' : ''}" onclick="selectRoom('${r.roomId}')">
+                            <span>${r.icon} ${r.name}</span>
+                            <span>${stateEmoji}</span>
+                        </button>
+                    `;
+                }).join('');
+                mobileStrip.innerHTML = pillsHtml + `<button type="button" class="mobile-add-room-pill" onclick="openAddRoomModal()">➕ חדר</button>`;
+            }
         }
 
         function CountBaseDomains(list) {
@@ -1763,6 +2376,7 @@
             const cmdCard = document.getElementById('activeRoomCommandCard');
             const btnLock = document.getElementById('btnLockRoomAction');
             const btnOpen = document.getElementById('btnOpenRoomAction');
+            const mobileOrb = document.getElementById('mobileStatusOrb');
 
             if (room.filterEnabled) {
                 badge.className = 'badge badge-offline';
@@ -1770,13 +2384,23 @@
                 if (cmdCard) cmdCard.classList.remove('room-open-mode');
                 if (btnLock) btnLock.classList.add('btn-mode-active-ring');
                 if (btnOpen) btnOpen.classList.remove('btn-mode-active-ring');
+                if (mobileOrb) mobileOrb.textContent = '🔒';
             } else {
                 badge.className = 'badge badge-online';
                 badge.textContent = '🔓 אינטרנט חופשי פעיל בחדר זה';
                 if (cmdCard) cmdCard.classList.add('room-open-mode');
                 if (btnOpen) btnOpen.classList.add('btn-mode-active-ring');
                 if (btnLock) btnLock.classList.remove('btn-mode-active-ring');
+                if (mobileOrb) mobileOrb.textContent = '🔓';
             }
+
+            // Update Mobile Quick Stats tiles
+            const roomComputersCount = allComputers.filter(c => c.roomId.toLowerCase() === room.roomId.toLowerCase()).length;
+            const sitesCount = CountBaseDomains(room.whitelist);
+            const mStatComp = document.getElementById('mobileStatComputers');
+            const mStatSites = document.getElementById('mobileStatSites');
+            if (mStatComp) mStatComp.textContent = `💻 ${roomComputersCount}`;
+            if (mStatSites) mStatSites.textContent = `🌐 ${sitesCount}`;
 
             const remoteBadge = document.getElementById('remoteCommandBadge');
             const btnClearRemote = document.getElementById('btnClearRemoteCmd');
@@ -1809,6 +2433,8 @@
             if (countBadge) {
                 countBadge.textContent = `${roomComputers.length} מחשבים`;
             }
+            const mStatComp = document.getElementById('mobileStatComputers');
+            if (mStatComp) mStatComp.textContent = `💻 ${roomComputers.length}`;
 
             if (roomComputers.length === 0) {
                 container.innerHTML = `
@@ -1855,6 +2481,9 @@
                 const base = s.replace(/^\*\./, '');
                 if (!uniqueDomains.includes(base)) uniqueDomains.push(base);
             });
+
+            const mStatSites = document.getElementById('mobileStatSites');
+            if (mStatSites) mStatSites.textContent = `🌐 ${uniqueDomains.length}`;
 
             container.innerHTML = uniqueDomains.map(domain => {
                 const isCore = coreSites.includes(domain);
@@ -2104,17 +2733,48 @@
             showToast(`✅ החדר '${newRoom.name}' (${newRoom.roomId}) נוצר בהצלחה!`);
         }
 
+        // Desktop Tab Switcher
         function switchMainTab(tab) {
+            const dash = document.getElementById('dashboard');
+            dash.setAttribute('data-desktop-tab', tab);
             document.getElementById('tabBtnRooms').className = 'nav-tab-btn' + (tab === 'rooms' ? ' active' : '');
             document.getElementById('tabBtnUsers').className = 'nav-tab-btn' + (tab === 'users' ? ' active' : '');
-            document.getElementById('tabRoomsContent').style.display = (tab === 'rooms') ? 'grid' : 'none';
-            document.getElementById('tabUsersContent').style.display = (tab === 'users') ? 'grid' : 'none';
             if (tab === 'users') {
                 renderAdminTables();
             }
         }
 
+        // Mobile App Bottom Bar View Switcher (Zero-Scroll Single Screen Views)
+        function switchMobileView(view) {
+            const dash = document.getElementById('dashboard');
+            dash.setAttribute('data-mobile-view', view);
+
+            const navIds = {
+                control: 'mNavControl',
+                sites: 'mNavSites',
+                computers: 'mNavComputers',
+                admin: 'mNavAdmin'
+            };
+            Object.keys(navIds).forEach(k => {
+                const el = document.getElementById(navIds[k]);
+                if (el) el.classList.toggle('active', k === view);
+            });
+
+            if (view === 'admin') {
+                renderAdminTables();
+            }
+        }
+
+        // Mobile Admin Sub-Switcher (Teachers vs Institutions)
+        function switchMobileAdminSub(sub) {
+            const dash = document.getElementById('dashboard');
+            dash.setAttribute('data-mobile-admin-sub', sub);
+            document.getElementById('subBtnAdminUsers').classList.toggle('active', sub === 'users');
+            document.getElementById('subBtnAdminInsts').classList.toggle('active', sub === 'insts');
+        }
+
         function renderAdminTables() {
+            if (!currentUser) return;
             const userInstSel = document.getElementById('newUserInstSelect');
             const allowedInsts = (currentUser.role === 'superadmin')
                 ? institutions
@@ -2144,11 +2804,11 @@
                 return `
                     <tr>
                         <td><strong>${u.name || '-'}</strong></td>
-                        <td style="direction: ltr; text-align: right;">${u.email}</td>
+                        <td style="direction: ltr; text-align: right; font-size: 11.5px;">${u.email}</td>
                         <td>${u.institutionName}</td>
                         <td>${roleLabel}</td>
                         <td>
-                            ${isOwner ? '<span style="font-size:11.5px;color:#64748b;">בעל המערכת</span>' : `<button class="btn btn-danger btn-sm" onclick="removeAuthorizedUser('${u.email}')">הסר</button>`}
+                            ${isOwner ? '<span style="font-size:11px;color:#64748b;">בעלים</span>' : `<button class="btn btn-danger btn-sm" onclick="removeAuthorizedUser('${u.email}')">הסר</button>`}
                         </td>
                     </tr>
                 `;
@@ -2288,7 +2948,7 @@
 
             const container = document.getElementById('previewWhitelistLinks');
             container.innerHTML = cleanDomains.map(dom =>
-                `<a href="https://${dom}" target="_blank" style="text-decoration:none; background:#ffffff; color:#1d4ed8; border:1px solid #bfdbfe; padding:7px 12px; border-radius:9px; font-weight:700; font-size:12.5px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">${getFriendlyDomainLabel(dom)}</a>`
+                `<a href="https://${dom}" target="_blank" style="text-decoration:none; background:#ffffff; color:#1d4ed8; border:1px solid #bfdbfe; padding:6px 11px; border-radius:9px; font-weight:700; font-size:12px; box-shadow:0 1px 2px rgba(0,0,0,0.05);">${getFriendlyDomainLabel(dom)}</a>`
             ).join('');
 
             document.getElementById('studentPreviewModal').style.display = 'flex';
