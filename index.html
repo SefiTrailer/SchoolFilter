@@ -3,130 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#1e40af">
+    <meta name="theme-color" content="#1e3a8a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="SchoolFilter">
-    <title>SchoolFilter - מערכת ניהול חדרי מחשבים ומוסדות</title>
+    <title>SchoolFilter — מערכת בקרה וסינון לחדרי מחשבים</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='100%25' stop-color='%231e3a8a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M32 4L8 14v18c0 16.5 10.2 31.6 24 36 13.8-4.4 24-19.5 24-36V14L32 4z' fill='url(%23g)' stroke='%2360a5fa' stroke-width='2'/%3E%3Cpath d='M26 33l-6-6-3.5 3.5L26 40l18-18-3.5-3.5L26 33z' fill='%23ffffff'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231e3a8a'/%3E%3Cpath d='M32 8L12 16.5v15c0 13.8 8.5 26.3 20 30 11.5-3.7 20-16.2 20-30v-15L32 8z' fill='%232563eb' stroke='%2393c5fd' stroke-width='2'/%3E%3Cpath d='M27 34l-5-5-3 3 8 8 15-15-3-3-12 12z' fill='%23ffffff'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
-            --success: #16a34a;
-            --danger: #dc2626;
-            --danger-hover: #b91c1c;
+            --primary-soft: #eff6ff;
+            --primary-border: #bfdbfe;
+            --indigo: #4f46e5;
+            --success: #10b981;
+            --success-dark: #059669;
+            --success-soft: #ecfdf5;
+            --success-border: #a7f3d0;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --danger-soft: #fef2f2;
+            --danger-border: #fecaca;
+            --warning: #f59e0b;
+            --warning-soft: #fffbeb;
+            --warning-border: #fde68a;
             --bg: #f1f5f9;
             --card-bg: #ffffff;
+            --surface-muted: #f8fafc;
             --text-main: #0f172a;
+            --text-secondary: #334155;
             --text-muted: #64748b;
             --border: #e2e8f0;
-            --radius: 14px;
-            --shadow: 0 4px 12px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --border-strong: #cbd5e1;
+            --radius-sm: 10px;
+            --radius: 16px;
+            --radius-lg: 22px;
+            --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+            --shadow-sm: 0 2px 10px -2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+            --shadow: 0 10px 30px -6px rgba(15, 23, 42, 0.06), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+            --shadow-lg: 0 20px 45px -12px rgba(15, 23, 42, 0.12);
+            --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Heebo', sans-serif;
+            font-family: 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
             background-color: var(--bg);
+            background-image:
+                radial-gradient(at 95% 0%, rgba(37, 99, 235, 0.08) 0px, transparent 45%),
+                radial-gradient(at 5% 15%, rgba(79, 70, 229, 0.06) 0px, transparent 40%),
+                radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
+            line-height: 1.5;
         }
 
+        /* ====== MAIN CONTAINER ====== */
+        .container {
+            max-width: 1060px;
+            width: 100%;
+            margin: 22px auto 36px;
+            padding: 0 20px;
+            flex: 1;
+        }
+
+        /* ====== TOP HEADER BAR (Inside Container) ====== */
         header {
-            background: #ffffff;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 16px 24px;
-            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            border-radius: var(--radius-lg);
+            padding: 15px 24px;
+            margin-bottom: 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 16px;
             box-shadow: var(--shadow);
+            position: sticky;
+            top: 12px;
+            z-index: 100;
         }
 
-        .header-title {
+        .header-brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
         }
 
         .logo-icon {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, #2563eb, #1e40af);
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
             color: white;
-            border-radius: 12px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
-            font-weight: bold;
+            box-shadow: 0 6px 16px -3px rgba(37, 99, 235, 0.42), inset 0 1px 1px rgba(255, 255, 255, 0.32);
             flex-shrink: 0;
         }
 
-        h1 {
-            font-size: 20px;
-            font-weight: 800;
+        .logo-icon svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        .brand-text h1 {
+            font-size: 22px;
+            font-weight: 900;
             color: var(--text-main);
-            line-height: 1.2;
-        }
-
-        .subtitle {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .user-status {
+            letter-spacing: -0.4px;
+            line-height: 1.15;
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        .brand-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        .header-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             flex-wrap: wrap;
         }
 
+        .btn-download-header {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transition: var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-download-header:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+        }
+
+        /* ====== BADGES & PILLS ====== */
         .badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 6px 12px;
+            padding: 6px 13px;
             border-radius: 9999px;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 12.5px;
+            font-weight: 700;
             max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            line-height: 1.2;
         }
 
         .badge-online {
-            background: #dcfce7;
-            color: #166534;
+            background: var(--success-soft);
+            color: #065f46;
+            border: 1px solid var(--success-border);
         }
 
         .badge-offline {
-            background: #fee2e2;
+            background: var(--danger-soft);
             color: #991b1b;
+            border: 1px solid var(--danger-border);
+        }
+
+        .badge-neutral {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
         }
 
         .badge-role {
-            background: #eff6ff;
+            background: var(--primary-soft);
             color: #1e40af;
-            border: 1px solid #bfdbfe;
+            border: 1px solid var(--primary-border);
         }
 
         .status-dot {
@@ -137,50 +220,180 @@
             flex-shrink: 0;
         }
 
-        .container {
-            max-width: 980px;
-            width: 100%;
-            margin: 24px auto;
-            padding: 0 16px;
-            flex: 1;
+        .status-dot.pulse {
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
         }
 
+        /* ====== BUTTON SYSTEM ====== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 18px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: var(--transition);
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.22);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.32);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            box-shadow: 0 5px 14px rgba(16, 185, 129, 0.35);
+        }
+
+        .btn-danger {
+            background: var(--danger-soft);
+            color: var(--danger-dark);
+            border-color: var(--danger-border);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-dark);
+            color: white;
+            border-color: var(--danger-dark);
+        }
+
+        .btn-outline {
+            background: #ffffff;
+            border: 1px solid var(--border-strong);
+            color: var(--text-secondary);
+            box-shadow: var(--shadow-xs);
+        }
+
+        .btn-outline:hover {
+            background: var(--surface-muted);
+            border-color: #94a3b8;
+            color: var(--text-main);
+        }
+
+        .btn-sm {
+            padding: 8px 14px;
+            font-size: 13px;
+            border-radius: 10px;
+        }
+
+        /* ====== KPI OVERVIEW STRIP ====== */
+        .kpi-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        .kpi-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 16px 18px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .kpi-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .kpi-value {
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--text-main);
+            line-height: 1.15;
+        }
+
+        .kpi-label {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        /* ====== CARDS ====== */
         .card {
             background: var(--card-bg);
-            border-radius: var(--radius);
+            border-radius: var(--radius-lg);
             border: 1px solid var(--border);
             box-shadow: var(--shadow);
-            padding: 24px;
-            margin-bottom: 20px;
+            padding: 26px;
+            margin-bottom: 22px;
+            transition: var(--transition);
         }
 
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
+            margin-bottom: 18px;
+            padding-bottom: 16px;
             border-bottom: 1px solid var(--border);
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
+        }
+
+        .card-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
         }
 
         .card-title {
             font-size: 18px;
-            font-weight: 700;
+            font-weight: 800;
+            color: var(--text-main);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             flex-wrap: wrap;
+        }
+
+        .card-subtitle {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            font-weight: 400;
         }
 
         .header-actions {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             align-items: center;
             flex-wrap: wrap;
         }
 
+        /* ====== FORM INPUTS ====== */
         .input-group {
             display: flex;
             gap: 10px;
@@ -194,100 +407,320 @@
         select {
             flex: 1;
             min-width: 180px;
-            padding: 12px 14px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            font-size: 16px; /* Prevents iOS auto-zoom on focus */
+            padding: 12px 15px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: 15px;
+            color: var(--text-main);
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            background: #fff;
+            transition: var(--transition);
+            background: #ffffff;
+        }
+
+        input::placeholder {
+            color: #94a3b8;
         }
 
         input:focus, select:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
         }
 
-        .btn {
+        /* ====== AUTH / HOME HERO SCREEN ====== */
+        .auth-wrapper {
+            max-width: 640px;
+            margin: 10px auto 28px;
+        }
+
+        .auth-card {
+            background: #ffffff;
+            border-radius: 26px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+            padding: 38px 34px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #2563eb, #4f46e5, #0ea5e9);
+        }
+
+        .auth-emblem {
+            width: 72px;
+            height: 72px;
+            border-radius: 22px;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 1px solid #bfdbfe;
+            color: var(--primary);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-            border: none;
-            transition: all 0.18s;
-            white-space: nowrap;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .btn-success {
-            background-color: var(--success);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background-color: #15803d;
-        }
-
-        .btn-danger {
-            background-color: #fee2e2;
-            color: var(--danger);
-        }
-
-        .btn-danger:hover {
-            background-color: var(--danger);
-            color: white;
-        }
-
-        .btn-outline {
-            background: #ffffff;
-            border: 1px solid var(--border);
-            color: var(--text-main);
-        }
-
-        .btn-outline:hover {
-            background: #f8fafc;
+            font-size: 34px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.16);
         }
 
         .btn-google {
             background: #ffffff;
-            color: #1e293b;
+            color: #0f172a;
             border: 2px solid #cbd5e1;
             font-size: 16px;
-            font-weight: 700;
-            padding: 14px 24px;
-            border-radius: 12px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            font-weight: 800;
+            padding: 15px 24px;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+            width: 100%;
+            justify-content: center;
+            gap: 12px;
+            transition: var(--transition);
         }
 
         .btn-google:hover {
-            border-color: #2563eb;
+            border-color: var(--primary);
             background: #f8fafc;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
         }
 
-        /* Master Control Panel */
+        .features-grid-mini {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 22px;
+            text-align: right;
+        }
+
+        .feature-pill-box {
+            background: var(--surface-muted);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 13px;
+        }
+
+        .feature-pill-box strong {
+            display: block;
+            font-size: 13px;
+            color: var(--text-main);
+            margin-bottom: 2px;
+        }
+
+        .feature-pill-box span {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            line-height: 1.35;
+            display: block;
+        }
+
+        .quick-install-strip {
+            margin-top: 16px;
+            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 16px;
+            padding: 16px 20px;
+            text-align: right;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* ====== NAVIGATION TABS ====== */
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 22px;
+            background: #e2e8f0;
+            padding: 6px;
+            border-radius: 14px;
+        }
+
+        .nav-tab-btn {
+            flex: 1;
+            padding: 11px 16px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 14.5px;
+            border: none;
+            cursor: pointer;
+            background: transparent;
+            color: #475569;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .nav-tab-btn:hover {
+            color: var(--text-main);
+        }
+
+        .nav-tab-btn.active {
+            background: #ffffff;
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        }
+
+        /* ====== ROOM CARDS GRID ====== */
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+            gap: 14px;
+        }
+
+        .room-tab {
+            border: 1.5px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            cursor: pointer;
+            background: var(--surface-muted);
+            transition: var(--transition);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .room-tab:hover {
+            border-color: #93c5fd;
+            background: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .room-tab.active {
+            border-color: var(--primary);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16), var(--shadow-sm);
+        }
+
+        .room-tab.active::before {
+            content: '';
+            position: absolute;
+            top: 12px;
+            bottom: 12px;
+            right: 0;
+            width: 4px;
+            border-radius: 4px 0 0 4px;
+            background: var(--primary);
+        }
+
+        .room-tab-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .room-tab-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.3;
+        }
+
+        .room-tab-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding-top: 10px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .room-tab-code {
+            font-family: Consolas, Monaco, monospace;
+            font-size: 12px;
+            font-weight: 700;
+            color: #334155;
+            background: #e2e8f0;
+            padding: 3px 9px;
+            border-radius: 6px;
+            direction: ltr;
+        }
+
+        .room-tab-stats {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* ====== ACTIVE ROOM COMMAND BANNER ====== */
+        .command-center-card {
+            border: 2px solid #fecaca;
+            background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .command-center-card.room-open-mode {
+            border-color: #a7f3d0;
+            background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%);
+        }
+
         .master-control-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 16px;
+            gap: 20px;
+        }
+
+        .room-hero-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .room-code-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid #cbd5e1;
+            padding: 5px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            width: fit-content;
+        }
+
+        .room-code-pill code {
+            font-family: Consolas, Monaco, monospace;
+            font-weight: 800;
+            color: #0f172a;
+            font-size: 13.5px;
+            direction: ltr;
+        }
+
+        .btn-copy-code {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: var(--primary);
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 11.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-copy-code:hover {
+            background: var(--primary);
+            color: white;
         }
 
         .master-control-buttons {
@@ -297,137 +730,231 @@
         }
 
         .btn-lock-action {
-            min-height: 48px;
-            font-size: 15px;
-            padding: 12px 22px;
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+            min-height: 50px;
+            font-size: 14.5px;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-weight: 800;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+            transition: var(--transition);
         }
 
-        /* Room Cards Grid */
-        .rooms-grid {
+        .btn-mode-lock {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .btn-mode-lock:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-mode-open {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-mode-open:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-mode-active-ring {
+            box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.16), 0 6px 16px rgba(15, 23, 42, 0.15);
+        }
+
+        /* ====== COMPUTERS & REMOTE MAINTENANCE CARD ====== */
+        .computers-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 14px;
-            margin-top: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 12px;
         }
 
-        .room-tab {
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            cursor: pointer;
-            background: #f8fafc;
-            transition: all 0.18s;
-            position: relative;
-        }
-
-        .room-tab:hover {
-            border-color: #93c5fd;
+        .computer-card {
             background: #ffffff;
-        }
-
-        .room-tab.active {
-            border-color: var(--primary);
-            background: #eff6ff;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
-        }
-
-        .room-tab-header {
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            gap: 8px;
-            margin-bottom: 10px;
+            align-items: center;
+            gap: 10px;
+            transition: var(--transition);
+            box-shadow: var(--shadow-xs);
         }
 
-        .room-tab-title {
-            font-size: 16px;
+        .computer-card:hover {
+            border-color: #93c5fd;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .computer-card.is-online {
+            border-color: #a7f3d0;
+            background: linear-gradient(to left, #f0fdf4 0%, #ffffff 35%);
+        }
+
+        .computer-name {
+            font-size: 14.5px;
             font-weight: 800;
             color: var(--text-main);
-            line-height: 1.35;
+            direction: ltr;
+            display: inline-block;
+            word-break: break-all;
+            font-family: 'Heebo', Consolas, monospace;
         }
 
-        .room-tab-code {
-            font-family: monospace;
+        .computer-meta {
             font-size: 12px;
             color: var(--text-muted);
-            background: #e2e8f0;
-            padding: 2px 8px;
-            border-radius: 6px;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn-remove-pc {
+            background: #f8fafc;
+            color: #94a3b8;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            flex-shrink: 0;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-remove-pc:hover {
+            background: var(--danger-soft);
+            color: var(--danger-dark);
+            border-color: var(--danger-border);
+        }
+
+        .remote-toolbar-box {
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .admin-creds-details {
+            background: var(--surface-muted);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 11px 15px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .admin-creds-details summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: #1e40af;
+            user-select: none;
+        }
+
+        /* ====== WHITELIST SITES & QUICK CHIPS ====== */
+        .preset-chips-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            padding: 11px 14px;
+            background: var(--surface-muted);
+            border-radius: 14px;
+            border: 1px solid var(--border);
+        }
+
+        .preset-chip {
+            background: #ffffff;
+            border: 1px solid var(--border-strong);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .preset-chip:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-soft);
+            transform: translateY(-1px);
         }
 
         .sites-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 12px;
-            margin-top: 16px;
+            margin-top: 12px;
         }
 
         .site-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
-            background: #f8fafc;
+            padding: 13px 16px;
+            background: var(--surface-muted);
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 14px;
             gap: 10px;
+            transition: var(--transition);
+        }
+
+        .site-item:hover {
+            background: #ffffff;
+            border-color: #cbd5e1;
+            box-shadow: var(--shadow-xs);
         }
 
         .site-domain {
-            font-weight: 700;
-            font-size: 15px;
+            font-weight: 800;
+            font-size: 14.5px;
             direction: ltr;
             text-align: left;
-            color: #1e293b;
+            color: var(--text-main);
             word-break: break-all;
         }
 
         .site-tag {
             font-size: 11px;
+            font-weight: 600;
             padding: 2px 8px;
-            border-radius: 4px;
+            border-radius: 6px;
             background: #e0e7ff;
             color: #3730a3;
-            margin-top: 3px;
+            margin-top: 4px;
             display: inline-block;
         }
 
-        .nav-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 18px;
-            background: #e2e8f0;
-            padding: 5px;
-            border-radius: 12px;
+        .site-tag.core {
+            background: #dbeafe;
+            color: #1e40af;
         }
 
-        .nav-tab-btn {
-            flex: 1;
-            padding: 11px 14px;
-            border-radius: 9px;
-            font-weight: 700;
-            font-size: 15px;
-            border: none;
-            cursor: pointer;
-            background: transparent;
-            color: #475569;
-            text-align: center;
-            transition: all 0.15s;
-        }
-
-        .nav-tab-btn.active {
-            background: #ffffff;
-            color: var(--primary);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-        }
-
+        /* ====== TABLES ====== */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
-            margin-top: 10px;
-            border-radius: 10px;
+            margin-top: 12px;
+            border-radius: 14px;
             border: 1px solid var(--border);
         }
 
@@ -438,107 +965,157 @@
         }
 
         .table-list th, .table-list td {
-            padding: 12px;
+            padding: 13px 16px;
             border-bottom: 1px solid var(--border);
             text-align: right;
             font-size: 14px;
         }
 
+        .table-list tr:last-child td {
+            border-bottom: none;
+        }
+
         .table-list th {
-            background: #f8fafc;
+            background: var(--surface-muted);
             color: var(--text-muted);
             font-weight: 700;
+            font-size: 13px;
+        }
+
+        /* ====== MODALS & TOAST ====== */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .modal-box {
+            background: #ffffff;
+            max-width: 520px;
+            width: 100%;
+            border-radius: 24px;
+            padding: 28px 26px;
+            box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+            position: relative;
+            border: 1px solid var(--border);
         }
 
         .toast {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: #0f172a;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(10px);
             color: white;
-            padding: 14px 20px;
-            border-radius: 12px;
+            padding: 14px 24px;
+            border-radius: 999px;
             font-size: 14px;
-            font-weight: 600;
-            box-shadow: 0 10px 25px -3px rgb(0 0 0 / 0.3);
+            font-weight: 700;
+            box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.35);
             display: none;
-            z-index: 1000;
+            z-index: 2000;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            text-align: center;
+            max-width: 92vw;
         }
 
         .alert-box {
-            background: #fffbeb;
-            border: 1px solid #fde68a;
+            background: var(--warning-soft);
+            border: 1px solid var(--warning-border);
             color: #92400e;
             padding: 16px;
-            border-radius: 12px;
-            font-size: 14px;
-            line-height: 1.6;
+            border-radius: 14px;
+            font-size: 13.5px;
+            line-height: 1.65;
             margin-top: 16px;
             text-align: right;
         }
 
         footer {
             text-align: center;
-            padding: 18px 14px;
-            font-size: 12px;
+            padding: 20px 16px;
+            font-size: 13px;
             color: var(--text-muted);
             border-top: 1px solid var(--border);
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.75);
             margin-top: auto;
         }
 
-        /* ====== התאמה ייעודית לסמארטפונים (Mobile-First Responsive) ====== */
+        /* ====== MOBILE RESPONSIVE ====== */
+        @media (max-width: 820px) {
+            .kpi-strip {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .features-grid-mini {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 680px) {
+            .container {
+                margin: 12px auto 24px;
+                padding: 0 12px;
+            }
+
             header {
-                padding: 12px 14px;
+                padding: 14px 16px;
+                border-radius: 16px;
+                position: static;
+            }
+
+            .header-toolbar {
+                width: 100%;
+                justify-content: space-between;
+                padding-top: 10px;
+                border-top: 1px solid #f1f5f9;
+            }
+
+            .btn-download-header {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .kpi-strip {
+                grid-template-columns: 1fr 1fr;
                 gap: 10px;
             }
 
-            .logo-icon {
-                width: 38px;
-                height: 38px;
-                font-size: 19px;
+            .kpi-card {
+                padding: 12px;
+                gap: 10px;
             }
 
-            h1 {
+            .kpi-icon {
+                width: 36px;
+                height: 36px;
                 font-size: 17px;
             }
 
-            .subtitle {
-                font-size: 12px;
+            .kpi-value {
+                font-size: 17px;
             }
 
-            .user-status {
-                width: 100%;
-                justify-content: space-between;
-                border-top: 1px solid #f1f5f9;
-                padding-top: 8px;
-            }
-
-            .badge {
-                font-size: 12px;
-                padding: 4px 10px;
-            }
-
-            .container {
-                margin: 12px auto;
-                padding: 0 10px;
+            .auth-card {
+                padding: 26px 18px 22px;
             }
 
             .card {
-                padding: 16px 14px;
-                margin-bottom: 14px;
-                border-radius: 14px;
+                padding: 18px 16px;
+                border-radius: 16px;
             }
 
             .card-header {
                 flex-direction: column;
                 align-items: stretch;
-                gap: 10px;
-            }
-
-            .card-title {
-                font-size: 16px;
             }
 
             .header-actions {
@@ -552,50 +1129,28 @@
                 width: 100%;
             }
 
-            .nav-tabs {
-                flex-direction: row;
-                gap: 6px;
-                margin-bottom: 14px;
-            }
-
-            .nav-tab-btn {
-                font-size: 13.5px;
-                padding: 10px 8px;
-                white-space: normal;
-                line-height: 1.25;
-            }
-
-            .rooms-grid {
+            .rooms-grid,
+            .computers-grid,
+            .sites-list {
                 grid-template-columns: 1fr;
-                gap: 10px;
-            }
-
-            .room-tab {
-                padding: 14px;
             }
 
             .master-control-row {
                 flex-direction: column;
                 align-items: stretch;
-                gap: 14px;
             }
 
             .master-control-buttons {
                 flex-direction: column;
                 width: 100%;
-                gap: 10px;
             }
 
             .btn-lock-action {
                 width: 100%;
-                min-height: 52px;
-                font-size: 16px;
-                border-radius: 12px;
             }
 
             .input-group {
                 flex-direction: column;
-                gap: 8px;
             }
 
             .input-group input,
@@ -604,22 +1159,6 @@
                 width: 100%;
                 min-width: 0;
             }
-
-            .sites-list {
-                grid-template-columns: 1fr;
-                gap: 8px;
-            }
-
-            .site-item {
-                padding: 12px 14px;
-            }
-
-            .toast {
-                left: 12px;
-                right: 12px;
-                bottom: 14px;
-                text-align: center;
-            }
         }
     </style>
 </head>
@@ -627,54 +1166,93 @@
 
     <div class="container">
 
+        <!-- סרגל עליון מרכזי בתוך הקונטיינר -->
         <header>
-            <div class="header-title">
-                <div class="logo-icon">🛡️</div>
-                <div>
+            <div class="header-brand">
+                <div class="logo-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
                     <h1>SchoolFilter</h1>
-                    <div class="subtitle">ניהול חדרי מחשבים, עגלות ניידים ומוסדות לימוד</div>
+                    <div class="brand-subtitle">מערכת ניהול וסינון חכם לחדרי מחשבים, עגלות ניידים ומוסדות לימוד</div>
                 </div>
             </div>
-            <div class="user-status">
-                <a href="dist/SchoolFilter_Setup.exe" download="SchoolFilter_Setup.exe" class="btn btn-primary" style="padding: 8px 14px; font-size: 13.5px; text-decoration: none; border-radius: 10px;">
-                    📥 הורד תוכנת התקנה
+
+            <div class="header-toolbar">
+                <a href="dist/SchoolFilter_Setup.exe" download="SchoolFilter_Setup.exe" class="btn-download-header">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>הורד תוכנת התקנה</span>
                 </a>
                 <span id="userRoleBadge" class="badge badge-role" style="display: none;"></span>
-                <span id="statusBadge" class="badge badge-offline">
+                <span id="statusBadge" class="badge badge-neutral">
                     <span class="status-dot"></span>
                     לא מחובר
                 </span>
-                <button id="btnLogout" class="btn btn-outline" style="display: none; padding: 6px 12px; font-size: 13px;" onclick="logoutUser()">התנתק</button>
+                <button id="btnLogout" class="btn btn-outline btn-sm" style="display: none;" onclick="logoutUser()">התנתק</button>
             </div>
         </header>
 
-        <!-- מסך התחברות עם Google -->
-        <div id="authCard" class="card" style="max-width: 540px; margin: 20px auto; text-align: center;">
-            <div style="font-size: 44px; margin-bottom: 8px;">🔐</div>
-            <h2 style="font-size: 21px; font-weight: 800; margin-bottom: 8px;">כניסת מורים ומנהלי מוסדות</h2>
-            <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 22px;">
-                התחבר באמצעות חשבון Google שלך כדי לשלוט על חדרי המחשבים ועגלות הניידים של המוסד שלך.
-            </p>
+        <!-- מסך בית והתחברות (לפני כניסת מנהל/מורה) -->
+        <div id="authCard" class="auth-wrapper">
+            <div class="auth-card">
+                <div class="auth-emblem">🛡️</div>
+                <h2 style="font-size: 25px; font-weight: 900; color: var(--text-main); margin-bottom: 8px;">כניסת מורים ומנהלי מוסדות</h2>
+                <p style="color: var(--text-muted); font-size: 15px; max-width: 460px; margin: 0 auto 24px;">
+                    התחבר באמצעות חשבון Google כדי לנעול או לפתוח חדרי מחשבים בזמן אמת, לנהל רשימות לבנות ולצפות במחשבי התלמידים.
+                </p>
 
-            <button class="btn btn-google" onclick="signInWithGoogle()" style="width: 100%; justify-content: center; margin-bottom: 16px;">
-                <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                התחבר באמצעות חשבון Google
-            </button>
+                <button class="btn btn-google" onclick="signInWithGoogle()">
+                    <svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                    <span>התחבר באמצעות חשבון Google</span>
+                </button>
 
-            <!-- הודעת הגדרה חד-פעמית אם טרם הופעל כפתור Google ב-Firebase Console -->
-            <div id="firebaseSetupHint" class="alert-box" style="display: none;">
-                <strong>⚙️ הפעלה חד-פעמית של Google Auth בפרויקט החדש (`school-filter-2026`):</strong><br>
-                1. פתח את <a href="https://console.firebase.google.com/project/school-filter-2026/authentication/providers" target="_blank" style="color: #2563eb; font-weight: 700;">מסך ספקי ההתחברות ב-Firebase</a>, לחץ על <strong>Get started</strong>, בחר ב-<strong>Google</strong>, העבר למצב <strong>Enable</strong> ולחץ <strong>Save</strong>.<br>
-                2. בלשונית <a href="https://console.firebase.google.com/project/school-filter-2026/authentication/settings" target="_blank" style="color: #2563eb; font-weight: 700;">Settings -> Authorized domains</a> לחץ על <strong>Add domain</strong> והוסף את: <code>sefitrailer.github.io</code>
-            </div>
-
-            <details style="margin-top: 18px; text-align: right; border-top: 1px solid var(--border); padding-top: 14px;">
-                <summary style="cursor: pointer; font-size: 13px; color: var(--text-muted); font-weight: 600;">🔑 כניסת גיבוי למנהל מערכת (GitHub Token)</summary>
-                <div class="input-group" style="margin-top: 10px;">
-                    <input type="password" id="backupTokenInput" placeholder="הדבק GitHub Token של SefiTrailer..." style="direction: ltr; font-size: 14px;">
-                    <button class="btn btn-primary" onclick="signInWithBackupToken()">כניסה</button>
+                <!-- הודעת הגדרה חד-פעמית אם טרם הופעל כפתור Google ב-Firebase Console -->
+                <div id="firebaseSetupHint" class="alert-box" style="display: none;">
+                    <strong>⚙️ הפעלה חד-פעמית של Google Auth בפרויקט (`school-filter-2026`):</strong><br>
+                    1. פתח את <a href="https://console.firebase.google.com/project/school-filter-2026/authentication/providers" target="_blank" style="color: #2563eb; font-weight: 700;">מסך ספקי ההתחברות ב-Firebase</a>, לחץ על <strong>Get started</strong>, בחר ב-<strong>Google</strong>, העבר למצב <strong>Enable</strong> ולחץ <strong>Save</strong>.<br>
+                    2. בלשונית <a href="https://console.firebase.google.com/project/school-filter-2026/authentication/settings" target="_blank" style="color: #2563eb; font-weight: 700;">Settings -> Authorized domains</a> לחץ על <strong>Add domain</strong> והוסף את: <code>sefitrailer.github.io</code>
                 </div>
-            </details>
+
+                <!-- 3 יתרונות ליבה של המערכת -->
+                <div class="features-grid-mini">
+                    <div class="feature-pill-box">
+                        <strong>🔒 מצב שיעור מיידי</strong>
+                        <span>חסימת משחקים ואתרים זרים בכל מחשבי החדר בלחיצת כפתור.</span>
+                    </div>
+                    <div class="feature-pill-box">
+                        <strong>🌐 רשימה לבנה גמישה</strong>
+                        <span>פתיחת אתרי לימוד ייעודיים לכל חדר מחשבים או עגלת ניידים בנפרד.</span>
+                    </div>
+                    <div class="feature-pill-box">
+                        <strong>💻 ניטור ותחזוקה מרחוק</strong>
+                        <span>צפייה בשמות המחשבים המותקנים, עדכון והסרה מרחוק בהרשאת SYSTEM.</span>
+                    </div>
+                </div>
+
+                <!-- תיבת הורדה מהירה של התוכנה לתחנות קצה ישירות ממסך הבית -->
+                <div class="quick-install-strip">
+                    <div style="flex: 1; min-width: 210px;">
+                        <div style="font-size: 14px; font-weight: 800; color: #1e3a8a; margin-bottom: 2px;">📥 התקנה מהירה על מחשב תלמיד</div>
+                        <div style="font-size: 12.5px; color: var(--text-secondary);">
+                            הורד והפעל במחשב התלמיד ושיעור ברירת המחדל ישויך לחדר <code>yeshiva-lab</code>.
+                        </div>
+                    </div>
+                    <a href="dist/SchoolFilter_Setup.exe" download="SchoolFilter_Setup.exe" class="btn btn-outline btn-sm" style="border-color: #93c5fd; color: #1d4ed8; text-decoration: none; font-weight: 800;">
+                        הורד SchoolFilter_Setup.exe
+                    </a>
+                </div>
+
+                <details style="margin-top: 18px; text-align: right; border-top: 1px solid var(--border); padding-top: 14px;">
+                    <summary style="cursor: pointer; font-size: 12.5px; color: var(--text-muted); font-weight: 600;">🔑 כניסת גיבוי למנהל מערכת (GitHub Token)</summary>
+                    <div class="input-group" style="margin-top: 10px; margin-bottom: 0;">
+                        <input type="password" id="backupTokenInput" placeholder="הדבק GitHub Token של SefiTrailer..." style="direction: ltr; font-size: 14px;">
+                        <button class="btn btn-primary" onclick="signInWithBackupToken()">כניסה</button>
+                    </div>
+                </details>
+            </div>
         </div>
 
         <!-- לוח בקרה ראשי -->
@@ -682,118 +1260,161 @@
 
             <!-- תפריט ניווט עליון -->
             <div class="nav-tabs">
-                <button id="tabBtnRooms" class="nav-tab-btn active" onclick="switchMainTab('rooms')">🖥️ חדרים ועגלות</button>
-                <button id="tabBtnUsers" class="nav-tab-btn" onclick="switchMainTab('users')" style="display: none;">👥 מורים ומוסדות</button>
+                <button id="tabBtnRooms" class="nav-tab-btn active" onclick="switchMainTab('rooms')">🖥️ שליטה בחדרי מחשבים ועגלות</button>
+                <button id="tabBtnUsers" class="nav-tab-btn" onclick="switchMainTab('users')" style="display: none;">👥 ניהול מורים ומוסדות</button>
             </div>
 
             <!-- טאב 1: שליטה על חדרי מחשבים -->
             <div id="tabRoomsContent">
 
-                <!-- בחירת מוסד וחדר מחשבים / עגלת ניידים -->
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <span>🏫 בחר חדר מחשבים או עגלת ניידים לשליטה</span>
-                        </div>
-                        <div class="header-actions">
-                            <select id="institutionSelect" onchange="onInstitutionChange()" style="min-width: 180px; font-weight: 700; display: none;"></select>
-                            <button class="btn btn-outline" style="padding: 9px 14px; font-size: 13.5px;" onclick="promptAddRoom()">➕ הוסף חדר / עגלה חדשה</button>
+                <!-- סרגל מדדים מהיר (KPI Overview) -->
+                <div class="kpi-strip">
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #eff6ff; color: #2563eb;">🏫</div>
+                        <div>
+                            <div id="kpiRoomsCount" class="kpi-value">0</div>
+                            <div class="kpi-label">חדרים ועגלות במוסד</div>
                         </div>
                     </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #fef2f2; color: #dc2626;">🔒</div>
+                        <div>
+                            <div id="kpiLockedRoomsCount" class="kpi-value">0</div>
+                            <div class="kpi-label">חדרים נעולים לשיעור</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #ecfdf5; color: #059669;">💻</div>
+                        <div>
+                            <div id="kpiComputersCount" class="kpi-value">0</div>
+                            <div class="kpi-label">מחשבים מותקנים בחדר</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon" style="background: #f5f3ff; color: #6d28d9;">🌐</div>
+                        <div>
+                            <div id="kpiSitesCount" class="kpi-value">0</div>
+                            <div class="kpi-label">אתרים מותרים בחדר</div>
+                        </div>
+                    </div>
+                </div>
 
-                    <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 10px;">
-                        כל חדר מחשבים או עגלת ניידים פועלים <strong>בנפרד לחלוטין</strong>. לחץ על החדר הרצוי כדי לשלוט עליו:
-                    </p>
+                <!-- 1. בחירת מוסד וחדר מחשבים / עגלת ניידים -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-title">
+                                <span>🏫 בחר חדר מחשבים או עגלת ניידים</span>
+                            </div>
+                            <div class="card-subtitle">כל חדר פועל באופן עצמאי. לחץ על החדר המבוקש כדי לצפות במחשבים המותקנים ולשלוט על הסינון:</div>
+                        </div>
+                        <div class="header-actions">
+                            <select id="institutionSelect" onchange="onInstitutionChange()" style="min-width: 190px; font-weight: 700; display: none;"></select>
+                            <button class="btn btn-primary btn-sm" onclick="openAddRoomModal()">➕ הוסף חדר / עגלה חדשה</button>
+                        </div>
+                    </div>
 
                     <div id="roomsGrid" class="rooms-grid"></div>
                 </div>
 
-                <!-- מתג שליטה לחדר הנבחר -->
-                <div class="card" style="border: 2px solid #bfdbfe; background: linear-gradient(to left, #eff6ff, #ffffff);">
+                <!-- 2. מרכז שליטה לחדר הנבחר (נעילה / פתיחה / תצוגת תלמיד) -->
+                <div id="activeRoomCommandCard" class="card command-center-card">
                     <div class="master-control-row">
-                        <div>
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
-                                <span id="activeRoomTitle" style="font-size: 19px; font-weight: 800; color: #1e3a8a;">🖥️ ישיבת נשמת התורה - חדר מחשבים</span>
+                        <div class="room-hero-info">
+                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                <span id="activeRoomTitle" style="font-size: 21px; font-weight: 900; color: #0f172a;">🖥️ ישיבת נשמת התורה - חדר מחשבים</span>
                                 <span id="filterStateBadge" class="badge badge-offline" style="font-size: 13px;">🔒 מצב שיעור פעיל (חסימת משחקים)</span>
                             </div>
-                            <div style="font-size: 13px; color: var(--text-muted);">
-                                קוד חדר להתקנה במחשבי התלמידים: <code id="activeRoomCodeBadge" style="background: #e2e8f0; padding: 2px 8px; border-radius: 6px; font-weight: 700; color: #0f172a;">yeshiva-lab</code>
+                            <div class="room-code-pill">
+                                <span>קוד חדר להתקנה במחשבי החדר:</span>
+                                <code id="activeRoomCodeBadge">yeshiva-lab</code>
+                                <button type="button" class="btn-copy-code" onclick="copyActiveRoomCode()">📋 העתק קוד</button>
                             </div>
                         </div>
                         <div class="master-control-buttons">
-                            <button class="btn btn-lock-action" style="background: #dc2626; color: white;" onclick="setRoomFilterMode(true)">
-                                🔒 נעל חדר זה לשיעור (חסום משחקים)
+                            <button id="btnLockRoomAction" class="btn btn-lock-action btn-mode-lock" onclick="setRoomFilterMode(true)">
+                                🔒 נעל חדר לשיעור (חסום משחקים)
                             </button>
-                            <button class="btn btn-lock-action" style="background: #16a34a; color: white;" onclick="setRoomFilterMode(false)">
-                                🔓 פתח אינטרנט מלא בחדר זה
+                            <button id="btnOpenRoomAction" class="btn btn-lock-action btn-mode-open" onclick="setRoomFilterMode(false)">
+                                🔓 פתח אינטרנט מלא בחדר
                             </button>
-                            <button class="btn btn-outline btn-lock-action" style="background: #ffffff; color: #1e3a8a; border: 1.5px solid #93c5fd;" onclick="openStudentBlockPreview()">
-                                👁️ תצוגת מסך תלמיד בזמן חסימה
+                            <button class="btn btn-outline btn-lock-action" style="background: #ffffff; color: #1e3a8a; border-color: #93c5fd;" onclick="openStudentBlockPreview()">
+                                👁️ מסך תלמיד בזמן חסימה
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. רשימת המחשבים המותקנים בחדר + תחזוקה מרחוק -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-title">
+                                <span>💻 מחשבים שעליהם מותקנת תוכנת הסינון בחדר זה</span>
+                                <span id="roomComputersCountBadge" class="badge badge-role" style="font-size: 12.5px;">0 מחשבים מותקנים</span>
+                            </div>
+                            <div class="card-subtitle">שמות המחשבים המשויכים לחדר הנוכחי ומצב החיבור שלהם בזמן אמת</div>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn btn-outline btn-sm" onclick="refreshRoomComputers()">
+                                🔄 רענן רשימת מחשבים
                             </button>
                         </div>
                     </div>
 
-                    <!-- שליטה מרחוק על תחנות הקצה בחדר (עדכון והסרה מרחוק כולל הרשאת מנהל) -->
-                    <div style="margin-top: 16px; padding-top: 14px; border-top: 1px dashed #bfdbfe; display: flex; flex-direction: column; gap: 10px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <div style="font-size: 13.5px; font-weight: 700; color: #1e3a8a; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                <span>📡 תחזוקת מחשבים מרחוק בחדר זה (פועל בהרשאת SYSTEM / מנהל):</span>
+                    <div id="roomComputersList" class="computers-grid"></div>
+
+                    <!-- סרגל תחזוקת מחשבים מרחוק (עדכון / הסרה / הרשאת מנהל) -->
+                    <div class="remote-toolbar-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                            <div style="font-size: 13.5px; font-weight: 800; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span>📡 פעולות תחזוקה מרחוק על כל מחשבי החדר:</span>
                                 <span id="remoteCommandBadge" class="badge" style="display: none; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 12px;"></span>
                             </div>
                             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                <button class="btn btn-outline" style="padding: 8px 14px; font-size: 13px; border-color: #93c5fd; color: #1d4ed8;" onclick="triggerRemoteRoomCommand('update')">
+                                <button class="btn btn-outline btn-sm" style="border-color: #93c5fd; color: #1d4ed8;" onclick="triggerRemoteRoomCommand('update')">
                                     🔄 עדכון תוכנה מרחוק בחדר זה
                                 </button>
-                                <button class="btn btn-danger" style="padding: 8px 14px; font-size: 13px;" onclick="triggerRemoteRoomCommand('uninstall')">
+                                <button class="btn btn-danger btn-sm" onclick="triggerRemoteRoomCommand('uninstall')">
                                     🗑️ הסרת התוכנה מרחוק בחדר זה
                                 </button>
-                                <button id="btnClearRemoteCmd" class="btn btn-outline" style="display: none; padding: 8px 12px; font-size: 12.5px;" onclick="clearRemoteRoomCommand()">
+                                <button id="btnClearRemoteCmd" class="btn btn-outline btn-sm" style="display: none;" onclick="clearRemoteRoomCommand()">
                                     ✕ בטל פקודה מרחוק
                                 </button>
                             </div>
                         </div>
-                        <details style="background: rgba(255,255,255,0.7); border: 1px solid #bfdbfe; border-radius: 10px; padding: 8px 12px; font-size: 12.5px; color: #1e3a8a;">
-                            <summary style="cursor: pointer; font-weight: 600; user-select: none;">
+
+                        <details class="admin-creds-details">
+                            <summary>
                                 🔑 הגדרת הרשאות מנהל מקומי למשתמשי סטודנט (אופציונלי — למחשבים שבהם שירות ה-SYSTEM טרם הותקן)
                             </summary>
-                            <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
-                                <div style="color: #475569; line-height: 1.4;">
-                                    בגרסה העדכנית, ההתקנה רושמת אוטומטית שירות רקע ברמת <strong>SYSTEM (מנהל מערכת מלא)</strong> כך שעדכון והסרה מרחוק רצים אוטומטית גם בחשבון סטודנט ללא צורך בסיסמה. אם במחשב מותקנת גרסה קודמת ללא שירות SYSTEM, ניתן להזין כאן את שם המשתמש והסיסמה של חשבון המנהל במחשב:
+                            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+                                <div style="color: var(--text-muted); line-height: 1.5; font-size: 12.5px;">
+                                    בגרסה העדכנית, ההתקנה רושמת אוטומטית שירות רקע ברמת <strong>SYSTEM (מנהל מערכת מלא)</strong> כך שעדכון והסרה מרחוק רצים אוטומטית גם בחשבון סטודנט ללא צורך בסיסמה. אם במחשב מותקנת גרסה קודמת ללא שירות SYSTEM, ניתן להזין כאן את פרטי המנהל של המחשב:
                                 </div>
-                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                    <input type="text" id="remoteAdminUserInput" placeholder="שם משתמש מנהל (למשל: Administrator)" style="flex: 1; min-width: 180px; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; direction: ltr;">
-                                    <input type="password" id="remoteAdminPassInput" placeholder="סיסמת מנהל במחשב" style="flex: 1; min-width: 180px; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; direction: ltr;">
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <input type="text" id="remoteAdminUserInput" placeholder="שם משתמש מנהל (למשל: Administrator)" style="flex: 1; min-width: 180px; padding: 9px 12px; font-size: 13.5px; direction: ltr;">
+                                    <input type="password" id="remoteAdminPassInput" placeholder="סיסמת מנהל במחשב" style="flex: 1; min-width: 180px; padding: 9px 12px; font-size: 13.5px; direction: ltr;">
                                 </div>
                             </div>
                         </details>
                     </div>
-
-                    <!-- רשימת המחשבים שעליהם מותקנת תוכנת הסינון בחדר זה -->
-                    <div style="margin-top: 16px; padding-top: 14px; border-top: 1px dashed #bfdbfe;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
-                            <div style="font-size: 14px; font-weight: 800; color: #1e3a8a; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                <span>💻 מחשבים שעליהם מותקנת תוכנת הסינון בחדר זה:</span>
-                                <span id="roomComputersCountBadge" class="badge" style="background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; font-size: 12px; padding: 3px 10px;">0 מחשבים</span>
-                            </div>
-                            <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12.5px; border-color: #93c5fd; color: #1d4ed8;" onclick="refreshRoomComputers()">
-                                🔄 רענן רשימת מחשבים
-                            </button>
-                        </div>
-                        <div id="roomComputersList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;"></div>
-                    </div>
                 </div>
 
-                <!-- עריכת הרשימה הלבנה של החדר הנבחר -->
+                <!-- 4. עריכת הרשימה הלבנה של החדר הנבחר -->
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">
-                            <span>🌐 אתרים מותרים עבור: <span id="whitelistRoomLabel" style="color: var(--primary);">ישיבת נשמת התורה - חדר מחשבים</span></span>
+                        <div class="card-title-group">
+                            <div class="card-title">
+                                <span>🌐 רשימה לבנה — אתרים מותרים עבור: <span id="whitelistRoomLabel" style="color: var(--primary);">ישיבת נשמת התורה - חדר מחשבים</span></span>
+                            </div>
+                            <div class="card-subtitle">כאשר החדר נעול לשיעור, רק האתרים ברשימה זו יהיו פתוחים לגלישה במחשבי התלמידים</div>
                         </div>
                         <div class="header-actions">
-                            <button class="btn btn-outline" style="font-size: 13.5px; padding: 9px 14px;" onclick="copyWhitelistToAllInstitutionRooms()">
-                                📋 העתק רשימה זו לכל חדרי המוסד
+                            <button class="btn btn-outline btn-sm" onclick="copyWhitelistToAllInstitutionRooms()">
+                                📋 העתק לכל חדרי המוסד
                             </button>
-                            <button class="btn btn-success" onclick="saveCurrentRoomToCloud()">
+                            <button class="btn btn-success btn-sm" onclick="saveCurrentRoomToCloud()">
                                 💾 שמור וסנכרן לחדר זה
                             </button>
                         </div>
@@ -802,6 +1423,17 @@
                     <div class="input-group">
                         <input type="text" id="newSiteInput" placeholder="הקלד כתובת אתר להוספה (למשל: kahoot.it או cet.ac.il)..." onkeypress="if(event.key === 'Enter') addSiteToRoom()">
                         <button class="btn btn-primary" onclick="addSiteToRoom()">+ הוסף אתר לחדר</button>
+                    </div>
+
+                    <!-- הוספה מהירה בלחיצה אחת של אתרי לימוד נפוצים -->
+                    <div class="preset-chips-bar">
+                        <span style="font-size: 12.5px; font-weight: 700; color: var(--text-muted); margin-left: 4px;">⚡ הוספה מהירה:</span>
+                        <button type="button" class="preset-chip" onclick="quickAddPresetSite('wikipedia.org')">📚 Wikipedia</button>
+                        <button type="button" class="preset-chip" onclick="quickAddPresetSite('cet.ac.il')">🏫 מט״ח / אופק (cet.ac.il)</button>
+                        <button type="button" class="preset-chip" onclick="quickAddPresetSite('kahoot.it')">🎯 Kahoot</button>
+                        <button type="button" class="preset-chip" onclick="quickAddPresetSite('canva.com')">🎨 Canva</button>
+                        <button type="button" class="preset-chip" onclick="quickAddPresetSite('scratch.mit.edu')">🐱 Scratch</button>
+                        <button type="button" class="preset-chip" onclick="quickAddPresetSite('gov.il')">🇮🇱 Gov.il</button>
                     </div>
 
                     <div id="sitesList" class="sites-list"></div>
@@ -815,11 +1447,11 @@
                 <!-- ניהול מוסדות לימוד (למנהל ראשי) -->
                 <div id="institutionsAdminCard" class="card" style="display: none;">
                     <div class="card-header">
-                        <div class="card-title">🏢 מוסדות לימוד רשומים במערכת</div>
+                        <div class="card-title-group">
+                            <div class="card-title">🏢 מוסדות לימוד רשומים במערכת</div>
+                            <div class="card-subtitle">כל מוסד מופרד לחלוטין ממוסדות אחרים ובעל חדרי מחשבים ומורים משלו</div>
+                        </div>
                     </div>
-                    <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 14px;">
-                        כל מוסד מופרד לחלוטין ממוסדות אחרים ובעל חדרי מחשבים ומורים משלו:
-                    </p>
                     <div class="input-group">
                         <input type="text" id="newInstName" placeholder="שם המוסד החדש (למשל: ישיבת בני עקיבא / תיכון אורט)...">
                         <input type="text" id="newInstCode" placeholder="קוד מוסד באנגלית (למשל: ort-school)..." style="direction: ltr;">
@@ -842,11 +1474,11 @@
                 <!-- ניהול מורים ומשתמשים מורשים -->
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">👩‍🏫 מורים ומנהלים מורשים (התחברות באמצעות Google)</div>
+                        <div class="card-title-group">
+                            <div class="card-title">👩‍🏫 מורים ומנהלים מורשים (התחברות באמצעות Google)</div>
+                            <div class="card-subtitle">הוסף את כתובת ה-Gmail של המורה ושייך אותו למוסד המתאים</div>
+                        </div>
                     </div>
-                    <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 14px;">
-                        הוסף את כתובת ה-Gmail של המורה ושייך אותו למוסד המתאים. רק משתמשים שמופיעים ברשימה זו יוכלו להתחבר עם חשבון Google שלהם:
-                    </p>
                     <div class="input-group">
                         <input type="email" id="newUserEmail" placeholder="כתובת Gmail של המורה (למשל: teacher@gmail.com)..." style="direction: ltr;">
                         <input type="text" id="newUserName" placeholder="שם המורה...">
@@ -883,31 +1515,63 @@
 
     <div id="toast" class="toast"></div>
 
+    <!-- חלונית הוספת חדר מחשבים / עגלה חדשה -->
+    <div id="addRoomModal" class="modal-backdrop" onclick="if(event.target===this) closeAddRoomModal()">
+        <div class="modal-box">
+            <button onclick="closeAddRoomModal()" style="position:absolute; top:16px; left:16px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:50%; width:34px; height:34px; font-size:15px; cursor:pointer; font-weight:bold; color:#334155;">✕</button>
+            <h3 style="font-size: 20px; font-weight: 900; color: var(--text-main); margin-bottom: 6px;">➕ הוספת חדר מחשבים או עגלת ניידים</h3>
+            <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 18px;">
+                הגדר שם וקוד מזהה לחדר החדש. הקוד ישמש בעת התקנת התוכנה במחשבי החדר.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div>
+                    <label style="font-size: 13px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 5px;">שם החדר או העגלה:</label>
+                    <input type="text" id="modalRoomNameInput" placeholder="למשל: חדר מחשבים 2 / עגלת ניידים מדעים..." style="width: 100%;" oninput="autoSuggestRoomCode()">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 5px;">סוג עמדות:</label>
+                    <select id="modalRoomIconSelect" style="width: 100%;" onchange="autoSuggestRoomCode()">
+                        <option value="🖥️">🖥️ חדר מחשבים נייחים / מעבדה</option>
+                        <option value="💻">💻 עגלת מחשבים ניידים</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 5px;">קוד חדר באנגלית (לשיוך המחשבים בהתקנה):</label>
+                    <input type="text" id="modalRoomCodeInput" placeholder="yeshiva-lab2" style="width: 100%; direction: ltr; font-family: Consolas, monospace; font-weight: 700;">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
+                    <button type="button" class="btn btn-outline" onclick="closeAddRoomModal()">ביטול</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmAddRoomModal()">צור חדר חדש</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- חלונית תצוגה מקדימה: מה התלמיד רואה בזמן חסימה -->
-    <div id="studentPreviewModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.82); z-index:9999; align-items:center; justify-content:center; padding:16px; overflow-y:auto;" onclick="if(event.target===this) closeStudentBlockPreview()">
-        <div style="background:#ffffff; max-width:620px; width:100%; border-radius:20px; padding:28px 24px; box-shadow:0 20px 50px rgba(0,0,0,0.45); border-top:8px solid #dc2626; text-align:center; position:relative;">
-            <button onclick="closeStudentBlockPreview()" style="position:absolute; top:14px; left:14px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:50%; width:34px; height:34px; font-size:16px; cursor:pointer; font-weight:bold; color:#334155;">✕</button>
-            <div style="font-size:12px; font-weight:700; color:#64748b; margin-bottom:10px;">👁️ תצוגה מקדימה — כך בדיוק נראה מסך התלמיד כשהוא מנסה להיכנס לאתר או משחק חסום:</div>
+    <div id="studentPreviewModal" class="modal-backdrop" onclick="if(event.target===this) closeStudentBlockPreview()">
+        <div style="background:#ffffff; max-width:620px; width:100%; border-radius:24px; padding:30px 26px; box-shadow:0 25px 60px rgba(0,0,0,0.4); border-top:8px solid #dc2626; text-align:center; position:relative;">
+            <button onclick="closeStudentBlockPreview()" style="position:absolute; top:16px; left:16px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:50%; width:36px; height:36px; font-size:16px; cursor:pointer; font-weight:bold; color:#334155;">✕</button>
+            <div style="font-size:12.5px; font-weight:700; color:#64748b; margin-bottom:10px;">👁️ תצוגה מקדימה — כך בדיוק נראה מסך התלמיד כשהוא מנסה להיכנס לאתר או משחק חסום:</div>
             <div style="width:64px; height:64px; background:#fef2f2; color:#dc2626; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:32px; margin-bottom:12px; border:2px solid #fecaca;">🛑</div>
-            <h2 style="color:#dc2626; margin:0 0 10px 0; font-size:23px; font-weight:800;">הגלישה לאתר זה נחסמה</h2>
+            <h2 style="color:#dc2626; margin:0 0 10px 0; font-size:24px; font-weight:900;">הגלישה לאתר זה נחסמה</h2>
             <div id="previewRoomBadge" style="display:inline-block; background:#fef3c7; color:#92400e; font-weight:700; padding:6px 16px; border-radius:999px; font-size:13.5px; margin-bottom:12px; border:1px solid #fde68a;">📚 מצב שיעור פעיל: ישיבת נשמת התורה - חדר מחשבים</div>
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 14px; margin:6px 0 14px 0; font-family:Consolas,monospace; font-size:14.5px; color:#334155; direction:ltr; font-weight:600;">www.youtube.com / RobloxPlayerBeta.exe</div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 14px; margin:6px 0 14px 0; font-family:Consolas,monospace; font-size:14.5px; color:#334155; direction:ltr; font-weight:700;">www.youtube.com / RobloxPlayerBeta.exe</div>
             <p style="color:#475569; font-size:14.5px; line-height:1.6; margin:0 0 16px 0;">
                 הכניסה לאתר או למשחק זה חסומה כעת מאחר שהמחשב נמצא <strong>במצב שיעור</strong>.<br>
                 להלן <strong>הרשימה הלבנה</strong> של האתרים המותרים כעת בחדר שלך:
             </p>
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:14px; padding:15px; text-align:center;">
-                <div style="font-size:13.5px; font-weight:800; color:#166534; margin-bottom:10px;">✅ הרשימה הלבנה שלך לשיעור (לחיצה של התלמיד פותחת את האתר):</div>
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:16px; padding:16px; text-align:center;">
+                <div style="font-size:13.5px; font-weight:800; color:#166534; margin-bottom:12px;">✅ הרשימה הלבנה שלך לשיעור (לחיצה של התלמיד פותחת את האתר):</div>
                 <div id="previewWhitelistLinks" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center;"></div>
             </div>
-            <div style="margin-top:18px;">
-                <button class="btn btn-primary" onclick="closeStudentBlockPreview()" style="min-width:160px;">סגור תצוגה מקדימה</button>
+            <div style="margin-top:20px;">
+                <button class="btn btn-primary" onclick="closeStudentBlockPreview()" style="min-width:170px;">סגור תצוגה מקדימה</button>
             </div>
         </div>
     </div>
 
     <footer>
-        SchoolFilter &copy; מערכת ניהול סינון אינטרנט לחדרי מחשבים ועגלות ניידים | מופעל על גבי Google Firebase
+        <strong>SchoolFilter</strong> &copy; מערכת ניהול וסינון אינטרנט לחדרי מחשבים ועגלות ניידים
     </footer>
 
     <!-- Firebase SDKs -->
@@ -930,7 +1594,7 @@
         const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents`;
         const OWNER_EMAIL = "shalomyosefzeev@gmail.com";
 
-        let currentUser = null; // { email, name, role, institutionId, institutionName }
+        let currentUser = null;
         let institutions = [];
         let allRooms = [];
         let allUsers = [];
@@ -1021,7 +1685,7 @@
             document.getElementById('btnLogout').style.display = 'none';
             document.getElementById('userRoleBadge').style.display = 'none';
             const badge = document.getElementById('statusBadge');
-            badge.className = 'badge badge-offline';
+            badge.className = 'badge badge-neutral';
             badge.innerHTML = '<span class="status-dot"></span> לא מחובר';
         }
 
@@ -1049,19 +1713,18 @@
                 currentUser = userDoc;
                 document.getElementById('authCard').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
-                document.getElementById('btnLogout').style.display = 'inline-block';
+                document.getElementById('btnLogout').style.display = 'inline-flex';
 
                 const badge = document.getElementById('statusBadge');
                 badge.className = 'badge badge-online';
-                badge.innerHTML = `<span class="status-dot"></span> ${currentUser.email}`;
+                badge.innerHTML = `<span class="status-dot pulse"></span> ${currentUser.email}`;
 
                 const roleBadge = document.getElementById('userRoleBadge');
                 roleBadge.style.display = 'inline-flex';
                 roleBadge.textContent = currentUser.role === 'superadmin'
-                    ? '👑 מנהל על (כל המוסדות)'
+                    ? '👑 מנהל על'
                     : (currentUser.role === 'inst_admin' ? `🏫 מנהל מוסד (${currentUser.institutionName})` : `👨‍🏫 מורה (${currentUser.institutionName})`);
 
-                // Show/hide admin controls
                 const canManageUsers = (currentUser.role === 'superadmin' || currentUser.role === 'inst_admin');
                 document.getElementById('tabBtnUsers').style.display = canManageUsers ? 'inline-block' : 'none';
                 document.getElementById('institutionsAdminCard').style.display = (currentUser.role === 'superadmin') ? 'block' : 'none';
@@ -1133,7 +1796,6 @@
         }
 
         async function loadAllCloudData() {
-            // 1. Fetch Institutions
             const instRes = await fetch(`${FIRESTORE_BASE}/institutions?pageSize=100`);
             const instJson = await instRes.json();
             institutions = (instJson.documents || []).map(doc => ({
@@ -1142,7 +1804,6 @@
                 ownerEmail: getStr(doc, 'ownerEmail')
             }));
 
-            // 2. Fetch Rooms
             const roomsRes = await fetch(`${FIRESTORE_BASE}/rooms?pageSize=200`);
             const roomsJson = await roomsRes.json();
             allRooms = (roomsJson.documents || []).map(doc => ({
@@ -1158,7 +1819,6 @@
                 updatedBy: getStr(doc, 'updatedBy')
             }));
 
-            // 3. Fetch Users
             const usersRes = await fetch(`${FIRESTORE_BASE}/users?pageSize=200`);
             const usersJson = await usersRes.json();
             allUsers = (usersJson.documents || []).map(doc => ({
@@ -1169,7 +1829,6 @@
                 institutionName: getStr(doc, 'institutionName') || 'הישיבה שלנו'
             }));
 
-            // 4. Fetch Installed Computers
             await fetchComputersFromCloud();
         }
 
@@ -1222,20 +1881,50 @@
             renderActiveRoomPanel();
         }
 
+        function copyActiveRoomCode() {
+            const room = getCurrentRoom();
+            if (!room) return;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(room.roomId);
+            }
+            showToast(`📋 קוד החדר '${room.roomId}' הועתק ללוח!`);
+        }
+
+        function updateKpiStrip() {
+            const instRooms = getRoomsForSelectedInstitution();
+            const lockedCount = instRooms.filter(r => r.filterEnabled).length;
+            const currentRoom = getCurrentRoom();
+            const roomPcsCount = currentRoom
+                ? allComputers.filter(c => c.roomId.toLowerCase() === currentRoom.roomId.toLowerCase()).length
+                : 0;
+            const roomSitesCount = currentRoom ? CountBaseDomains(currentRoom.whitelist) : 0;
+
+            const elRooms = document.getElementById('kpiRoomsCount');
+            const elLocked = document.getElementById('kpiLockedRoomsCount');
+            const elPcs = document.getElementById('kpiComputersCount');
+            const elSites = document.getElementById('kpiSitesCount');
+
+            if (elRooms) elRooms.textContent = instRooms.length;
+            if (elLocked) elLocked.textContent = `${lockedCount} / ${instRooms.length}`;
+            if (elPcs) elPcs.textContent = roomPcsCount;
+            if (elSites) elSites.textContent = roomSitesCount;
+        }
+
         function renderRoomsGrid() {
             const container = document.getElementById('roomsGrid');
             const rooms = getRoomsForSelectedInstitution();
+            updateKpiStrip();
 
             if (rooms.length === 0) {
-                container.innerHTML = `<div style="grid-column: 1/-1; padding: 20px; text-align: center; color: var(--text-muted);">אין עדיין חדרי מחשבים במוסד זה. לחץ על '➕ הוסף חדר / עגלה חדשה'.</div>`;
+                container.innerHTML = `<div style="grid-column: 1/-1; padding: 28px; text-align: center; color: var(--text-muted); background: var(--surface-muted); border-radius: 14px; border: 1px dashed var(--border-strong);">אין עדיין חדרי מחשבים במוסד זה. לחץ על '➕ הוסף חדר / עגלה חדשה'.</div>`;
                 return;
             }
 
             container.innerHTML = rooms.map(r => {
                 const isActive = (r.roomId === selectedRoomId);
                 const statusBadge = r.filterEnabled
-                    ? `<span class="badge badge-offline" style="font-size: 11px; padding: 3px 8px;">🔒 נעול לשיעור</span>`
-                    : `<span class="badge badge-online" style="font-size: 11px; padding: 3px 8px;">🔓 אינטרנט פתוח</span>`;
+                    ? `<span class="badge badge-offline" style="font-size: 11.5px; padding: 4px 10px;">🔒 נעול לשיעור</span>`
+                    : `<span class="badge badge-online" style="font-size: 11.5px; padding: 4px 10px;">🔓 אינטרנט פתוח</span>`;
                 const roomComputersCount = allComputers.filter(c => c.roomId.toLowerCase() === r.roomId.toLowerCase()).length;
 
                 return `
@@ -1244,10 +1933,13 @@
                             <span class="room-tab-title">${r.icon} ${r.name}</span>
                             ${statusBadge}
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 6px; flex-wrap: wrap;">
+                        <div class="room-tab-footer">
                             <span class="room-tab-code">${r.roomId}</span>
-                            <span style="font-size: 12px; color: #1d4ed8; font-weight: 700;">💻 ${roomComputersCount} מחשבים</span>
-                            <span style="font-size: 12px; color: var(--text-muted);">${CountBaseDomains(r.whitelist)} אתרים</span>
+                            <div class="room-tab-stats">
+                                <span style="color: #1d4ed8; font-weight: 800;">💻 ${roomComputersCount} מחשבים</span>
+                                <span>•</span>
+                                <span>🌐 ${CountBaseDomains(r.whitelist)} אתרים</span>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1263,18 +1955,29 @@
         function renderActiveRoomPanel() {
             const room = getCurrentRoom();
             if (!room) return;
+            updateKpiStrip();
 
             document.getElementById('activeRoomTitle').textContent = `${room.icon} ${room.name} (${room.institutionName})`;
             document.getElementById('activeRoomCodeBadge').textContent = room.roomId;
             document.getElementById('whitelistRoomLabel').textContent = `${room.name}`;
 
             const badge = document.getElementById('filterStateBadge');
+            const cmdCard = document.getElementById('activeRoomCommandCard');
+            const btnLock = document.getElementById('btnLockRoomAction');
+            const btnOpen = document.getElementById('btnOpenRoomAction');
+
             if (room.filterEnabled) {
                 badge.className = 'badge badge-offline';
                 badge.textContent = '🔒 מצב שיעור פעיל (חסימת משחקים)';
+                if (cmdCard) cmdCard.classList.remove('room-open-mode');
+                if (btnLock) btnLock.classList.add('btn-mode-active-ring');
+                if (btnOpen) btnOpen.classList.remove('btn-mode-active-ring');
             } else {
                 badge.className = 'badge badge-online';
                 badge.textContent = '🔓 אינטרנט חופשי פעיל בחדר זה';
+                if (cmdCard) cmdCard.classList.add('room-open-mode');
+                if (btnOpen) btnOpen.classList.add('btn-mode-active-ring');
+                if (btnLock) btnLock.classList.remove('btn-mode-active-ring');
             }
 
             const remoteBadge = document.getElementById('remoteCommandBadge');
@@ -1311,8 +2014,10 @@
 
             if (roomComputers.length === 0) {
                 container.innerHTML = `
-                    <div style="grid-column: 1/-1; background: rgba(255,255,255,0.75); border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #64748b; text-align: center;">
-                        עדיין לא נרשמו מחשבים בחדר זה (<code>${room.roomId}</code>). מיד עם התקנת התוכנה או הפעלת מחשב משויך לחדר זה, שמו יופיע כאן אוטומטית.
+                    <div style="grid-column: 1/-1; background: var(--surface-muted); border: 1.5px dashed var(--border-strong); border-radius: 14px; padding: 20px; font-size: 13.5px; color: var(--text-muted); text-align: center;">
+                        <div style="font-size: 24px; margin-bottom: 6px;">🖥️</div>
+                        <strong style="color: var(--text-secondary);">עדיין לא נרשמו מחשבים בחדר זה (<code>${room.roomId}</code>)</strong><br>
+                        מיד עם התקנת התוכנה או הפעלת מחשב המשויך לקוד החדר <code>${room.roomId}</code>, שם המחשב יופיע כאן אוטומטית.
                     </div>
                 `;
                 return;
@@ -1321,24 +2026,25 @@
             const nowMs = Date.now();
             container.innerHTML = roomComputers.map(c => {
                 const seenMs = c.lastSeen ? Date.parse(c.lastSeen) : 0;
-                const isOnlineNow = seenMs > 0 && (nowMs - seenMs) < 90000; // active within last 90s
-                const statusColor = isOnlineNow ? '#16a34a' : '#94a3b8';
+                const isOnlineNow = seenMs > 0 && (nowMs - seenMs) < 90000;
+                const statusColor = isOnlineNow ? '#10b981' : '#94a3b8';
                 const statusText = isOnlineNow
-                    ? (c.filterActive ? 'מחובר כעת (נעול לשיעור)' : 'מחובר כעת (אינטרנט פתוח)')
-                    : 'מותקן (לא דווח בדקה האחרונה)';
+                    ? (c.filterActive ? 'מחובר כעת • נעול לשיעור' : 'מחובר כעת • אינטרנט פתוח')
+                    : 'מותקן בחדר';
 
                 return `
-                    <div style="background: #ffffff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                    <div class="computer-card ${isOnlineNow ? 'is-online' : ''}">
                         <div style="min-width: 0;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor}; display: inline-block; flex-shrink: 0;"></span>
-                                <strong style="font-size: 13.5px; color: #0f172a; direction: ltr; display: inline-block; word-break: break-all;">🖥️ ${c.computerName}</strong>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="width: 9px; height: 9px; border-radius: 50%; background: ${statusColor}; display: inline-block; flex-shrink: 0; ${isOnlineNow ? 'box-shadow: 0 0 0 3px rgba(16,185,129,0.22);' : ''}"></span>
+                                <span class="computer-name">🖥️ ${c.computerName}</span>
                             </div>
-                            <div style="font-size: 11.5px; color: #64748b; margin-top: 3px;">
-                                ${c.userName ? `משתמש: <span style="direction:ltr;display:inline-block;">${c.userName}</span> • ` : ''}${statusText}
+                            <div class="computer-meta">
+                                ${c.userName ? `<span>👤 <span style="direction:ltr;display:inline-block;font-weight:600;">${c.userName}</span></span><span>•</span>` : ''}
+                                <span style="color: ${isOnlineNow ? '#059669' : '#64748b'}; font-weight: ${isOnlineNow ? '700' : '500'};">${statusText}</span>
                             </div>
                         </div>
-                        <button onclick="removeComputerFromRoom('${c.docId}', '${c.computerName.replace(/'/g, "\\'")}')" title="הסר מחשב מהרשימה" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font-size: 12px; font-weight: bold; flex-shrink: 0;">✕</button>
+                        <button class="btn-remove-pc" onclick="removeComputerFromRoom('${c.docId}', '${c.computerName.replace(/'/g, "\\'")}')" title="הסר מחשב מהרשימה">✕</button>
                     </div>
                 `;
             }).join('');
@@ -1356,11 +2062,11 @@
                 const isCore = coreSites.includes(domain);
                 return `
                     <div class="site-item">
-                        <div>
+                        <div style="min-width: 0;">
                             <div class="site-domain">${domain}</div>
-                            <span class="site-tag">${isCore ? 'אתר ליבה מוגן' : 'כולל תתי-דומיינים (*)'}</span>
+                            <span class="site-tag ${isCore ? 'core' : ''}">${isCore ? '🛡️ אתר ליבה מוגן' : '🌐 כולל תתי-דומיינים (*)'}</span>
                         </div>
-                        <button class="btn btn-danger" style="padding: 6px 12px; font-size: 13px;" onclick="removeSiteFromRoom('${domain}')">הסר</button>
+                        <button class="btn btn-danger btn-sm" onclick="removeSiteFromRoom('${domain}')">הסר</button>
                     </div>
                 `;
             }).join('');
@@ -1374,7 +2080,7 @@
             return domain;
         }
 
-        function addSiteToRoom() {
+        async function addSiteToRoom() {
             const room = getCurrentRoom();
             if (!room) return;
             const input = document.getElementById('newSiteInput');
@@ -1387,15 +2093,29 @@
             input.value = '';
             renderSitesList(room);
             renderRoomsGrid();
-            showToast(`האתר ${domain} נוסף ל-${room.name}. לחץ 'שמור וסנכרן לחדר זה' להחלה.`);
+            await saveRoomDocument(room);
+            showToast(`✅ האתר ${domain} נוסף וסונכרן אוטומטית ל-${room.name}!`);
         }
 
-        function removeSiteFromRoom(domain) {
+        async function quickAddPresetSite(domain) {
+            const room = getCurrentRoom();
+            if (!room) return;
+            if (!room.whitelist.includes(domain)) room.whitelist.push(domain);
+            if (!room.whitelist.includes('*.' + domain)) room.whitelist.push('*.' + domain);
+            renderSitesList(room);
+            renderRoomsGrid();
+            await saveRoomDocument(room);
+            showToast(`⚡ ${domain} נוסף וסונכרן ל-${room.name}!`);
+        }
+
+        async function removeSiteFromRoom(domain) {
             const room = getCurrentRoom();
             if (!room) return;
             room.whitelist = room.whitelist.filter(s => s !== domain && s !== '*.' + domain);
             renderSitesList(room);
             renderRoomsGrid();
+            await saveRoomDocument(room);
+            showToast(`🗑️ האתר ${domain} הוסר מ-${room.name}.`);
         }
 
         async function setRoomFilterMode(enableBlock) {
@@ -1482,7 +2202,6 @@
         }
 
         async function saveRoomDocument(room) {
-            // Ensure every domain has both base and *.base
             const expanded = [];
             for (const item of (room.whitelist || [])) {
                 const base = item.replace(/^\*\./, '');
@@ -1524,31 +2243,57 @@
             }
         }
 
-        async function promptAddRoom() {
+        function openAddRoomModal() {
             const inst = institutions.find(i => i.code === selectedInstitutionId) || { code: 'yeshiva', name: 'הישיבה שלנו' };
-            const roomName = prompt(`הקלד שם עבור החדר או עגלת המחשבים החדשה במוסד '${inst.name}' (למשל: עגלת מחשבים ניידים 3 / מעבדת פיזיקה):`);
-            if (!roomName || !roomName.trim()) return;
+            document.getElementById('modalRoomNameInput').value = '';
+            document.getElementById('modalRoomIconSelect').value = '🖥️';
+            document.getElementById('modalRoomCodeInput').value = `${inst.code}-lab${getRoomsForSelectedInstitution().length + 1}`;
+            document.getElementById('addRoomModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('modalRoomNameInput').focus(), 50);
+        }
 
-            const isCart = roomName.includes('עגלה') || roomName.includes('נייד');
-            const defaultCode = `${inst.code}-${isCart ? 'cart' : 'lab'}${ getRoomsForSelectedInstitution().length + 1 }`;
-            const roomCodeInput = prompt(`בחר קוד מזהה באנגלית לחדר זה (ישמש בעת ההתקנה במחשבי החדר):`, defaultCode);
-            if (!roomCodeInput || !roomCodeInput.trim()) return;
+        function closeAddRoomModal() {
+            document.getElementById('addRoomModal').style.display = 'none';
+        }
 
-            const cleanCode = roomCodeInput.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+        function autoSuggestRoomCode() {
+            const inst = institutions.find(i => i.code === selectedInstitutionId) || { code: 'yeshiva', name: 'הישיבה שלנו' };
+            const nameVal = document.getElementById('modalRoomNameInput').value;
+            const iconVal = document.getElementById('modalRoomIconSelect').value;
+            const isCart = iconVal === '💻' || nameVal.includes('עגלה') || nameVal.includes('נייד');
+            if (nameVal.includes('עגלה') || nameVal.includes('נייד')) {
+                document.getElementById('modalRoomIconSelect').value = '💻';
+            }
+            document.getElementById('modalRoomCodeInput').value = `${inst.code}-${isCart ? 'cart' : 'lab'}${getRoomsForSelectedInstitution().length + 1}`;
+        }
+
+        async function confirmAddRoomModal() {
+            const inst = institutions.find(i => i.code === selectedInstitutionId) || { code: 'yeshiva', name: 'הישיבה שלנו' };
+            const roomName = document.getElementById('modalRoomNameInput').value.trim();
+            const roomIcon = document.getElementById('modalRoomIconSelect').value;
+            const roomCodeInput = document.getElementById('modalRoomCodeInput').value.trim();
+
+            if (!roomName || !roomCodeInput) {
+                alert('אנא הזן שם חדר וקוד חדר באנגלית');
+                return;
+            }
+
+            const cleanCode = roomCodeInput.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
             const newRoom = {
                 roomId: cleanCode,
-                name: roomName.trim(),
-                icon: isCart ? '💻' : '🖥️',
+                name: roomName,
+                icon: roomIcon || '🖥️',
                 institutionId: inst.code,
                 institutionName: inst.name,
                 filterEnabled: true,
                 whitelist: [...coreSites],
-                updatedBy: currentUser.email
+                updatedBy: currentUser ? currentUser.email : ''
             };
 
             await saveRoomDocument(newRoom);
             allRooms.push(newRoom);
             selectedRoomId = newRoom.roomId;
+            closeAddRoomModal();
             renderRoomsGrid();
             renderActiveRoomPanel();
             renderAdminTables();
@@ -1566,14 +2311,12 @@
         }
 
         function renderAdminTables() {
-            // Populate institution select for adding users
             const userInstSel = document.getElementById('newUserInstSelect');
             const allowedInsts = (currentUser.role === 'superadmin')
                 ? institutions
                 : institutions.filter(i => i.code === currentUser.institutionId);
             userInstSel.innerHTML = allowedInsts.map(i => `<option value="${i.code}">${i.name}</option>`).join('');
 
-            // Institutions table
             const instTbody = document.getElementById('institutionsTableBody');
             instTbody.innerHTML = institutions.map(inst => {
                 const count = allRooms.filter(r => r.institutionId === inst.code).length;
@@ -1586,7 +2329,6 @@
                 `;
             }).join('');
 
-            // Users table
             const usersTbody = document.getElementById('usersTableBody');
             const visibleUsers = (currentUser.role === 'superadmin')
                 ? allUsers
@@ -1602,7 +2344,7 @@
                         <td>${u.institutionName}</td>
                         <td>${roleLabel}</td>
                         <td>
-                            ${isOwner ? '<span style="font-size:12px;color:#64748b;">בעל המערכת</span>' : `<button class="btn btn-danger" style="padding: 4px 10px; font-size: 12px;" onclick="removeAuthorizedUser('${u.email}')">הסר הרשאה</button>`}
+                            ${isOwner ? '<span style="font-size:12px;color:#64748b;">בעל המערכת</span>' : `<button class="btn btn-danger btn-sm" onclick="removeAuthorizedUser('${u.email}')">הסר הרשאה</button>`}
                         </td>
                     </tr>
                 `;
@@ -1632,7 +2374,6 @@
                 body: JSON.stringify(body)
             });
 
-            // Also create a default Computer Lab room for the new institution
             const defaultRoom = {
                 roomId: `${rawCode}-lab1`,
                 name: 'חדר מחשבים ראשי',
