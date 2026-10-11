@@ -800,6 +800,15 @@ namespace SchoolFilter.Controller
         {
             List<string> effectiveList = new List<string>(userWhitelist);
 
+            string[] coreInfraDomains = new string[]
+            {
+                "sefitrailer.github.io", "raw.githubusercontent.com", "firestore.googleapis.com"
+            };
+            foreach (string infra in coreInfraDomains)
+            {
+                if (!effectiveList.Contains(infra)) effectiveList.Add(infra);
+            }
+
             // If Google Gemini or Google Classroom is in the whitelist, include required Google static/auth sub-resources
             bool hasGoogle = effectiveList.Contains("gemini.google.com") || effectiveList.Contains("classroom.google.com");
             if (hasGoogle)

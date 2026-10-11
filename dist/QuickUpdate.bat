@@ -10,11 +10,11 @@ if exist "C:\Program Files\SchoolFilter\SchoolFilterCtl.exe" (
     "C:\Program Files\SchoolFilter\SchoolFilterCtl.exe" allow >nul 2>&1
 )
 
-:: 2. Use local SchoolFilter_Setup.exe if sitting in the same folder (e.g. USB / Network Share), otherwise download from Cloud
+:: 2. Use local SchoolFilter_Setup.exe if sitting in the same folder (e.g. USB / Network Share), otherwise download from Cloud (bypassing proxy)
 if exist "%~dp0SchoolFilter_Setup.exe" (
     copy /Y "%~dp0SchoolFilter_Setup.exe" "%PAYLOAD%" >nul 2>&1
 ) else (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe' -OutFile '%PAYLOAD%' -UseBasicParsing"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = 3072; $wc = New-Object System.Net.WebClient; $wc.Proxy = $null; $wc.DownloadFile('https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe', '%PAYLOAD%')"
 )
 
 :: 3. Trigger existing SYSTEM task (runs as NT AUTHORITY\SYSTEM with zero UAC prompts!)

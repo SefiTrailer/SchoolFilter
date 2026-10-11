@@ -10,7 +10,7 @@ set "LOCAL_SETUP=%~dp0SchoolFilter_Setup.exe"
 if not exist "%LOCAL_SETUP%" (
     set "LOCAL_SETUP=%TEMP%\SchoolFilter_Setup.exe"
     echo Downloading latest SchoolFilter_Setup.exe from Cloud...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe' -OutFile '%TEMP%\SchoolFilter_Setup.exe' -UseBasicParsing"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = 3072; $wc = New-Object System.Net.WebClient; $wc.Proxy = $null; $wc.DownloadFile('https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe', '%TEMP%\SchoolFilter_Setup.exe')"
 )
 
 :: Update local machine first
@@ -18,6 +18,9 @@ echo [Local] Updating this computer (%COMPUTERNAME%)...
 if not exist "%ProgramData%\SchoolFilter" mkdir "%ProgramData%\SchoolFilter" >nul 2>&1
 copy /Y "%LOCAL_SETUP%" "%ProgramData%\SchoolFilter\remote_update_setup.exe" >nul 2>&1
 schtasks /Run /TN "SchoolFilterRemoteUpdate" >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    start "" /wait "%ProgramData%\SchoolFilter\remote_update_setup.exe" /STUDENT /VERYSILENT /SUPPRESSMSGBOXES
+)
 
 :: Loop through NISHMAS01 to NISHMAS25 on the LAN
 for /L %%i in (1,1,25) do (
@@ -52,7 +55,7 @@ if exist "\\%PC%\C$\ProgramData\SchoolFilter" (
         goto :eof
     )
 )
-wmic /node:"%PC%" process call create "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command \"[Net.ServicePointManager]::SecurityProtocol=3072; Invoke-WebRequest -Uri 'https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe' -OutFile 'C:\ProgramData\SchoolFilter\remote_update_setup.exe' -UseBasicParsing; schtasks /Run /TN SchoolFilterRemoteUpdate\"" >nul 2>&1
+wmic /node:"%PC%" process call create "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command \"[Net.ServicePointManager]::SecurityProtocol=3072; $wc=New-Object System.Net.WebClient; $wc.Proxy=$null; $wc.DownloadFile('https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe','C:\ProgramData\SchoolFilter\remote_update_setup.exe'); schtasks /Run /TN SchoolFilterRemoteUpdate\"" >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo   -^> [SUCCESS] Triggered WMI silent download ^& update on %PC%!
 ) else (
