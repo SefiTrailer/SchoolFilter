@@ -69,19 +69,29 @@ namespace SchoolFilter.Controller
             "drive.google.com"
         };
 
+        private static readonly string LastKilledGameFilePath = Path.Combine(DataDir, "last_killed_game.txt");
+
         // Background telemetry/CDN domains that browsers request automatically without user navigation.
         private static readonly string[] SilentTelemetryDomains = new string[]
         {
             "googleapis.com", "gstatic.com", "google.com", "gvt1.com", "gvt2.com", "1e100.net",
             "microsoft.com", "windows.com", "windowsupdate.com", "live.com", "msn.com", "bing.com",
             "msedge.net", "office.com", "office365.com", "office.net", "skype.com", "sfx.ms",
-            "azureedge.net", "trafficmanager.net", "visualstudio.com", "aka.ms",
+            "azureedge.net", "trafficmanager.net", "visualstudio.com", "aka.ms", "windows.net",
+            "msftconnecttest.com", "msftncsi.com", "msauth.net", "msftauth.net", "bing.net",
             "cloudflare.com", "cloudflare-dns.com", "amazonaws.com", "akamai.net", "akamaihd.net",
+            "akamaized.net", "cloudfront.net", "b-cdn.net", "fastlylb.net",
             "edgekey.net", "edgesuite.net", "fastly.net", "digicert.com", "lencr.org", "sectigo.com",
             "verisign.com", "globalsign.com", "identrust.com", "pki.goog", "ocsp", "crl",
             "doubleclick.net", "googlesyndication.com", "googleadservices.com", "google-analytics.com",
             "googletagmanager.com", "adnxs.com", "rubiconproject.com", "criteo.com", "taboola.com",
-            "outbrain.com", "mozilla.org", "mozilla.com", "mozilla.net", "firefox.com",
+            "outbrain.com", "scorecardresearch.com", "amazon-adsystem.com", "casalemedia.com",
+            "pubmatic.com", "openx.net", "demdex.net", "krxd.net", "rlcdn.com", "bidswitch.net",
+            "sharethrough.com", "smartadserver.com", "clarity.ms", "hotjar.com", "sentry.io",
+            "datadoghq.com", "newrelic.com", "jsdelivr.net", "unpkg.com", "fontawesome.com",
+            "typekit.net", "wp.com", "gravatar.com", "ytimg.com", "ggpht.com", "fbcdn.net",
+            "facebook.net", "licdn.com", "twimg.com", "pinimg.com", "yahoo.com", "yimg.com",
+            "mozilla.org", "mozilla.com", "mozilla.net", "firefox.com",
             "opera.com", "brave.com", "localhost", "127.0.0.1"
         };
 
@@ -106,10 +116,15 @@ namespace SchoolFilter.Controller
             { "steam", "Steam" },
             { "cs2", "Counter-Strike 2" },
             { "csgo", "Counter-Strike" },
+            { "cstrike", "Counter-Strike 1.6" },
             { "dota2", "Dota 2" },
             { "hl2", "Half-Life / Source Game" },
+            { "hl", "Half-Life" },
             { "gta5", "GTA V" },
             { "PlayGTAV", "GTA V" },
+            { "gta_sa", "GTA San Andreas" },
+            { "gta-vc", "GTA Vice City" },
+            { " gta3", "GTA III" },
             { "FiveM", "FiveM (GTA RP)" },
             { "RiotClientServices", "Riot Games" },
             { "RiotClientUx", "Riot Games" },
@@ -129,7 +144,111 @@ namespace SchoolFilter.Controller
             { "HD-Player", "BlueStacks Android Emulator" },
             { "Bluestacks", "BlueStacks" },
             { "LDPlayer", "LDPlayer Emulator" },
-            { "Nox", "Nox Emulator" }
+            { "dnplayer", "LDPlayer Emulator" },
+            { "Nox", "Nox Emulator" },
+            { "MEmu", "MEmu Emulator" },
+            { "icytower", "Icy Tower" },
+            { "icytower13", "Icy Tower" },
+            { "icytower14", "Icy Tower" },
+            { "icytower15", "Icy Tower" },
+            { "lf2", "Little Fighter 2" },
+            { "ChickenInvaders", "Chicken Invaders" },
+            { "CI2", "Chicken Invaders 2" },
+            { "CI3", "Chicken Invaders 3" },
+            { "CI4", "Chicken Invaders 4" },
+            { "CI5", "Chicken Invaders 5" },
+            { "ra2", "Command & Conquer: Red Alert 2" },
+            { "yuri", "Red Alert 2: Yuri's Revenge" },
+            { "gamemd", "Red Alert 2" },
+            { "generals", "Command & Conquer: Generals" },
+            { "empires2", "Age of Empires II" },
+            { "age2_x1", "Age of Empires II" },
+            { "AoE2DE", "Age of Empires II" },
+            { "AoE2DE_s", "Age of Empires II" },
+            { "Stronghold", "Stronghold" },
+            { "StrongholdCrusader", "Stronghold Crusader" },
+            { "Crusader", "Stronghold Crusader" },
+            { "Worms", "Worms" },
+            { "WA", "Worms Armageddon" },
+            { "WWP", "Worms World Party" },
+            { "Claw", "Captain Claw" },
+            { "jazz2", "Jazz Jackrabbit 2" },
+            { "dave", "Dangerous Dave" },
+            { "dosbox", "DOSBox Game Emulator" },
+            { "retroarch", "RetroArch Emulator" },
+            { "mame", "MAME Arcade Emulator" },
+            { "project64", "Project64 Emulator" },
+            { "dolphin", "Dolphin Emulator" },
+            { "pcsx2", "PCSX2 Emulator" },
+            { "ppsspp", "PPSSPP Emulator" },
+            { "PPSSPPWindows", "PPSSPP Emulator" },
+            { "PPSSPPWindows64", "PPSSPP Emulator" },
+            { "GeometryDash", "Geometry Dash" },
+            { "Undertale", "Undertale" },
+            { "Cuphead", "Cuphead" },
+            { "Terraria", "Terraria" },
+            { "Brawlhalla", "Brawlhalla" },
+            { "Hollow Knight", "Hollow Knight" },
+            { "Celeste", "Celeste" },
+            { "Subnautica", "Subnautica" },
+            { "PlantsVsZombies", "Plants vs. Zombies" },
+            { "popcapgame1", "Plants vs. Zombies" },
+            { "Zuma", "Zuma" },
+            { "Bejeweled", "Bejeweled" },
+            { "dxball", "DX-Ball" },
+            { "blobby", "Blobby Volley" },
+            { "TrackMania", "TrackMania" },
+            { "TmForever", "TrackMania" },
+            { "eurotrucks2", "Euro Truck Simulator 2" },
+            { "speed", "Need for Speed" },
+            { "nfsw", "Need for Speed" },
+            { "nfs", "Need for Speed" },
+            { "fifa", "FIFA" },
+            { "FC24", "EA Sports FC 24" },
+            { "FC25", "EA Sports FC 25" },
+            { "pes", "Pro Evolution Soccer" },
+            { "NBA2K", "NBA 2K" },
+            { "iw3sp", "Call of Duty 4" },
+            { "iw3mp", "Call of Duty 4" },
+            { "iw4sp", "Call of Duty: Modern Warfare 2" },
+            { "iw4mp", "Call of Duty: Modern Warfare 2" },
+            { "cod", "Call of Duty" },
+            { "warcraft", "Warcraft" },
+            { "war3", "Warcraft III" },
+            { "starcraft", "StarCraft" },
+            { "Solitaire", "Solitaire" },
+            { "WinMine", "Minesweeper" },
+            { "MineSweeper", "Minesweeper" },
+            { "Pinball", "3D Pinball" },
+            { "ChessTitans", "Chess Titans" },
+            { "PurblePlace", "Purble Place" },
+            { "FreeCell", "FreeCell" },
+            { "SpiderSolitaire", "Spider Solitaire" },
+            { "Hearts", "Hearts" },
+            { "Mahjong", "Mahjong" }
+        };
+
+        // Known safe system, office, programming, and school processes that must never be killed by heuristic game checks
+        private static readonly HashSet<string> SafeNonGameProcesses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Idle", "System", "Registry", "smss", "csrss", "wininit", "services", "lsass", "svchost",
+            "fontdrvhost", "winlogon", "dwm", "spoolsv", "explorer", "sihost", "taskhostw", "taskmgr",
+            "RuntimeBroker", "ApplicationFrameHost", "SystemSettings", "SearchHost", "SearchApp",
+            "StartMenuExperienceHost", "ShellExperienceHost", "TextInputHost", "ctfmon", "dllhost",
+            "WmiPrvSE", "audiodg", "conhost", "cmd", "powershell", "pwsh", "wt", "msiexec", "regedit",
+            "mmc", "control", "schtasks", "netsh", "icacls", "taskkill", "ping", "wmic", "gpupdate",
+            "SchoolFilterCtl", "SchoolFilter_Setup", "Uninstall",
+            "chrome", "msedge", "firefox", "brave", "opera", "iexplore", "msedgewebview2",
+            "GoogleUpdate", "MicrosoftEdgeUpdate",
+            "winword", "excel", "powerpnt", "onenote", "outlook", "mspub", "msaccess", "lync", "Teams",
+            "Acrobat", "AcroRd32", "FoxitReader", "SumatraPDF",
+            "notepad", "notepad++", "Code", "devenv", "pycharm64", "idea64", "eclipse", "netbeans",
+            "python", "pythonw", "node", "git", "dotnet", "csc",
+            "veyon-service", "veyon-server", "veyon-worker", "veyon-master", "veyon-configurator", "veyon-cli",
+            "AnyDesk", "TeamViewer", "TeamViewer_Service", "Zoom", "vlc", "wmplayer", "mspaint",
+            "calc", "CalculatorApp", "SnippingTool", "ScreenSketch", "SecurityHealthService",
+            "SecurityHealthSystray", "MsMpEng", "NisSrv", "OneDrive", " BarIlan", "Responsa",
+            "Otzar", "OtzarHaHochma", "ToratEmet", "Tag", "InDesign", "Photoshop", "Illustrator"
         };
 
         public const int INTERNET_OPTION_PER_CONNECTION_OPTION = 75;
@@ -176,7 +295,9 @@ namespace SchoolFilter.Controller
 
         private static readonly IntPtr HWND_BROADCAST = new IntPtr(0xffff);
         private const uint WM_SETTINGCHANGE = 0x001A;
+        private const uint WM_CLOSE = 0x0010;
         private const uint SMTO_ABORTIFHUNG = 0x0002;
+        private const int PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
 
         [DllImport("wininet.dll", SetLastError = true, CharSet = CharSet.Auto)]
         private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);
@@ -196,6 +317,18 @@ namespace SchoolFilter.Controller
 
         [DllImport("user32.dll")]
         private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern bool QueryFullProcessImageName(IntPtr hProcess, int dwFlags, StringBuilder lpExeName, ref int lpdwSize);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr hObject);
 
         private static volatile bool IsFilterCurrentlyEnforced = true;
         private static DateTime LastNotificationTime = DateTime.MinValue;
@@ -224,11 +357,19 @@ namespace SchoolFilter.Controller
                 }
                 else if (action == "notify")
                 {
-                    string targetName = (args.Length > 1) ? args[1] : "אתר לא מורשה";
-                    string isGame = (args.Length > 2) ? args[2] : "web";
-                    string roomLabel = (args.Length > 3) ? args[3] : GetConfiguredRoomDisplayLabel();
-                    string csvWhitelist = (args.Length > 4) ? args[4] : "one-class.co.il,gemini.google.com,copilot.microsoft.com,classroom.google.com,edu.gov.il";
-                    Application.Run(new ClassroomBlockNotificationForm(targetName, isGame == "game", roomLabel, csvWhitelist));
+                    bool createdPopupNew;
+                    using (Mutex popupMutex = CreateGlobalMutex("Global\\SchoolFilterNotifyPopupMutex", out createdPopupNew))
+                    {
+                        if (popupMutex == null || !createdPopupNew)
+                        {
+                            return 0;
+                        }
+                        string targetName = (args.Length > 1) ? args[1] : "אתר לא מורשה";
+                        string isGame = (args.Length > 2) ? args[2] : "web";
+                        string roomLabel = (args.Length > 3) ? args[3] : GetConfiguredRoomDisplayLabel();
+                        string csvWhitelist = (args.Length > 4) ? args[4] : "one-class.co.il,gemini.google.com,copilot.microsoft.com,classroom.google.com,edu.gov.il";
+                        Application.Run(new ClassroomBlockNotificationForm(targetName, isGame == "game", roomLabel, csvWhitelist));
+                    }
                     return 0;
                 }
                 else if (action == "watchdog")
@@ -1492,8 +1633,11 @@ namespace SchoolFilter.Controller
                                     if (!lastAppliedFirewall || lastEnforcedState != true)
                                     {
                                         ConfigureGameFirewallRules(true);
+                                        EnforceBrowserExtensionPolicies(true);
                                         lastAppliedFirewall = true;
                                     }
+                                    PurgeUnauthorizedBrowserExtensions();
+                                    EnforceInstalledGameBlock();
                                     lastEnforcedState = true;
                                 }
                                 else
@@ -1525,8 +1669,18 @@ namespace SchoolFilter.Controller
                     }
                     catch {}
 
+                    try
+                    {
+                        string localMode = ReadLocalOverride();
+                        if (localMode == "block" || (localMode != "allow" && lastEnforcedState != false))
+                        {
+                            EnforceInstalledGameBlock();
+                        }
+                    }
+                    catch {}
+
                     tickCounter++;
-                    for (int i = 0; i < 10 && running; i++)
+                    for (int i = 0; i < 5 && running; i++)
                     {
                         Thread.Sleep(500);
                     }
@@ -1552,6 +1706,8 @@ namespace SchoolFilter.Controller
                 {
                     RefreshPacSettings(initialCacheBuster);
                     ConfigureGameFirewallRules(true);
+                    EnforceBrowserExtensionPolicies(true);
+                    PurgeUnauthorizedBrowserExtensions();
                     EnforceInstalledGameBlock();
                 }
 
@@ -1728,10 +1884,16 @@ namespace SchoolFilter.Controller
                                 if (!lastAppliedFirewallState)
                                 {
                                     ConfigureGameFirewallRules(true);
+                                    EnforceBrowserExtensionPolicies(true);
                                     lastAppliedFirewallState = true;
                                 }
 
+                                if (tickCounter % 4 == 0)
+                                {
+                                    PurgeUnauthorizedBrowserExtensions();
+                                }
                                 EnforceInstalledGameBlock();
+                                CheckAndNotifySystemKilledGame();
                             }
                             else
                             {
@@ -1964,38 +2126,466 @@ namespace SchoolFilter.Controller
             return false;
         }
 
+        private static readonly string[] SafeGoogleDefaultExtensionIds = new string[]
+        {
+            "ghbmnnjooekpmoecnnnilnnbdlolhkhi", // Google Docs Offline
+            "nmmhkkegccagdldgiimedpiccmgmieda", // Chrome Web Store Payments
+            "aohghmighlieiainnegkcijnfilokake", // Google Docs
+            "felcaaldnbdncclmgdcncolpebgiejap", // Google Sheets
+            "aapocclcgogkmnckokdopfmhonfmgoek", // Google Slides
+            "apdfllckaahabafndbhieahigkjlhalf"  // Google Drive
+        };
+
+        private static readonly string[] BrowserOfflineGameTitleKeywords = new string[]
+        {
+            "chrome-extension://", "extension://", "chrome://dino", "edge://surf",
+            "chrome://extensions", "edge://extensions", "תוספים - google chrome", "תוספים - microsoft edge",
+            "unblocked games", "unblocked", "2048", "slope game", "subway surfers", "geometry dash",
+            "moto x3m", "retro bowl", "1v1.lol", "cookie clicker", "run 3", "bitlife", "drive mad",
+            "tunnel rush", "smash karts", "basketball stars", "temple run", "flappy bird",
+            "snake game", "pacman", "pac-man", "tetris", "dino game", "dinosaur game",
+            "fireboy", "watergirl", "friday night funkin", "five nights at freddy"
+        };
+
+        private static readonly string[] GameFolderKeywords = new string[]
+        {
+            "\\games\\", "\\game\\", "\\משחקים\\", "\\משחק\\", "\\steamapps\\", "\\epic games\\",
+            "\\gog games\\", "\\riot games\\", "\\origin games\\", "\\ubisoft\\", "\\xboxgames\\",
+            "\\plarium\\", "\\tlauncher\\", "\\.minecraft\\", "\\roblox\\", "\\bluestacks\\",
+            "\\ldplayer\\", "\\nox\\", "\\memu\\", "\\retroarch\\", "\\dosbox\\",
+            "\\microsoft.microsoftsolitairecollection", "\\microsoft.msminesweeper"
+        };
+
+        private static readonly string[] GameSignatureFiles = new string[]
+        {
+            "UnityPlayer.dll", "steam_api.dll", "steam_api64.dll", "steamclient.dll", "steamclient64.dll",
+            "EOSSDK-Win64-Shipping.dll", "EOSSDK-Win32-Shipping.dll", "Galaxy.dll", "Galaxy64.dll",
+            "binkw32.dll", "binkw64.dll", "bink2w32.dll", "bink2w64.dll",
+            "fmod.dll", "fmodex.dll", "fmod64.dll", "fmodstudio.dll",
+            "alleg40.dll", "alleg42.dll", "alleg44.dll",
+            "raylib.dll", "love.dll", "data.win", "dosbox.conf",
+            "rgss102e.dll", "rgss202e.dll", "rgss300.dll", "rgss301.dll"
+        };
+
+        private static void EnforceBrowserExtensionPolicies(bool blockExtensions)
+        {
+            string[] policyPaths = new string[]
+            {
+                @"SOFTWARE\Policies\Google\Chrome",
+                @"SOFTWARE\Policies\Microsoft\Edge",
+                @"SOFTWARE\Policies\BraveSoftware\Brave"
+            };
+
+            foreach (string path in policyPaths)
+            {
+                ApplyBrowserPolicyToHive(Registry.LocalMachine, "", path, blockExtensions);
+                ApplyBrowserPolicyToHive(Registry.CurrentUser, "", path, blockExtensions);
+
+                try
+                {
+                    foreach (string sid in Registry.Users.GetSubKeyNames())
+                    {
+                        if (sid.StartsWith("S-1-5-21-", StringComparison.OrdinalIgnoreCase) &&
+                            !sid.EndsWith("_Classes", StringComparison.OrdinalIgnoreCase))
+                        {
+                            ApplyBrowserPolicyToHive(Registry.Users, sid + "\\", path, blockExtensions);
+                        }
+                    }
+                }
+                catch {}
+            }
+        }
+
+        private static void ApplyBrowserPolicyToHive(RegistryKey root, string prefix, string policyPath, bool blockExtensions)
+        {
+            try
+            {
+                using (RegistryKey key = root.CreateSubKey(prefix + policyPath))
+                {
+                    if (key == null) return;
+                    key.SetValue("QuicAllowed", 0, RegistryValueKind.DWord);
+                    key.SetValue("DnsOverHttpsMode", "off", RegistryValueKind.String);
+
+                    if (blockExtensions)
+                    {
+                        key.SetValue("AllowDinosaurEasterEgg", 0, RegistryValueKind.DWord);
+                        key.SetValue("AllowSurfGame", 0, RegistryValueKind.DWord);
+                        key.SetValue("BlockExternalExtensions", 1, RegistryValueKind.DWord);
+                        key.SetValue("DeveloperToolsAvailability", 2, RegistryValueKind.DWord);
+
+                        using (RegistryKey blockKey = key.CreateSubKey("ExtensionInstallBlocklist"))
+                        {
+                            if (blockKey != null)
+                            {
+                                blockKey.SetValue("1", "*", RegistryValueKind.String);
+                            }
+                        }
+                        using (RegistryKey allowKey = key.CreateSubKey("ExtensionInstallAllowlist"))
+                        {
+                            if (allowKey != null)
+                            {
+                                allowKey.SetValue("1", "ghbmnnjooekpmoecnnnilnnbdlolhkhi", RegistryValueKind.String);
+                            }
+                        }
+                    }
+                }
+            }
+            catch {}
+        }
+
+        private static void PurgeUnauthorizedBrowserExtensions()
+        {
+            bool removedAnyExtension = false;
+            try
+            {
+                List<string> userDataRoots = new List<string>();
+                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                if (!string.IsNullOrEmpty(localAppData))
+                {
+                    userDataRoots.Add(Path.Combine(localAppData, @"Google\Chrome\User Data"));
+                    userDataRoots.Add(Path.Combine(localAppData, @"Microsoft\Edge\User Data"));
+                    userDataRoots.Add(Path.Combine(localAppData, @"BraveSoftware\Brave-Browser\User Data"));
+                }
+
+                string usersDir = Path.GetFullPath(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), @"..\Users"));
+                if (!Directory.Exists(usersDir))
+                {
+                    usersDir = @"C:\Users";
+                }
+                if (Directory.Exists(usersDir))
+                {
+                    foreach (string userDir in Directory.GetDirectories(usersDir))
+                    {
+                        string uLocal = Path.Combine(userDir, @"AppData\Local");
+                        if (Directory.Exists(uLocal))
+                        {
+                            userDataRoots.Add(Path.Combine(uLocal, @"Google\Chrome\User Data"));
+                            userDataRoots.Add(Path.Combine(uLocal, @"Microsoft\Edge\User Data"));
+                            userDataRoots.Add(Path.Combine(uLocal, @"BraveSoftware\Brave-Browser\User Data"));
+                        }
+                    }
+                }
+
+                foreach (string userDataDir in userDataRoots)
+                {
+                    try
+                    {
+                        if (!Directory.Exists(userDataDir)) continue;
+                        foreach (string profileDir in Directory.GetDirectories(userDataDir))
+                        {
+                            string extRoot = Path.Combine(profileDir, "Extensions");
+                            if (!Directory.Exists(extRoot)) continue;
+
+                            foreach (string extDir in Directory.GetDirectories(extRoot))
+                            {
+                                string extId = Path.GetFileName(extDir) ?? "";
+                                bool isSafeDefault = false;
+                                foreach (string safeId in SafeGoogleDefaultExtensionIds)
+                                {
+                                    if (string.Equals(extId, safeId, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        isSafeDefault = true;
+                                        break;
+                                    }
+                                }
+                                if (!isSafeDefault)
+                                {
+                                    try
+                                    {
+                                        Directory.Delete(extDir, true);
+                                        removedAnyExtension = true;
+                                    }
+                                    catch {}
+                                }
+                            }
+                        }
+                    }
+                    catch {}
+                }
+            }
+            catch {}
+
+            if (removedAnyExtension)
+            {
+                // Restart open browsers once so deleted game extensions are immediately unloaded from memory
+                foreach (string browserProc in new string[] { "chrome", "msedge", "brave" })
+                {
+                    try
+                    {
+                        foreach (Process p in Process.GetProcessesByName(browserProc))
+                        {
+                            try { p.Kill(); } catch {}
+                            finally { try { p.Dispose(); } catch {} }
+                        }
+                    }
+                    catch {}
+                }
+                RecordOrShowKilledGame("תוסף משחק בדפדפן (Chrome/Edge Extension)");
+            }
+        }
+
+        private static string GetProcessExecutablePath(Process p)
+        {
+            try
+            {
+                IntPtr hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, p.Id);
+                if (hProc != IntPtr.Zero)
+                {
+                    try
+                    {
+                        StringBuilder sb = new StringBuilder(1024);
+                        int size = sb.Capacity;
+                        if (QueryFullProcessImageName(hProc, 0, sb, ref size) && size > 0)
+                        {
+                            return sb.ToString();
+                        }
+                    }
+                    finally
+                    {
+                        CloseHandle(hProc);
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
+                if (p.MainModule != null)
+                {
+                    return p.MainModule.FileName ?? "";
+                }
+            }
+            catch {}
+
+            return "";
+        }
+
+        private static string DetectInstalledGameOrExtension(Process p, out bool isBrowserWindowOnly)
+        {
+            isBrowserWindowOnly = false;
+            string procName = p.ProcessName ?? "";
+            if (string.IsNullOrEmpty(procName)) return null;
+
+            string title = "";
+            try { title = p.MainWindowTitle ?? ""; } catch {}
+
+            // 1. Check browser windows for offline/extension games or chrome://extensions
+            if (string.Equals(procName, "chrome", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "msedge", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "brave", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "opera", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "firefox", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.IsNullOrEmpty(title))
+                {
+                    string lowerTitle = title.ToLowerInvariant();
+                    foreach (string kw in BrowserOfflineGameTitleKeywords)
+                    {
+                        if (lowerTitle.Contains(kw))
+                        {
+                            isBrowserWindowOnly = true;
+                            return "משחק/תוסף בדפדפן (" + title + ")";
+                        }
+                    }
+                }
+                return null;
+            }
+
+            // 2. Direct known game process names
+            string knownGameName;
+            if (BlockedGameProcesses.TryGetValue(procName, out knownGameName))
+            {
+                return knownGameName;
+            }
+
+            // 3. Java-based games (Minecraft, etc.)
+            if (string.Equals(procName, "javaw", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "java", StringComparison.OrdinalIgnoreCase))
+            {
+                if (title.IndexOf("Minecraft", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    title.IndexOf("Lunar Client", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    title.IndexOf("Badlion", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    title.IndexOf("TLauncher", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return "Minecraft";
+                }
+                return null;
+            }
+
+            // 4. Never touch whitelisted system, study, office, or school processes
+            if (SafeNonGameProcesses.Contains(procName))
+            {
+                return null;
+            }
+
+            string exePath = GetProcessExecutablePath(p);
+            if (string.IsNullOrEmpty(exePath)) return null;
+
+            string lowerPath = exePath.ToLowerInvariant();
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows).ToLowerInvariant();
+            if (!string.IsNullOrEmpty(winDir) && lowerPath.StartsWith(winDir))
+            {
+                return null;
+            }
+            if (lowerPath.Contains("\\schoolfilter\\") ||
+                lowerPath.Contains("\\veyon\\") ||
+                lowerPath.Contains("\\microsoft office\\") ||
+                lowerPath.Contains("\\windows defender\\") ||
+                lowerPath.Contains("\\google\\chrome\\") ||
+                lowerPath.Contains("\\microsoft\\edge"))
+            {
+                return null;
+            }
+
+            // 5. Unreal Engine *-Shipping.exe signature
+            if (procName.EndsWith("-Shipping", StringComparison.OrdinalIgnoreCase) ||
+                lowerPath.EndsWith("-shipping.exe", StringComparison.OrdinalIgnoreCase))
+            {
+                return !string.IsNullOrEmpty(title) ? title : procName;
+            }
+
+            // 6. Game folder path keywords (\Games\, \משחקים\, \SteamApps\, etc.)
+            foreach (string folderKw in GameFolderKeywords)
+            {
+                if (lowerPath.Contains(folderKw))
+                {
+                    return !string.IsNullOrEmpty(title) ? title : procName;
+                }
+            }
+
+            // 7. Check executable directory and parent directory for Game Engine / Game SDK DLLs
+            try
+            {
+                string exeDir = Path.GetDirectoryName(exePath);
+                if (!string.IsNullOrEmpty(exeDir) && Directory.Exists(exeDir))
+                {
+                    if (Directory.Exists(Path.Combine(exeDir, procName + "_Data")) ||
+                        Directory.Exists(Path.Combine(exeDir, "MonoBleedingEdge")) ||
+                        Directory.Exists(Path.Combine(exeDir, @"Engine\Binaries")))
+                    {
+                        return !string.IsNullOrEmpty(title) ? title : procName;
+                    }
+
+                    foreach (string sigFile in GameSignatureFiles)
+                    {
+                        if (File.Exists(Path.Combine(exeDir, sigFile)))
+                        {
+                            return !string.IsNullOrEmpty(title) ? title : procName;
+                        }
+                    }
+
+                    // SDL / DirectX / XInput bundled locally in a non-system application folder with a visible window
+                    if (p.MainWindowHandle != IntPtr.Zero &&
+                        (File.Exists(Path.Combine(exeDir, "SDL2.dll")) ||
+                         File.Exists(Path.Combine(exeDir, "SDL.dll")) ||
+                         File.Exists(Path.Combine(exeDir, "d3dx9_43.dll")) ||
+                         File.Exists(Path.Combine(exeDir, "xinput1_3.dll")) ||
+                         File.Exists(Path.Combine(exeDir, "physxloader.dll"))))
+                    {
+                        return !string.IsNullOrEmpty(title) ? title : procName;
+                    }
+                }
+            }
+            catch {}
+
+            // 8. Check FileVersionInfo OriginalFilename (catches renamed game .exe files!)
+            try
+            {
+                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(exePath);
+                if (fvi != null)
+                {
+                    string origName = Path.GetFileNameWithoutExtension(fvi.OriginalFilename ?? "");
+                    if (!string.IsNullOrEmpty(origName) && BlockedGameProcesses.TryGetValue(origName, out knownGameName))
+                    {
+                        return knownGameName;
+                    }
+                }
+            }
+            catch {}
+
+            return null;
+        }
+
+        private static void RecordOrShowKilledGame(string gameDisplayName)
+        {
+            if (WindowsIdentity.GetCurrent().IsSystem)
+            {
+                try
+                {
+                    if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
+                    File.WriteAllText(LastKilledGameFilePath, gameDisplayName, Encoding.UTF8);
+                }
+                catch {}
+            }
+            else
+            {
+                TriggerPopupNotification(gameDisplayName, true);
+            }
+        }
+
+        private static void CheckAndNotifySystemKilledGame()
+        {
+            try
+            {
+                if (File.Exists(LastKilledGameFilePath))
+                {
+                    string killedGame = File.ReadAllText(LastKilledGameFilePath, Encoding.UTF8).Trim();
+                    File.Delete(LastKilledGameFilePath);
+                    if (!string.IsNullOrEmpty(killedGame))
+                    {
+                        TriggerPopupNotification(killedGame, true);
+                    }
+                }
+            }
+            catch {}
+        }
+
         private static void EnforceInstalledGameBlock()
         {
             try
             {
+                int currentPid = Process.GetCurrentProcess().Id;
                 Process[] allProcs = Process.GetProcesses();
                 foreach (Process p in allProcs)
                 {
                     try
                     {
-                        string procName = p.ProcessName;
-                        string gameDisplayName = null;
+                        if (p.Id <= 4 || p.Id == currentPid) continue;
 
-                        if (BlockedGameProcesses.TryGetValue(procName, out gameDisplayName))
-                        {
-                        }
-                        else if (string.Equals(procName, "javaw", StringComparison.OrdinalIgnoreCase) ||
-                                 string.Equals(procName, "java", StringComparison.OrdinalIgnoreCase))
-                        {
-                            string title = p.MainWindowTitle ?? "";
-                            if (title.IndexOf("Minecraft", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                title.IndexOf("Lunar Client", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                title.IndexOf("Badlion", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                title.IndexOf("TLauncher", StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
-                                gameDisplayName = "Minecraft";
-                            }
-                        }
+                        bool isBrowserWindowOnly;
+                        string gameDisplayName = DetectInstalledGameOrExtension(p, out isBrowserWindowOnly);
 
                         if (!string.IsNullOrEmpty(gameDisplayName))
                         {
-                            p.Kill();
-                            TriggerPopupNotification(gameDisplayName, true);
+                            if (isBrowserWindowOnly && p.MainWindowHandle != IntPtr.Zero)
+                            {
+                                PostMessage(p.MainWindowHandle, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    p.Kill();
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        ProcessStartInfo tkPsi = new ProcessStartInfo("taskkill.exe", "/F /T /PID " + p.Id)
+                                        {
+                                            CreateNoWindow = true,
+                                            UseShellExecute = false,
+                                            WindowStyle = ProcessWindowStyle.Hidden
+                                        };
+                                        using (Process tk = Process.Start(tkPsi))
+                                        {
+                                            if (tk != null) tk.WaitForExit(1000);
+                                        }
+                                    }
+                                    catch {}
+                                }
+                            }
+                            RecordOrShowKilledGame(gameDisplayName);
                         }
                     }
                     catch {}
@@ -2067,6 +2657,8 @@ namespace SchoolFilter.Controller
         {
             try
             {
+                if (!IsForegroundWindowBrowser()) return;
+
                 string cleanDomain = domain.Trim().ToLowerInvariant();
                 if (cleanDomain.StartsWith("www."))
                 {
@@ -2119,8 +2711,11 @@ namespace SchoolFilter.Controller
                 DateTime now = DateTime.UtcNow;
                 double secondsSinceLast = (now - LastNotificationTime).TotalSeconds;
 
-                if (secondsSinceLast < 4.0) return;
-                if (string.Equals(LastNotifiedTarget, targetName, StringComparison.OrdinalIgnoreCase) && secondsSinceLast < 8.0) return;
+                double minCooldown = isGame ? 5.0 : 25.0;
+                double sameTargetCooldown = isGame ? 10.0 : 60.0;
+
+                if (secondsSinceLast < minCooldown) return;
+                if (string.Equals(LastNotifiedTarget, targetName, StringComparison.OrdinalIgnoreCase) && secondsSinceLast < sameTargetCooldown) return;
 
                 LastNotificationTime = now;
                 LastNotifiedTarget = targetName;
@@ -2480,6 +3075,12 @@ namespace SchoolFilter.Controller
     internal sealed class ClassroomBlockNotificationForm : Form
     {
         private System.Windows.Forms.Timer closeTimer;
+        private int remainingSeconds = 5;
+
+        protected override bool ShowWithoutActivation
+        {
+            get { return true; }
+        }
 
         public ClassroomBlockNotificationForm(string targetName, bool isGame, string roomLabel, string csvWhitelist)
         {
@@ -2617,7 +3218,7 @@ namespace SchoolFilter.Controller
 
             Button closeBtn = new Button
             {
-                Text = "הבנתי, סגור",
+                Text = "הבנתי, סגור (5)",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
                 Size = new Size(195, 36),
                 Location = new Point(305, 260),
@@ -2639,11 +3240,19 @@ namespace SchoolFilter.Controller
             this.Controls.Add(contentPanel);
 
             closeTimer = new System.Windows.Forms.Timer();
-            closeTimer.Interval = 9000;
+            closeTimer.Interval = 1000;
             closeTimer.Tick += (s, e) =>
             {
-                closeTimer.Stop();
-                this.Close();
+                remainingSeconds--;
+                if (remainingSeconds <= 0)
+                {
+                    closeTimer.Stop();
+                    this.Close();
+                }
+                else
+                {
+                    closeBtn.Text = "הבנתי, סגור (" + remainingSeconds + ")";
+                }
             };
             closeTimer.Start();
         }

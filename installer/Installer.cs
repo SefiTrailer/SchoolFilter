@@ -833,7 +833,8 @@ namespace SchoolFilter.Setup
             string[] policyPaths = new string[]
             {
                 @"SOFTWARE\Policies\Google\Chrome",
-                @"SOFTWARE\Policies\Microsoft\Edge"
+                @"SOFTWARE\Policies\Microsoft\Edge",
+                @"SOFTWARE\Policies\BraveSoftware\Brave"
             };
 
             foreach (string path in policyPaths)
@@ -849,6 +850,20 @@ namespace SchoolFilter.Setup
                                 // Prevent UDP QUIC and DoH from bypassing Windows system proxy/PAC
                                 key.SetValue("QuicAllowed", 0, RegistryValueKind.DWord);
                                 key.SetValue("DnsOverHttpsMode", "off", RegistryValueKind.String);
+                                // Block offline browser games and browser extensions
+                                key.SetValue("AllowDinosaurEasterEgg", 0, RegistryValueKind.DWord);
+                                key.SetValue("AllowSurfGame", 0, RegistryValueKind.DWord);
+                                key.SetValue("BlockExternalExtensions", 1, RegistryValueKind.DWord);
+                                key.SetValue("DeveloperToolsAvailability", 2, RegistryValueKind.DWord);
+
+                                using (RegistryKey blockKey = key.CreateSubKey("ExtensionInstallBlocklist"))
+                                {
+                                    if (blockKey != null) blockKey.SetValue("1", "*", RegistryValueKind.String);
+                                }
+                                using (RegistryKey allowKey = key.CreateSubKey("ExtensionInstallAllowlist"))
+                                {
+                                    if (allowKey != null) allowKey.SetValue("1", "ghbmnnjooekpmoecnnnilnnbdlolhkhi", RegistryValueKind.String);
+                                }
                             }
                         }
                     }
@@ -860,6 +875,12 @@ namespace SchoolFilter.Setup
                             {
                                 key.DeleteValue("QuicAllowed", false);
                                 key.DeleteValue("DnsOverHttpsMode", false);
+                                key.DeleteValue("AllowDinosaurEasterEgg", false);
+                                key.DeleteValue("AllowSurfGame", false);
+                                key.DeleteValue("BlockExternalExtensions", false);
+                                key.DeleteValue("DeveloperToolsAvailability", false);
+                                key.DeleteSubKeyTree("ExtensionInstallBlocklist", false);
+                                key.DeleteSubKeyTree("ExtensionInstallAllowlist", false);
                             }
                         }
                     }
