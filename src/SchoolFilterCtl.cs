@@ -738,6 +738,7 @@ namespace SchoolFilter.Controller
                         "\"roomId\":{\"stringValue\":\"" + EscapeJsonStr(roomId) + "\"}," +
                         "\"roomName\":{\"stringValue\":\"" + EscapeJsonStr(roomName) + "\"}," +
                         "\"institutionName\":{\"stringValue\":\"" + EscapeJsonStr(instName) + "\"}," +
+                        "\"version\":{\"stringValue\":\"3.3\"}," +
                         "\"filterActive\":{\"booleanValue\":" + (filterActive ? "true" : "false") + "}," +
                         "\"lastSeen\":{\"stringValue\":\"" + nowIso + "\"}" +
                     "}" +

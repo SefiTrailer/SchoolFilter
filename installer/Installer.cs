@@ -608,6 +608,7 @@ namespace SchoolFilter.Setup
                         "\"roomId\":{\"stringValue\":\"" + EscapeJsonStr(roomId) + "\"}," +
                         "\"roomName\":{\"stringValue\":\"" + EscapeJsonStr(roomName) + "\"}," +
                         "\"institutionName\":{\"stringValue\":\"" + EscapeJsonStr(institutionName) + "\"}," +
+                        "\"version\":{\"stringValue\":\"3.3\"}," +
                         "\"filterActive\":{\"booleanValue\":true}," +
                         "\"installedAt\":{\"stringValue\":\"" + nowIso + "\"}," +
                         "\"lastSeen\":{\"stringValue\":\"" + nowIso + "\"}" +
