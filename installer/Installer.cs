@@ -589,13 +589,51 @@ namespace SchoolFilter.Setup
             return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ");
         }
 
+        private static string GetEffectiveUserName()
+        {
+            try
+            {
+                string current = Environment.UserName ?? "";
+                if (!WindowsIdentity.GetCurrent().IsSystem &&
+                    !string.Equals(current, "SYSTEM", StringComparison.OrdinalIgnoreCase) &&
+                    !current.EndsWith("$", StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrEmpty(current))
+                {
+                    return current;
+                }
+
+                string[] subKeyNames = Registry.Users.GetSubKeyNames();
+                foreach (string sid in subKeyNames)
+                {
+                    if (sid.StartsWith("S-1-5-21-", StringComparison.OrdinalIgnoreCase) &&
+                        !sid.EndsWith("_Classes", StringComparison.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            using (RegistryKey volKey = Registry.Users.OpenSubKey(sid + "\\Volatile Environment", false))
+                            {
+                                if (volKey != null)
+                                {
+                                    string u = volKey.GetValue("USERNAME") as string;
+                                    if (!string.IsNullOrEmpty(u)) return u;
+                                }
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+            catch {}
+            return Environment.UserName ?? "student";
+        }
+
         private static void RegisterComputerInFirestore(string roomId, string roomName, string institutionName)
         {
             try
             {
                 ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
                 string pcName = Environment.MachineName;
-                string userName = Environment.UserName;
+                string userName = GetEffectiveUserName();
                 string docId = SanitizeDocIdPart(roomId) + "__" + SanitizeDocIdPart(pcName);
                 string url = "https://firestore.googleapis.com/v1/projects/" + FirebaseProjectId +
                              "/databases/(default)/documents/computers/" + Uri.EscapeDataString(docId);

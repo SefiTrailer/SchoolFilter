@@ -715,6 +715,44 @@ namespace SchoolFilter.Controller
             return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ");
         }
 
+        private static string GetEffectiveUserName()
+        {
+            try
+            {
+                string current = Environment.UserName ?? "";
+                if (!WindowsIdentity.GetCurrent().IsSystem &&
+                    !string.Equals(current, "SYSTEM", StringComparison.OrdinalIgnoreCase) &&
+                    !current.EndsWith("$", StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrEmpty(current))
+                {
+                    return current;
+                }
+
+                string[] subKeyNames = Registry.Users.GetSubKeyNames();
+                foreach (string sid in subKeyNames)
+                {
+                    if (sid.StartsWith("S-1-5-21-", StringComparison.OrdinalIgnoreCase) &&
+                        !sid.EndsWith("_Classes", StringComparison.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            using (RegistryKey volKey = Registry.Users.OpenSubKey(sid + "\\Volatile Environment", false))
+                            {
+                                if (volKey != null)
+                                {
+                                    string u = volKey.GetValue("USERNAME") as string;
+                                    if (!string.IsNullOrEmpty(u)) return u;
+                                }
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+            catch {}
+            return Environment.UserName ?? "student";
+        }
+
         private static void ReportComputerHeartbeatToFirestore(bool filterActive)
         {
             try
@@ -725,7 +763,7 @@ namespace SchoolFilter.Controller
                 string roomName = GetConfigValue("RoomName", CurrentRoomDisplayLabel);
                 string instName = GetConfigValue("InstitutionName", "ישיבת נשמת התורה");
                 string pcName = Environment.MachineName;
-                string userName = Environment.UserName;
+                string userName = GetEffectiveUserName();
                 string docId = SanitizeDocIdPart(roomId) + "__" + SanitizeDocIdPart(pcName);
                 string url = "https://firestore.googleapis.com/v1/projects/" + projectId +
                              "/databases/(default)/documents/computers/" + Uri.EscapeDataString(docId);
@@ -1466,7 +1504,10 @@ namespace SchoolFilter.Controller
                     };
                     using (Process p = Process.Start(runUpdateTask))
                     {
-                        if (p != null) p.WaitForExit(1500);
+                        if (p != null && p.WaitForExit(2000) && p.ExitCode == 0)
+                        {
+                            return true;
+                        }
                     }
                 }
                 catch {}
@@ -1551,6 +1592,17 @@ namespace SchoolFilter.Controller
                 {
                     try
                     {
+                        string localUpdateTrigger = Path.Combine(DataDir, "trigger_update.txt");
+                        if (File.Exists(localUpdateTrigger))
+                        {
+                            try { File.Delete(localUpdateTrigger); } catch {}
+                            if (ExecuteRemoteUpdate("", ""))
+                            {
+                                running = false;
+                                return;
+                            }
+                        }
+
                         string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                         string roomId = GetConfigValue("RoomId", DefaultRoomId);
                         string firestoreUrl = "https://firestore.googleapis.com/v1/projects/" + projectId +
