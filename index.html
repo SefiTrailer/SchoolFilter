@@ -769,21 +769,37 @@
         }
 
         /* Installed Computers High-Density Grid (Zero Scroll) */
+        .computers-summary-strip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 7px;
+            padding: 5px 8px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
         .computers-grid {
             flex: 1;
             min-height: 0;
-            overflow: hidden;
+            overflow-y: auto;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
             align-content: start;
             gap: 6px;
+            padding-left: 2px;
         }
 
         .computer-card {
             background: var(--surface-muted);
-            border: 1px solid var(--border);
+            border: 1.5px solid var(--border);
             border-radius: 9px;
-            padding: 6px 9px;
+            padding: 6px 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -791,9 +807,88 @@
             transition: var(--transition);
         }
 
-        .computer-card.is-online {
-            border-color: #a7f3d0;
-            background: linear-gradient(to left, #f0fdf4 0%, #ffffff 45%);
+        .computer-card.is-locked {
+            border-color: #fca5a5;
+            background: linear-gradient(to left, #fff1f2 0%, #ffffff 60%);
+        }
+
+        .computer-card.is-open {
+            border-color: #6ee7b7;
+            background: linear-gradient(to left, #ecfdf5 0%, #ffffff 60%);
+        }
+
+        .computer-card.is-unsynced {
+            border: 2px solid #f59e0b;
+            background: linear-gradient(to left, #fffbeb 0%, #fef3c7 100%);
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.22);
+        }
+
+        .computer-card.is-offline {
+            border-color: #e2e8f0;
+            background: #f8fafc;
+            opacity: 0.78;
+        }
+
+        .pc-state-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 1px 6px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .pc-state-pill.locked {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .pc-state-pill.open {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+
+        .pc-state-pill.offline {
+            background: #e2e8f0;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+
+        .pc-ver-badge {
+            display: inline-block;
+            padding: 0px 5px;
+            border-radius: 4px;
+            font-size: 9.5px;
+            font-weight: 800;
+            direction: ltr;
+        }
+
+        .pc-ver-badge.ver-ok {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .pc-ver-badge.ver-old {
+            background: #ffedd5;
+            color: #9a3412;
+            border: 1px solid #fdba74;
+        }
+
+        .pc-unsync-tag {
+            display: inline-block;
+            background: #fef3c7;
+            color: #b45309;
+            border: 1px solid #f59e0b;
+            border-radius: 4px;
+            padding: 0px 5px;
+            font-size: 9.5px;
+            font-weight: 800;
         }
 
         .computer-name {
@@ -807,9 +902,13 @@
         }
 
         .computer-meta {
-            font-size: 10.5px;
+            font-size: 10px;
             color: var(--text-muted);
-            margin-top: 1px;
+            margin-top: 3px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
         }
 
         .btn-remove-pc {
@@ -1710,6 +1809,7 @@
                                 </button>
                             </div>
 
+                            <div id="roomComputersSummaryBar" class="computers-summary-strip" style="display: none;"></div>
                             <div id="roomComputersList" class="computers-grid"></div>
 
                             <!-- סרגל תחתון קומפקטי לעדכון/הסרה מרחוק והרשאות מנהל -->
@@ -2137,9 +2237,42 @@
             }
         }
 
+        function formatShortRoomName(room) {
+            if (!room) return '';
+            const id = (room.roomId || '').toLowerCase();
+            if (id === 'yeshiva-lab') return 'חדר מחשבים (ישיבה)';
+            if (id === 'yeshiva-cart') return 'עגלת מחשבים (ישיבה)';
+            if (id === 'mechina-cart') return 'עגלת מחשבים (מכינה)';
+
+            let raw = (room.name || '').trim();
+            if (raw.includes(' - ')) {
+                const parts = raw.split(' - ').map(s => s.trim()).filter(Boolean);
+                if (parts.length >= 2) {
+                    const instPart = parts[0]
+                        .replace('ישיבת נשמת התורה', 'ישיבה')
+                        .replace('מכינה נשמת התורה', 'מכינה')
+                        .replace('נשמת התורה', '')
+                        .trim();
+                    const roomPart = parts.slice(1).join(' - ');
+                    return instPart ? `${roomPart} (${instPart})` : roomPart;
+                }
+            }
+            return raw || id;
+        }
+
+        function getRoomSortPriority(room) {
+            const id = (room && room.roomId ? room.roomId : '').toLowerCase();
+            const name = (room && room.name ? room.name : '');
+            if (id === 'yeshiva-lab') return 0;
+            if (id.includes('lab') || name.includes('חדר מחשבים')) return 1;
+            if (id === 'yeshiva-cart') return 2;
+            if (id === 'mechina-cart') return 3;
+            return 10;
+        }
+
         async function fetchComputersFromCloud() {
             try {
-                const compRes = await fetch(`${FIRESTORE_BASE}/computers?pageSize=500`);
+                const compRes = await fetch(`${FIRESTORE_BASE}/computers?pageSize=500`, { cache: 'no-store' });
                 if (!compRes.ok) return;
                 const compJson = await compRes.json();
                 allComputers = (compJson.documents || []).map(doc => ({
@@ -2150,6 +2283,7 @@
                     roomName: getStr(doc, 'roomName') || '',
                     institutionName: getStr(doc, 'institutionName') || '',
                     filterActive: getBool(doc, 'filterActive', true),
+                    version: getStr(doc, 'version') || '',
                     installedAt: getStr(doc, 'installedAt') || '',
                     lastSeen: getStr(doc, 'lastSeen') || ''
                 }));
@@ -2184,7 +2318,7 @@
         }
 
         async function loadAllCloudData() {
-            const instRes = await fetch(`${FIRESTORE_BASE}/institutions?pageSize=100`);
+            const instRes = await fetch(`${FIRESTORE_BASE}/institutions?pageSize=100`, { cache: 'no-store' });
             const instJson = await instRes.json();
             institutions = (instJson.documents || []).map(doc => ({
                 code: getStr(doc, 'code') || doc.name.split('/').pop(),
@@ -2192,22 +2326,26 @@
                 ownerEmail: getStr(doc, 'ownerEmail')
             }));
 
-            const roomsRes = await fetch(`${FIRESTORE_BASE}/rooms?pageSize=200`);
+            const roomsRes = await fetch(`${FIRESTORE_BASE}/rooms?pageSize=200`, { cache: 'no-store' });
             const roomsJson = await roomsRes.json();
-            allRooms = (roomsJson.documents || []).map(doc => ({
-                roomId: getStr(doc, 'roomId') || doc.name.split('/').pop(),
-                name: getStr(doc, 'name'),
-                icon: getStr(doc, 'icon') || '🖥️',
-                institutionId: getStr(doc, 'institutionId') || 'yeshiva',
-                institutionName: getStr(doc, 'institutionName') || 'הישיבה שלנו',
-                filterEnabled: getBool(doc, 'filterEnabled', true),
-                whitelist: getStrArray(doc, 'whitelist', coreSites),
-                remoteCommand: getStr(doc, 'remoteCommand') || 'none',
-                remoteCommandId: getStr(doc, 'remoteCommandId') || '0',
-                updatedBy: getStr(doc, 'updatedBy')
-            }));
+            allRooms = (roomsJson.documents || []).map(doc => {
+                const roomObj = {
+                    roomId: getStr(doc, 'roomId') || doc.name.split('/').pop(),
+                    name: getStr(doc, 'name'),
+                    icon: getStr(doc, 'icon') || '🖥️',
+                    institutionId: getStr(doc, 'institutionId') || 'yeshiva',
+                    institutionName: getStr(doc, 'institutionName') || 'הישיבה שלנו',
+                    filterEnabled: getBool(doc, 'filterEnabled', true),
+                    whitelist: getStrArray(doc, 'whitelist', coreSites),
+                    remoteCommand: getStr(doc, 'remoteCommand') || 'none',
+                    remoteCommandId: getStr(doc, 'remoteCommandId') || '0',
+                    updatedBy: getStr(doc, 'updatedBy')
+                };
+                roomObj.shortName = formatShortRoomName(roomObj);
+                return roomObj;
+            });
 
-            const usersRes = await fetch(`${FIRESTORE_BASE}/users?pageSize=200`);
+            const usersRes = await fetch(`${FIRESTORE_BASE}/users?pageSize=200`, { cache: 'no-store' });
             const usersJson = await usersRes.json();
             allUsers = (usersJson.documents || []).map(doc => ({
                 email: getStr(doc, 'email') || doc.name.split('/').pop(),
@@ -2272,7 +2410,13 @@
         }
 
         function getRoomsForSelectedInstitution() {
-            return allRooms.filter(r => r.institutionId === selectedInstitutionId);
+            return allRooms
+                .filter(r => r.institutionId === selectedInstitutionId)
+                .sort((a, b) => {
+                    const diff = getRoomSortPriority(a) - getRoomSortPriority(b);
+                    if (diff !== 0) return diff;
+                    return (a.roomId || '').localeCompare(b.roomId || '');
+                });
         }
 
         function getCurrentRoom() {
@@ -2321,15 +2465,16 @@
 
             container.innerHTML = rooms.map(r => {
                 const isActive = (r.roomId === selectedRoomId);
+                const shortTitle = formatShortRoomName(r);
                 const statusBadge = r.filterEnabled
-                    ? `<span class="badge badge-offline" style="font-size: 10.5px; padding: 3px 8px;">🔒 נעול</span>`
-                    : `<span class="badge badge-online" style="font-size: 10.5px; padding: 3px 8px;">🔓 פתוח</span>`;
+                    ? `<span class="badge badge-offline" style="font-size: 10.5px; padding: 3px 8px; flex-shrink: 0;">🔒 נעול</span>`
+                    : `<span class="badge badge-online" style="font-size: 10.5px; padding: 3px 8px; flex-shrink: 0;">🔓 פתוח</span>`;
                 const roomComputersCount = allComputers.filter(c => c.roomId.toLowerCase() === r.roomId.toLowerCase()).length;
 
                 return `
-                    <div class="room-tab ${isActive ? 'active' : ''}" onclick="selectRoom('${r.roomId}')">
+                    <div class="room-tab ${isActive ? 'active' : ''}" onclick="selectRoom('${r.roomId}')" title="${r.name}">
                         <div class="room-tab-header">
-                            <span class="room-tab-title">${r.icon} ${r.name}</span>
+                            <span class="room-tab-title">${r.icon} ${shortTitle}</span>
                             ${statusBadge}
                         </div>
                         <div class="room-tab-footer">
@@ -2345,10 +2490,11 @@
             if (mobileStrip) {
                 const pillsHtml = rooms.map(r => {
                     const isActive = (r.roomId === selectedRoomId);
+                    const shortTitle = formatShortRoomName(r);
                     const stateEmoji = r.filterEnabled ? '🔒' : '🔓';
                     return `
                         <button type="button" class="mobile-room-pill ${isActive ? 'active' : ''}" onclick="selectRoom('${r.roomId}')">
-                            <span>${r.icon} ${r.name}</span>
+                            <span>${r.icon} ${shortTitle}</span>
                             <span>${stateEmoji}</span>
                         </button>
                     `;
@@ -2368,9 +2514,10 @@
             if (!room) return;
             updateKpiStrip();
 
-            document.getElementById('activeRoomTitle').textContent = `${room.icon} ${room.name} (${room.institutionName})`;
+            const shortTitle = formatShortRoomName(room);
+            document.getElementById('activeRoomTitle').textContent = `${room.icon} ${shortTitle} — ${room.institutionName}`;
             document.getElementById('activeRoomCodeBadge').textContent = room.roomId;
-            document.getElementById('whitelistRoomLabel').textContent = `${room.name}`;
+            document.getElementById('whitelistRoomLabel').textContent = shortTitle;
 
             const badge = document.getElementById('filterStateBadge');
             const cmdCard = document.getElementById('activeRoomCommandCard');
@@ -2380,14 +2527,14 @@
 
             if (room.filterEnabled) {
                 badge.className = 'badge badge-offline';
-                badge.textContent = '🔒 מצב שיעור פעיל (חסימת משחקים)';
+                badge.textContent = '🔒 הוראת השרת לחדר: נעול (מצב שיעור)';
                 if (cmdCard) cmdCard.classList.remove('room-open-mode');
                 if (btnLock) btnLock.classList.add('btn-mode-active-ring');
                 if (btnOpen) btnOpen.classList.remove('btn-mode-active-ring');
                 if (mobileOrb) mobileOrb.textContent = '🔒';
             } else {
                 badge.className = 'badge badge-online';
-                badge.textContent = '🔓 אינטרנט חופשי פעיל בחדר זה';
+                badge.textContent = '🔓 הוראת השרת לחדר: פתוח (אינטרנט חופשי)';
                 if (cmdCard) cmdCard.classList.add('room-open-mode');
                 if (btnOpen) btnOpen.classList.add('btn-mode-active-ring');
                 if (btnLock) btnLock.classList.remove('btn-mode-active-ring');
@@ -2423,12 +2570,13 @@
 
         function renderRoomComputersList(room) {
             const container = document.getElementById('roomComputersList');
+            const summaryBar = document.getElementById('roomComputersSummaryBar');
             const countBadge = document.getElementById('roomComputersCountBadge');
             if (!container || !room) return;
 
             const roomComputers = allComputers
                 .filter(c => c.roomId.toLowerCase() === room.roomId.toLowerCase())
-                .sort((a, b) => a.computerName.localeCompare(b.computerName));
+                .sort((a, b) => a.computerName.localeCompare(b.computerName, undefined, { numeric: true }));
 
             if (countBadge) {
                 countBadge.textContent = `${roomComputers.length} מחשבים`;
@@ -2437,6 +2585,7 @@
             if (mStatComp) mStatComp.textContent = `💻 ${roomComputers.length}`;
 
             if (roomComputers.length === 0) {
+                if (summaryBar) summaryBar.style.display = 'none';
                 container.innerHTML = `
                     <div style="grid-column: 1/-1; background: var(--surface-muted); border: 1.5px dashed var(--border-strong); border-radius: 12px; padding: 18px 12px; font-size: 12.5px; color: var(--text-muted); text-align: center;">
                         <div style="font-size: 22px; margin-bottom: 4px;">🖥️</div>
@@ -2448,30 +2597,89 @@
             }
 
             const nowMs = Date.now();
-            container.innerHTML = roomComputers.map(c => {
+            let onlineCount = 0;
+            let lockedCount = 0;
+            let openCount = 0;
+            let unsyncedCount = 0;
+            let updatedVerCount = 0;
+
+            const cardsHtml = roomComputers.map(c => {
                 const seenMs = c.lastSeen ? Date.parse(c.lastSeen) : 0;
                 const isOnlineNow = seenMs > 0 && (nowMs - seenMs) < 90000;
-                const statusColor = isOnlineNow ? '#10b981' : '#94a3b8';
-                const statusText = isOnlineNow
-                    ? (c.filterActive ? 'מחובר • נעול' : 'מחובר • פתוח')
-                    : 'מותקן בחדר';
+                const isLocked = Boolean(c.filterActive);
+                const isUnsynced = isOnlineNow && (isLocked !== Boolean(room.filterEnabled));
+                const verRaw = (c.version || '').trim();
+                const isLatestVer = verRaw === '3.3' || verRaw.startsWith('3.3');
+
+                if (isLatestVer) updatedVerCount++;
+                if (isOnlineNow) {
+                    onlineCount++;
+                    if (isLocked) lockedCount++;
+                    else openCount++;
+                    if (isUnsynced) unsyncedCount++;
+                }
+
+                let cardStateClass = 'is-offline';
+                if (isOnlineNow) {
+                    if (isUnsynced) cardStateClass = 'is-unsynced';
+                    else if (isLocked) cardStateClass = 'is-locked';
+                    else cardStateClass = 'is-open';
+                }
+
+                const dotColor = !isOnlineNow
+                    ? '#94a3b8'
+                    : (isUnsynced ? '#f59e0b' : (isLocked ? '#ef4444' : '#10b981'));
+
+                const statePillHtml = !isOnlineNow
+                    ? `<span class="pc-state-pill offline">⚪ כבוי</span>`
+                    : (isLocked
+                        ? `<span class="pc-state-pill locked">🔒 נעול</span>`
+                        : `<span class="pc-state-pill open">🔓 פתוח</span>`);
+
+                const verBadgeHtml = isLatestVer
+                    ? `<span class="pc-ver-badge ver-ok" title="מותקנת גרסה 3.3 המעודכנת">v${verRaw} ✓</span>`
+                    : `<span class="pc-ver-badge ver-old" title="מותקנת גרסה ישנה (לפני 3.3) — מומלץ לעדכן">${verRaw ? 'v' + verRaw : 'v3.1 (ישנה)'}</span>`;
+
+                const unsyncBadgeHtml = isUnsynced
+                    ? `<span class="pc-unsync-tag" title="המחשב מתנהג בניגוד להוראת השרת לחדר זה!">⚠️ לא מסונכרן לשרת</span>`
+                    : '';
 
                 return `
-                    <div class="computer-card ${isOnlineNow ? 'is-online' : ''}">
-                        <div style="min-width: 0;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <span style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor}; display: inline-block; flex-shrink: 0;"></span>
-                                <span class="computer-name">🖥️ ${c.computerName}</span>
+                    <div class="computer-card ${cardStateClass}">
+                        <div style="min-width: 0; flex: 1;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                                <div style="display: flex; align-items: center; gap: 5px; min-width: 0;">
+                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: ${dotColor}; display: inline-block; flex-shrink: 0;"></span>
+                                    <span class="computer-name">${c.computerName}</span>
+                                </div>
+                                ${statePillHtml}
                             </div>
                             <div class="computer-meta">
-                                ${c.userName ? `<span style="direction:ltr;display:inline-block;">${c.userName}</span> • ` : ''}
-                                <span style="color: ${isOnlineNow ? '#059669' : '#64748b'}; font-weight: 600;">${statusText}</span>
+                                ${verBadgeHtml}
+                                ${unsyncBadgeHtml}
+                                ${c.userName ? `<span style="direction:ltr;display:inline-block;color:#475569;font-weight:600;">👤 ${c.userName}</span>` : ''}
                             </div>
                         </div>
                         <button class="btn-remove-pc" onclick="removeComputerFromRoom('${c.docId}', '${c.computerName.replace(/'/g, "\\'")}')" title="הסר מחשב מהרשימה">✕</button>
                     </div>
                 `;
             }).join('');
+
+            if (summaryBar) {
+                summaryBar.style.display = 'flex';
+                const syncPill = unsyncedCount > 0
+                    ? `<span style="background:#fef3c7;color:#b45309;border:1px solid #f59e0b;padding:2px 7px;border-radius:6px;">⚠️ ${unsyncedCount} חורגים מהוראת השרת!</span>`
+                    : `<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;padding:2px 7px;border-radius:6px;">✅ כל המחוברים מסונכרנים לשרת</span>`;
+
+                summaryBar.innerHTML = `
+                    <span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:6px;">🔒 נעולים: ${lockedCount}</span>
+                    <span style="background:#d1fae5;color:#065f46;padding:2px 7px;border-radius:6px;">🔓 פתוחים: ${openCount}</span>
+                    ${syncPill}
+                    <span style="background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:6px;margin-right:auto;">📦 גרסה 3.3: ${updatedVerCount}/${roomComputers.length}</span>
+                `;
+            }
+
+            container.innerHTML = cardsHtml;
         }
 
         function renderSitesList(room) {
