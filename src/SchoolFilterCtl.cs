@@ -4,10 +4,12 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Net;
+using System.Net.Cache;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -172,8 +174,22 @@ namespace SchoolFilter.Controller
             public IntPtr pOptions;
         }
 
+        private static readonly IntPtr HWND_BROADCAST = new IntPtr(0xffff);
+        private const uint WM_SETTINGCHANGE = 0x001A;
+        private const uint SMTO_ABORTIFHUNG = 0x0002;
+
         [DllImport("wininet.dll", SetLastError = true, CharSet = CharSet.Auto)]
         private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern IntPtr SendMessageTimeout(
+            IntPtr hWnd,
+            uint Msg,
+            IntPtr wParam,
+            string lParam,
+            uint fuFlags,
+            uint uTimeout,
+            out IntPtr lpdwResult);
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
@@ -235,6 +251,18 @@ namespace SchoolFilter.Controller
                 else if (action == "allow" || action == "unblock" || action == "off" || action == "restore")
                 {
                     SaveLocalOverride("allow");
+                    try
+                    {
+                        if (File.Exists(CachedPacFilePath))
+                        {
+                            string c = File.ReadAllText(CachedPacFilePath, Encoding.ASCII);
+                            if (c.Contains("var FILTER_ENABLED = true;"))
+                            {
+                                File.WriteAllText(CachedPacFilePath, c.Replace("var FILTER_ENABLED = true;", "var FILTER_ENABLED = false;"), Encoding.ASCII);
+                            }
+                        }
+                    }
+                    catch {}
                     DisableFilter(false);
                 }
                 else if (action == "uninstall-cleanup")
@@ -281,6 +309,38 @@ namespace SchoolFilter.Controller
             }
         }
 
+        private static Mutex CreateGlobalMutex(string name, out bool createdNew)
+        {
+            createdNew = false;
+            try
+            {
+                MutexSecurity security = new MutexSecurity();
+                security.AddAccessRule(new MutexAccessRule(
+                    new SecurityIdentifier(WellKnownSidType.WorldSid, null),
+                    MutexRights.FullControl,
+                    AccessControlType.Allow
+                ));
+                return new Mutex(true, name, out createdNew, security);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                createdNew = false;
+                return null;
+            }
+            catch
+            {
+                try
+                {
+                    return new Mutex(true, name, out createdNew);
+                }
+                catch
+                {
+                    createdNew = false;
+                    return null;
+                }
+            }
+        }
+
         private static bool IsSystemAgentRunning()
         {
             try
@@ -289,6 +349,29 @@ namespace SchoolFilter.Controller
                 {
                     return true;
                 }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool IsSinkholeRunning()
+        {
+            try
+            {
+                using (Mutex m = Mutex.OpenExisting("Global\\SchoolFilterSinkholeMutex"))
+                {
+                    return true;
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return true;
             }
             catch
             {
@@ -438,14 +521,33 @@ namespace SchoolFilter.Controller
             ConfigureGameFirewallRules(true);
         }
 
+        private static void NotifyBrowserSettingsChanged()
+        {
+            try
+            {
+                InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
+                InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
+                IntPtr result;
+                SendMessageTimeout(
+                    HWND_BROADCAST,
+                    WM_SETTINGCHANGE,
+                    IntPtr.Zero,
+                    "Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings",
+                    SMTO_ABORTIFHUNG,
+                    500,
+                    out result
+                );
+            }
+            catch {}
+        }
+
         private static void RefreshPacSettings(long cacheBuster)
         {
             string pacUrl = GetLocalPacEndpointUrl(cacheBuster);
             SetWinInetPac(true, pacUrl);
             ApplyPacToRegistryRoot(Registry.CurrentUser, true, pacUrl);
             ApplyPacToAllLoadedUsers(true, pacUrl);
-            InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
-            InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
+            NotifyBrowserSettingsChanged();
         }
 
         private static string SanitizeDocIdPart(string input)
@@ -554,8 +656,7 @@ namespace SchoolFilter.Controller
                 ReportComputerHeartbeatToFirestore(false);
             }
 
-            InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
-            InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
+            NotifyBrowserSettingsChanged();
         }
 
         private static void ConfigureGameFirewallRules(bool blockGames)
@@ -1276,20 +1377,23 @@ namespace SchoolFilter.Controller
         }
 
         // Background daemon running as NT AUTHORITY\SYSTEM (via Scheduled Task SchoolFilterSystemAgent)
-        // Ensures Remote Update, Remote Uninstall, and Windows Firewall rules execute with full Administrator privileges
+        // Ensures Remote Update, Remote Uninstall, Registry PAC sync, and Windows Firewall rules execute with full Administrator privileges
         // even when the logged-in user is a standard Student account without Admin permissions.
         private static void RunSystemAgentDaemon()
         {
             bool createdNew;
-            using (Mutex mutex = new Mutex(true, "Global\\SchoolFilterSystemAgentMutex", out createdNew))
+            using (Mutex mutex = CreateGlobalMutex("Global\\SchoolFilterSystemAgentMutex", out createdNew))
             {
-                if (!createdNew)
+                if (mutex == null || !createdNew)
                 {
                     return;
                 }
 
                 ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
                 bool lastAppliedFirewall = false;
+                bool? lastEnforcedState = null;
+                string lastSeenUpdatedAt = null;
+                int tickCounter = 0;
                 bool running = true;
 
                 while (running)
@@ -1298,15 +1402,16 @@ namespace SchoolFilter.Controller
                     {
                         string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                         string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                        long ticks = DateTime.UtcNow.Ticks;
                         string firestoreUrl = "https://firestore.googleapis.com/v1/projects/" + projectId +
-                                              "/databases/(default)/documents/rooms/" + Uri.EscapeDataString(roomId) +
-                                              "?nocache=" + ticks;
+                                              "/databases/(default)/documents/rooms/" + Uri.EscapeDataString(roomId);
 
                         HttpWebRequest req = (HttpWebRequest)WebRequest.Create(firestoreUrl);
                         req.Proxy = null;
                         req.Timeout = 4000;
-                        req.UserAgent = "SchoolFilter-SystemAgent/3.1";
+                        req.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
+                        req.Headers[HttpRequestHeader.CacheControl] = "no-cache, no-store, must-revalidate";
+                        req.Headers[HttpRequestHeader.Pragma] = "no-cache";
+                        req.UserAgent = "SchoolFilter-SystemAgent/3.2";
 
                         using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                         using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
@@ -1342,18 +1447,76 @@ namespace SchoolFilter.Controller
                                     }
                                 }
 
+                                if (!string.IsNullOrEmpty(roomUpdatedAt))
+                                {
+                                    if (lastSeenUpdatedAt == null || roomUpdatedAt != lastSeenUpdatedAt)
+                                    {
+                                        lastSeenUpdatedAt = roomUpdatedAt;
+                                        SaveLocalOverride("auto");
+                                    }
+                                }
+                                else if (lastSeenUpdatedAt == null)
+                                {
+                                    lastSeenUpdatedAt = "init";
+                                    SaveLocalOverride("auto");
+                                }
+
                                 string localOverride = ReadLocalOverride();
                                 bool shouldEnforce = (localOverride == "allow") ? false : ((localOverride == "block") ? true : cloudFilterEnabled);
-                                if (shouldEnforce != lastAppliedFirewall)
+
+                                try
                                 {
-                                    ConfigureGameFirewallRules(shouldEnforce);
-                                    lastAppliedFirewall = shouldEnforce;
+                                    string newPac = GenerateDynamicPacScript(shouldEnforce, whitelist);
+                                    if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
+                                    File.WriteAllText(CachedPacFilePath, newPac, Encoding.ASCII);
+                                }
+                                catch {}
+
+                                if (shouldEnforce)
+                                {
+                                    if (lastEnforcedState != true || !AreAllUsersProxyEnforced())
+                                    {
+                                        long ts = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                                        ApplyPacToAllLoadedUsers(true, GetLocalPacEndpointUrl(ts));
+                                        NotifyBrowserSettingsChanged();
+                                    }
+                                    if (!lastAppliedFirewall || lastEnforcedState != true)
+                                    {
+                                        ConfigureGameFirewallRules(true);
+                                        lastAppliedFirewall = true;
+                                    }
+                                    lastEnforcedState = true;
+                                }
+                                else
+                                {
+                                    if (lastEnforcedState != false || IsAnyUserProxyEnforced())
+                                    {
+                                        ApplyPacToAllLoadedUsers(false, "");
+                                        NotifyBrowserSettingsChanged();
+                                        ReportComputerHeartbeatToFirestore(false);
+                                    }
+                                    if (lastAppliedFirewall || lastEnforcedState != false)
+                                    {
+                                        ConfigureGameFirewallRules(false);
+                                        lastAppliedFirewall = false;
+                                    }
+                                    lastEnforcedState = false;
+                                }
+
+                                if (!IsSinkholeRunning())
+                                {
+                                    EnsureSinkholeRunning();
+                                    if (tickCounter % 3 == 0)
+                                    {
+                                        ReportComputerHeartbeatToFirestore(shouldEnforce);
+                                    }
                                 }
                             }
                         }
                     }
                     catch {}
 
+                    tickCounter++;
                     for (int i = 0; i < 10 && running; i++)
                     {
                         Thread.Sleep(500);
@@ -1365,9 +1528,9 @@ namespace SchoolFilter.Controller
         private static void RunSinkholeAndCloudSyncDaemon()
         {
             bool createdNew;
-            using (Mutex mutex = new Mutex(true, "Global\\SchoolFilterSinkholeMutex", out createdNew))
+            using (Mutex mutex = CreateGlobalMutex("Global\\SchoolFilterSinkholeMutex", out createdNew))
             {
-                if (!createdNew)
+                if (mutex == null || !createdNew)
                 {
                     return;
                 }
@@ -1416,15 +1579,16 @@ namespace SchoolFilter.Controller
                                 {
                                     string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                                     string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                                    long ticks = DateTime.UtcNow.Ticks;
                                     string firestoreUrl = "https://firestore.googleapis.com/v1/projects/" + projectId +
-                                                          "/databases/(default)/documents/rooms/" + Uri.EscapeDataString(roomId) +
-                                                          "?nocache=" + ticks;
+                                                          "/databases/(default)/documents/rooms/" + Uri.EscapeDataString(roomId);
 
                                     HttpWebRequest req = (HttpWebRequest)WebRequest.Create(firestoreUrl);
                                     req.Proxy = null;
                                     req.Timeout = 4000;
-                                    req.UserAgent = "SchoolFilter-RoomDaemon/3.1";
+                                    req.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
+                                    req.Headers[HttpRequestHeader.CacheControl] = "no-cache, no-store, must-revalidate";
+                                    req.Headers[HttpRequestHeader.Pragma] = "no-cache";
+                                    req.UserAgent = "SchoolFilter-RoomDaemon/3.2";
 
                                     using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                                     using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
@@ -1483,18 +1647,19 @@ namespace SchoolFilter.Controller
                                             CurrentRoomWhitelist = ExtractCleanBaseDomains(whitelist);
                                             lastCloudFilterEnabled = cloudFilterEnabled;
 
-                                            // If the teacher clicked a button in the web portal (updatedAt changed), clear any local override
+                                            // Clear any local override on initial cloud sync or whenever teacher clicks a button in the web portal (updatedAt changed)
                                             if (!string.IsNullOrEmpty(roomUpdatedAt))
                                             {
-                                                if (lastSeenUpdatedAt == null)
-                                                {
-                                                    lastSeenUpdatedAt = roomUpdatedAt;
-                                                }
-                                                else if (roomUpdatedAt != lastSeenUpdatedAt)
+                                                if (lastSeenUpdatedAt == null || roomUpdatedAt != lastSeenUpdatedAt)
                                                 {
                                                     lastSeenUpdatedAt = roomUpdatedAt;
                                                     SaveLocalOverride("auto");
                                                 }
+                                            }
+                                            else if (lastSeenUpdatedAt == null)
+                                            {
+                                                lastSeenUpdatedAt = "init";
+                                                SaveLocalOverride("auto");
                                             }
                                         }
                                     }
@@ -1539,11 +1704,15 @@ namespace SchoolFilter.Controller
                                 {
                                     RefreshPacSettings(currentCacheBuster);
                                 }
+                                else
+                                {
+                                    DisableFilter(false);
+                                }
                             }
 
                             if (shouldEnforceBlock)
                             {
-                                if (!IsProxyCurrentlyEnforced())
+                                if (!AreAllUsersProxyEnforced())
                                 {
                                     RefreshPacSettings(currentCacheBuster);
                                 }
@@ -1557,7 +1726,7 @@ namespace SchoolFilter.Controller
                             }
                             else
                             {
-                                if (IsProxyCurrentlyEnforced())
+                                if (IsAnyUserProxyEnforced())
                                 {
                                     DisableFilter(false);
                                 }
@@ -1601,7 +1770,7 @@ namespace SchoolFilter.Controller
                                 c.ReceiveTimeout = 1000;
                                 c.SendTimeout = 1000;
                                 NetworkStream stream = c.GetStream();
-                                byte[] buf = new byte[1024];
+                                byte[] buf = new byte[4096];
                                 int read = 0;
                                 try
                                 {
@@ -1636,6 +1805,16 @@ namespace SchoolFilter.Controller
 
                                 bool isDirectInfoPage = false;
                                 string blockedDomain = ExtractDomainFromHttpRequest(req, out isDirectInfoPage);
+
+                                // If filter is currently unlocked (IsFilterCurrentlyEnforced == false) and a browser
+                                // still sent a cached proxy request to 127.0.0.1:9999, tunnel it directly so internet works immediately
+                                if (!isDirectInfoPage && !IsFilterCurrentlyEnforced)
+                                {
+                                    if (TryTunnelUnlockedProxyRequest(c, stream, buf, read, req, blockedDomain))
+                                    {
+                                        return;
+                                    }
+                                }
 
                                 if (!isDirectInfoPage && IsFilterCurrentlyEnforced && !string.IsNullOrEmpty(blockedDomain))
                                 {
@@ -1674,6 +1853,106 @@ namespace SchoolFilter.Controller
                     }
                 }
             }
+        }
+
+        private static bool TryTunnelUnlockedProxyRequest(TcpClient clientSocket, NetworkStream clientStream, byte[] initialBuf, int initialRead, string reqText, string fallbackHost)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(reqText)) return false;
+                string[] lines = reqText.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                if (lines.Length == 0) return false;
+                string firstLine = lines[0];
+
+                if (firstLine.StartsWith("CONNECT ", StringComparison.OrdinalIgnoreCase))
+                {
+                    string[] parts = firstLine.Split(' ');
+                    if (parts.Length < 2) return false;
+                    string hostPort = parts[1].Trim();
+                    string host = hostPort;
+                    int port = 443;
+                    int colonIdx = hostPort.LastIndexOf(':');
+                    if (colonIdx > 0)
+                    {
+                        host = hostPort.Substring(0, colonIdx);
+                        int parsedPort;
+                        if (int.TryParse(hostPort.Substring(colonIdx + 1), out parsedPort) && parsedPort > 0)
+                        {
+                            port = parsedPort;
+                        }
+                    }
+
+                    using (TcpClient upstream = new TcpClient())
+                    {
+                        IAsyncResult ar = upstream.BeginConnect(host, port, null, null);
+                        if (!ar.AsyncWaitHandle.WaitOne(3500)) return false;
+                        upstream.EndConnect(ar);
+
+                        clientSocket.ReceiveTimeout = 30000;
+                        clientSocket.SendTimeout = 30000;
+                        upstream.ReceiveTimeout = 30000;
+                        upstream.SendTimeout = 30000;
+
+                        NetworkStream upStream = upstream.GetStream();
+                        byte[] okBytes = Encoding.ASCII.GetBytes("HTTP/1.1 200 Connection Established\r\n\r\n");
+                        clientStream.Write(okBytes, 0, okBytes.Length);
+                        clientStream.Flush();
+
+                        Thread pumpToServer = new Thread(() =>
+                        {
+                            try
+                            {
+                                byte[] b = new byte[8192];
+                                int n;
+                                while ((n = clientStream.Read(b, 0, b.Length)) > 0)
+                                {
+                                    upStream.Write(b, 0, n);
+                                    upStream.Flush();
+                                }
+                            }
+                            catch {}
+                            try { upstream.Close(); } catch {}
+                        });
+                        pumpToServer.IsBackground = true;
+                        pumpToServer.Start();
+
+                        byte[] downBuf = new byte[8192];
+                        int r;
+                        while ((r = upStream.Read(downBuf, 0, downBuf.Length)) > 0)
+                        {
+                            clientStream.Write(downBuf, 0, r);
+                            clientStream.Flush();
+                        }
+                    }
+                    return true;
+                }
+                else if (!string.IsNullOrEmpty(fallbackHost) && fallbackHost != "127.0.0.1" && fallbackHost != "localhost")
+                {
+                    using (TcpClient upstream = new TcpClient())
+                    {
+                        IAsyncResult ar = upstream.BeginConnect(fallbackHost, 80, null, null);
+                        if (!ar.AsyncWaitHandle.WaitOne(3500)) return false;
+                        upstream.EndConnect(ar);
+                        clientSocket.ReceiveTimeout = 15000;
+                        clientSocket.SendTimeout = 15000;
+                        upstream.ReceiveTimeout = 15000;
+                        upstream.SendTimeout = 15000;
+                        NetworkStream upStream = upstream.GetStream();
+                        upStream.Write(initialBuf, 0, initialRead);
+                        upStream.Flush();
+                        byte[] downBuf = new byte[8192];
+                        int r;
+                        while ((r = upStream.Read(downBuf, 0, downBuf.Length)) > 0)
+                        {
+                            clientStream.Write(downBuf, 0, r);
+                            clientStream.Flush();
+                        }
+                    }
+                    return true;
+                }
+            }
+            catch {}
+            return false;
         }
 
         private static void EnforceInstalledGameBlock()
@@ -1921,8 +2200,22 @@ namespace SchoolFilter.Controller
                    "</html>";
         }
 
-        private static bool IsProxyCurrentlyEnforced()
+        private static bool AreAllUsersProxyEnforced()
         {
+            bool checkedAny = false;
+            try
+            {
+                if (IsRegistryRootProxyEnforced(Registry.CurrentUser, ""))
+                {
+                    checkedAny = true;
+                }
+                else if (!WindowsIdentity.GetCurrent().IsSystem)
+                {
+                    return false;
+                }
+            }
+            catch { }
+
             try
             {
                 string[] subKeyNames = Registry.Users.GetSubKeyNames();
@@ -1931,25 +2224,111 @@ namespace SchoolFilter.Controller
                     if (sid.StartsWith("S-1-5-21-", StringComparison.OrdinalIgnoreCase) &&
                         !sid.EndsWith("_Classes", StringComparison.OrdinalIgnoreCase))
                     {
-                        using (RegistryKey connKey = Registry.Users.OpenSubKey(sid + @"\Software\Microsoft\Windows\CurrentVersion\Internet Settings\Connections", false))
+                        try
                         {
-                            if (connKey != null)
+                            checkedAny = true;
+                            if (!IsRegistryRootProxyEnforced(Registry.Users, sid + "\\"))
                             {
-                                byte[] data = connKey.GetValue("DefaultConnectionSettings") as byte[];
-                                if (data == null || data.Length < 12 || (data[8] & PROXY_TYPE_AUTO_PROXY_URL) == 0)
-                                {
-                                    return false;
-                                }
+                                return false;
                             }
                         }
+                        catch { }
                     }
                 }
-                return true;
             }
-            catch
+            catch { }
+
+            return checkedAny;
+        }
+
+        private static bool IsAnyUserProxyEnforced()
+        {
+            try
             {
-                return false;
+                if (HasRegistryRootAnyProxy(Registry.CurrentUser, ""))
+                {
+                    return true;
+                }
             }
+            catch { }
+
+            try
+            {
+                string[] subKeyNames = Registry.Users.GetSubKeyNames();
+                foreach (string sid in subKeyNames)
+                {
+                    if (sid.StartsWith("S-1-5-21-", StringComparison.OrdinalIgnoreCase) &&
+                        !sid.EndsWith("_Classes", StringComparison.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            if (HasRegistryRootAnyProxy(Registry.Users, sid + "\\"))
+                            {
+                                return true;
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch { }
+
+            return false;
+        }
+
+        private static bool IsRegistryRootProxyEnforced(RegistryKey root, string prefix)
+        {
+            using (RegistryKey regKey = root.OpenSubKey(prefix + @"Software\Microsoft\Windows\CurrentVersion\Internet Settings", false))
+            {
+                if (regKey == null) return false;
+                string autoConfigUrl = regKey.GetValue("AutoConfigURL") as string;
+                if (string.IsNullOrEmpty(autoConfigUrl) ||
+                    autoConfigUrl.IndexOf("127.0.0.1:9999", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    return false;
+                }
+            }
+
+            using (RegistryKey connKey = root.OpenSubKey(prefix + @"Software\Microsoft\Windows\CurrentVersion\Internet Settings\Connections", false))
+            {
+                if (connKey == null) return false;
+                byte[] data = connKey.GetValue("DefaultConnectionSettings") as byte[];
+                if (data == null || data.Length < 12 || (data[8] & PROXY_TYPE_AUTO_PROXY_URL) == 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool HasRegistryRootAnyProxy(RegistryKey root, string prefix)
+        {
+            using (RegistryKey regKey = root.OpenSubKey(prefix + @"Software\Microsoft\Windows\CurrentVersion\Internet Settings", false))
+            {
+                if (regKey != null)
+                {
+                    string autoConfigUrl = regKey.GetValue("AutoConfigURL") as string;
+                    if (!string.IsNullOrEmpty(autoConfigUrl)) return true;
+
+                    object proxyEnable = regKey.GetValue("ProxyEnable");
+                    if (proxyEnable is int && ((int)proxyEnable) != 0) return true;
+                }
+            }
+
+            using (RegistryKey connKey = root.OpenSubKey(prefix + @"Software\Microsoft\Windows\CurrentVersion\Internet Settings\Connections", false))
+            {
+                if (connKey != null)
+                {
+                    byte[] data = connKey.GetValue("DefaultConnectionSettings") as byte[];
+                    if (data != null && data.Length >= 12 && (data[8] & (PROXY_TYPE_PROXY | PROXY_TYPE_AUTO_PROXY_URL)) != 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private static void SetWinInetPac(bool enable, string pacUrl)

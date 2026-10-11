@@ -528,15 +528,18 @@ namespace SchoolFilter.Setup
             // 8. If Student Station, register computer in cloud and activate the filter & cloud listener immediately!
             if (role == InstallRole.Student)
             {
+                try
+                {
+                    File.WriteAllText(Path.Combine(dataDir, "state.txt"), "auto", Encoding.UTF8);
+                }
+                catch { }
                 RegisterComputerInFirestore(roomId, roomName, institutionName);
                 if (IsAdministrator())
                 {
                     RunHiddenProcess("schtasks.exe", "/Run /TN \"SchoolFilterSystemAgent\"", true);
+                    RunHiddenProcess("schtasks.exe", "/Run /TN \"SchoolFilterGuard\"", true);
                 }
-                if (!WindowsIdentity.GetCurrent().IsSystem)
-                {
-                    RunHiddenProcess(ctlPath, "block", true);
-                }
+                RunHiddenProcess(ctlPath, "watchdog", false);
             }
 
             if (!isSilent && !suppressMsgBoxes)
