@@ -12,39 +12,48 @@
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231e3a8a'/%3E%3Cpath d='M32 8L12 16.5v15c0 13.8 8.5 26.3 20 30 11.5-3.7 20-16.2 20-30v-15L32 8z' fill='%232563eb' stroke='%2393c5fd' stroke-width='2'/%3E%3Cpath d='M27 34l-5-5-3 3 8 8 15-15-3-3-12 12z' fill='%23ffffff'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Rubik:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
+            --primary-deep: #1e3a8a;
             --primary-soft: #eff6ff;
             --primary-border: #bfdbfe;
+            --indigo: #4f46e5;
+            --indigo-soft: #eef2ff;
+            --violet: #7c3aed;
+            --violet-soft: #f5f3ff;
+            --violet-border: #ddd6fe;
             --success: #10b981;
             --success-dark: #059669;
             --success-soft: #ecfdf5;
-            --success-border: #a7f3d0;
+            --success-border: #6ee7b7;
             --danger: #ef4444;
             --danger-dark: #dc2626;
             --danger-soft: #fef2f2;
-            --danger-border: #fecaca;
+            --danger-border: #fca5a5;
             --warning: #f59e0b;
             --warning-soft: #fffbeb;
-            --warning-border: #fde68a;
+            --warning-border: #fcd34d;
             --bg: #f1f5f9;
-            --card-bg: #ffffff;
+            --card-bg: rgba(255, 255, 255, 0.94);
             --surface-muted: #f8fafc;
+            --surface-hover: #f1f5f9;
             --text-main: #0f172a;
             --text-secondary: #334155;
             --text-muted: #64748b;
             --border: #e2e8f0;
             --border-strong: #cbd5e1;
+            --radius-sm: 10px;
             --radius: 16px;
-            --radius-lg: 20px;
+            --radius-lg: 22px;
+            --radius-xl: 26px;
             --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-            --shadow-sm: 0 2px 8px -2px rgba(15, 23, 42, 0.06);
-            --shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.06), 0 2px 8px -2px rgba(15, 23, 42, 0.04);
-            --shadow-lg: 0 20px 45px -12px rgba(15, 23, 42, 0.14);
-            --transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            --shadow-sm: 0 4px 14px -3px rgba(15, 23, 42, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+            --shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.08), 0 4px 12px -3px rgba(15, 23, 42, 0.04);
+            --shadow-lg: 0 24px 48px -12px rgba(15, 23, 42, 0.16);
+            --transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         * {
@@ -55,96 +64,117 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* ====== ZERO-SCROLL SINGLE VIEWPORT LOCK (Desktop & Mobile) ====== */
+        h1, h2, h3, .room-tab-title, .panel-title, .btn, .badge, .mini-kpi-val {
+            font-family: 'Rubik', 'Heebo', sans-serif;
+        }
+
+        /* Custom sleek scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* ====== DESKTOP VIEWPORT & AMBIENT MESH BACKDROP ====== */
         html, body {
             height: 100vh;
             height: 100dvh;
-            max-height: 100dvh;
-            width: 100vw;
-            overflow: hidden !important;
+            width: 100%;
+            overflow: hidden;
             overscroll-behavior: none;
-            background-color: var(--bg);
+            background-color: #eef2f6;
             background-image:
-                radial-gradient(at 95% 0%, rgba(37, 99, 235, 0.08) 0px, transparent 45%),
-                radial-gradient(at 5% 15%, rgba(79, 70, 229, 0.06) 0px, transparent 40%),
-                radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+                radial-gradient(at 92% 4%, rgba(37, 99, 235, 0.11) 0px, transparent 42%),
+                radial-gradient(at 8% 12%, rgba(124, 58, 237, 0.08) 0px, transparent 38%),
+                radial-gradient(at 50% 96%, rgba(16, 185, 129, 0.07) 0px, transparent 48%);
             color: var(--text-main);
-            line-height: 1.35;
+            line-height: 1.4;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* ====== MAIN CONTAINER (100dvh Flex Column) ====== */
         .container {
-            max-width: 1180px;
+            max-width: 1420px;
             width: 100%;
             height: 100vh;
             height: 100dvh;
-            max-height: 100dvh;
             margin: 0 auto;
-            padding: 10px 18px 6px;
+            padding: 12px 20px 8px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             overflow: hidden;
         }
 
-        /* ====== TOP HEADER BAR (Inside Container) ====== */
+        /* ====== TOP GLASS HEADER BAR ====== */
         header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(226, 232, 240, 0.95);
-            border-radius: 16px;
-            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.85);
+            box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(226, 232, 240, 0.8);
+            border-radius: 18px;
+            padding: 9px 18px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 12px;
-            box-shadow: var(--shadow-sm);
+            gap: 14px;
             flex-shrink: 0;
+            z-index: 100;
         }
 
         .header-right {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 16px;
             min-width: 0;
         }
 
         .header-brand {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 11px;
             min-width: 0;
         }
 
         .logo-icon {
-            width: 38px;
-            height: 38px;
-            background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
             color: white;
-            border-radius: 11px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.4);
+            box-shadow: 0 6px 16px -3px rgba(37, 99, 235, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35);
             flex-shrink: 0;
         }
 
         .logo-icon svg {
-            width: 21px;
-            height: 21px;
+            width: 22px;
+            height: 22px;
         }
 
         .brand-text h1 {
-            font-size: 18px;
-            font-weight: 900;
-            color: var(--text-main);
-            letter-spacing: -0.3px;
+            font-size: 19px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.4px;
             line-height: 1.1;
         }
 
         .brand-subtitle {
-            font-size: 11px;
+            font-size: 11.5px;
             color: var(--text-muted);
             font-weight: 500;
             white-space: nowrap;
@@ -157,17 +187,17 @@
             display: none;
             align-items: center;
             gap: 4px;
-            background: #f1f5f9;
+            background: rgba(241, 245, 249, 0.9);
             padding: 4px;
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px solid var(--border);
         }
 
         .nav-tab-btn {
-            padding: 5px 12px;
-            border-radius: 7px;
-            font-weight: 800;
-            font-size: 12.5px;
+            padding: 6px 14px;
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 13px;
             border: none;
             cursor: pointer;
             background: transparent;
@@ -183,7 +213,7 @@
         .nav-tab-btn.active {
             background: #ffffff;
             color: var(--primary);
-            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
         }
 
         .header-toolbar {
@@ -197,21 +227,21 @@
             background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             color: #ffffff;
             text-decoration: none;
-            padding: 7px 14px;
-            border-radius: 10px;
+            padding: 8px 15px;
+            border-radius: 11px;
             font-size: 12.5px;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.24);
+            gap: 7px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
             transition: var(--transition);
             white-space: nowrap;
         }
 
         .btn-download-header:hover {
             transform: translateY(-1px);
-            box-shadow: 0 5px 14px rgba(37, 99, 235, 0.34);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
             background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
         }
 
@@ -220,12 +250,12 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            padding: 4px 10px;
+            padding: 4px 11px;
             border-radius: 9999px;
             font-size: 11.5px;
             font-weight: 700;
             white-space: nowrap;
-            line-height: 1.15;
+            line-height: 1.2;
         }
 
         .badge-online {
@@ -262,6 +292,12 @@
 
         .status-dot.pulse {
             box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+            animation: statusPulse 2s infinite;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3); }
+            50% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.1); }
         }
 
         /* ====== BUTTON SYSTEM ====== */
@@ -270,8 +306,8 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
-            padding: 7px 13px;
-            border-radius: 9px;
+            padding: 8px 14px;
+            border-radius: 10px;
             font-size: 12.5px;
             font-weight: 700;
             cursor: pointer;
@@ -282,23 +318,24 @@
         }
 
         .btn:active {
-            transform: scale(0.97);
+            transform: scale(0.96);
         }
 
         .btn-primary {
-            background: var(--primary);
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             color: white;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.22);
         }
 
         .btn-primary:hover {
-            background: var(--primary-hover);
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            box-shadow: 0 5px 14px rgba(37, 99, 235, 0.3);
         }
 
         .btn-success {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.22);
+            box-shadow: 0 3px 10px rgba(16, 185, 129, 0.22);
         }
 
         .btn-success:hover {
@@ -321,6 +358,7 @@
             background: #ffffff;
             border: 1px solid var(--border-strong);
             color: var(--text-secondary);
+            box-shadow: var(--shadow-xs);
         }
 
         .btn-outline:hover {
@@ -330,9 +368,9 @@
         }
 
         .btn-sm {
-            padding: 5px 10px;
-            font-size: 11.5px;
-            border-radius: 8px;
+            padding: 6px 11px;
+            font-size: 12px;
+            border-radius: 9px;
         }
 
         /* ====== FORM INPUTS ====== */
@@ -341,9 +379,9 @@
         input[type="email"],
         input[type="url"],
         select {
-            padding: 7px 11px;
-            border: 1.5px solid var(--border);
-            border-radius: 9px;
+            padding: 8px 12px;
+            border: 1.5px solid var(--border-strong);
+            border-radius: 10px;
             font-size: 13px;
             color: var(--text-main);
             outline: none;
@@ -357,27 +395,28 @@
 
         input:focus, select:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.14);
         }
 
-        /* ====== AUTH / HOME HERO SCREEN (Centered in 100dvh) ====== */
+        /* ====== AUTH / HOME HERO SCREEN ====== */
         .auth-wrapper {
             flex: 1;
             min-height: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            padding: 12px;
         }
 
         .auth-card {
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(20px);
             max-width: 560px;
             width: 100%;
-            border-radius: 22px;
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow-lg);
-            padding: 24px 28px 20px;
+            border-radius: 26px;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.14), 0 0 0 1px rgba(226, 232, 240, 0.8);
+            padding: 30px 32px 24px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -389,82 +428,81 @@
             top: 0;
             right: 0;
             left: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #2563eb, #4f46e5, #0ea5e9);
+            height: 6px;
+            background: linear-gradient(90deg, #2563eb, #7c3aed, #10b981);
         }
 
         .auth-emblem {
-            width: 52px;
-            height: 52px;
-            border-radius: 15px;
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
             background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
             border: 1px solid #bfdbfe;
             color: var(--primary);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
-            margin-bottom: 8px;
-            box-shadow: 0 6px 16px -4px rgba(37, 99, 235, 0.16);
+            font-size: 30px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.2);
         }
 
         .btn-google {
-            background: #ffffff;
-            color: #0f172a;
-            border: 2px solid #cbd5e1;
-            font-size: 14.5px;
-            font-weight: 800;
-            padding: 11px 18px;
-            border-radius: 12px;
-            box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+            background: #0f172a;
+            color: #ffffff;
+            border: 1px solid #1e293b;
+            font-size: 15px;
+            font-weight: 700;
+            padding: 13px 20px;
+            border-radius: 14px;
+            box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.25);
             width: 100%;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
             transition: var(--transition);
         }
 
         .btn-google:hover {
-            border-color: var(--primary);
-            background: #f8fafc;
+            background: #1e293b;
             transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.12);
+            box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.32);
         }
 
         .features-grid-mini {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 14px;
+            gap: 10px;
+            margin-top: 18px;
             text-align: right;
         }
 
         .feature-pill-box {
             background: var(--surface-muted);
             border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 8px 10px;
+            border-radius: 13px;
+            padding: 10px 12px;
         }
 
         .feature-pill-box strong {
             display: block;
-            font-size: 11.5px;
+            font-size: 12px;
             color: var(--text-main);
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
 
         .feature-pill-box span {
-            font-size: 10.5px;
+            font-size: 11px;
             color: var(--text-muted);
-            line-height: 1.25;
+            line-height: 1.3;
             display: block;
         }
 
         .quick-install-strip {
-            margin-top: 10px;
+            margin-top: 14px;
             background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
             border: 1px solid #bfdbfe;
-            border-radius: 11px;
-            padding: 10px 13px;
+            border-radius: 14px;
+            padding: 11px 15px;
             text-align: right;
             display: flex;
             align-items: center;
@@ -472,13 +510,13 @@
             gap: 10px;
         }
 
-        /* ====== DASHBOARD WORKSPACE (100% Fit inside Viewport, Zero Scroll) ====== */
+        /* ====== DASHBOARD WORKSPACE ====== */
         #dashboard {
             flex: 1;
             min-height: 0;
             display: none;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             overflow: hidden;
         }
 
@@ -486,12 +524,13 @@
         .mobile-top-room-bar,
         .mobile-bottom-nav,
         .mobile-remote-hero,
+        .mobile-only-section,
         .mobile-admin-subtabs {
             display: none;
         }
 
-        /* Desktop Tab Switching via attribute */
-        @media (min-width: 821px) {
+        /* Desktop Tab Switching */
+        @media (min-width: 961px) {
             #dashboard[data-desktop-tab="rooms"] #tabRoomsContent {
                 display: grid;
             }
@@ -511,17 +550,18 @@
             flex: 1;
             min-height: 0;
             display: grid;
-            grid-template-columns: 275px 1fr;
-            gap: 10px;
+            grid-template-columns: 290px 1fr;
+            gap: 12px;
             overflow: hidden;
         }
 
         .panel-card {
             background: var(--card-bg);
-            border-radius: 16px;
-            border: 1px solid var(--border);
+            backdrop-filter: blur(16px);
+            border-radius: 20px;
+            border: 1px solid rgba(226, 232, 240, 0.9);
             box-shadow: var(--shadow-sm);
-            padding: 12px 14px;
+            padding: 14px 16px;
             display: flex;
             flex-direction: column;
             min-height: 0;
@@ -533,66 +573,68 @@
             justify-content: space-between;
             align-items: center;
             gap: 8px;
-            padding-bottom: 8px;
-            margin-bottom: 8px;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
+            flex-wrap: wrap;
         }
 
         .panel-title {
-            font-size: 14px;
+            font-size: 14.5px;
             font-weight: 800;
             color: var(--text-main);
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 7px;
         }
 
         /* Sidebar KPI mini row */
         .sidebar-kpi-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            margin-bottom: 8px;
+            gap: 8px;
+            margin-bottom: 10px;
             flex-shrink: 0;
         }
 
         .mini-kpi {
             background: var(--surface-muted);
             border: 1px solid var(--border);
-            border-radius: 9px;
-            padding: 6px 9px;
+            border-radius: 12px;
+            padding: 8px 11px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
 
         .mini-kpi-label {
-            font-size: 11px;
+            font-size: 11.5px;
             color: var(--text-muted);
             font-weight: 600;
         }
 
         .mini-kpi-val {
-            font-size: 13.5px;
-            font-weight: 900;
+            font-size: 15px;
+            font-weight: 800;
             color: var(--text-main);
         }
 
-        /* Sidebar Rooms List (Zero Scroll) */
+        /* Sidebar Rooms List */
         .rooms-grid {
             flex: 1;
             min-height: 0;
-            overflow: hidden;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
+            padding-left: 2px;
         }
 
         .room-tab {
             border: 1.5px solid var(--border);
-            border-radius: 11px;
-            padding: 9px 11px;
+            border-radius: 14px;
+            padding: 11px 13px;
             cursor: pointer;
             background: var(--surface-muted);
             transition: var(--transition);
@@ -603,21 +645,23 @@
         .room-tab:hover {
             border-color: #93c5fd;
             background: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-xs);
         }
 
         .room-tab.active {
             border-color: var(--primary);
-            background: #eff6ff;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.1);
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+            box-shadow: 0 4px 14px -3px rgba(37, 99, 235, 0.15);
         }
 
         .room-tab.active::before {
             content: '';
             position: absolute;
-            top: 6px;
-            bottom: 6px;
+            top: 8px;
+            bottom: 8px;
             right: 0;
-            width: 3.5px;
+            width: 4px;
             border-radius: 4px 0 0 4px;
             background: var(--primary);
         }
@@ -627,11 +671,11 @@
             justify-content: space-between;
             align-items: center;
             gap: 6px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .room-tab-title {
-            font-size: 13.5px;
+            font-size: 14px;
             font-weight: 800;
             color: var(--text-main);
             white-space: nowrap;
@@ -643,7 +687,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 11px;
+            font-size: 11.5px;
             color: var(--text-muted);
         }
 
@@ -653,8 +697,8 @@
             font-weight: 700;
             color: #334155;
             background: #e2e8f0;
-            padding: 1px 6px;
-            border-radius: 4px;
+            padding: 2px 7px;
+            border-radius: 6px;
             direction: ltr;
         }
 
@@ -662,100 +706,166 @@
         .workspace-col {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             min-height: 0;
             overflow: hidden;
         }
 
-        /* Active Room Command Banner */
+        /* ====== EXECUTIVE HERO COMMAND DECK (Locked vs Open State) ====== */
         .command-center-card {
-            background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%);
-            border: 1.5px solid #fecaca;
-            border-radius: 16px;
-            padding: 11px 16px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 48%, #7f1d1d 100%);
+            border: 1px solid rgba(252, 165, 165, 0.25);
+            border-radius: 22px;
+            padding: 15px 20px;
             flex-shrink: 0;
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 12px 30px -8px rgba(15, 23, 42, 0.25);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 10px;
+            gap: 14px;
             flex-wrap: wrap;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            transition: background 0.35s ease, border-color 0.35s ease;
+        }
+
+        .command-center-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -10%;
+            width: 240px;
+            height: 240px;
+            background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%);
+            pointer-events: none;
         }
 
         .command-center-card.room-open-mode {
-            border-color: #a7f3d0;
-            background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #047857 100%);
+            border-color: rgba(110, 231, 183, 0.3);
         }
 
         .room-hero-info {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 7px;
+            z-index: 1;
+        }
+
+        #activeRoomTitle {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff !important;
+            letter-spacing: -0.3px;
+        }
+
+        .command-center-card #filterStateBadge.badge-offline {
+            background: rgba(239, 68, 68, 0.22);
+            color: #fecaca;
+            border: 1px solid rgba(252, 165, 165, 0.45);
+            backdrop-filter: blur(8px);
+        }
+
+        .command-center-card #filterStateBadge.badge-online {
+            background: rgba(16, 185, 129, 0.24);
+            color: #a7f3d0;
+            border: 1px solid rgba(110, 231, 183, 0.5);
+            backdrop-filter: blur(8px);
         }
 
         .room-code-pill {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid #cbd5e1;
-            padding: 2px 9px;
-            border-radius: 7px;
-            font-size: 11.5px;
-            color: var(--text-secondary);
+            gap: 7px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 3px 10px;
+            border-radius: 9px;
+            font-size: 12px;
+            color: #cbd5e1;
             width: fit-content;
+            backdrop-filter: blur(6px);
         }
 
         .room-code-pill code {
             font-family: Consolas, Monaco, monospace;
             font-weight: 800;
-            color: #0f172a;
-            font-size: 12px;
+            color: #ffffff;
+            font-size: 12.5px;
             direction: ltr;
         }
 
         .btn-copy-code {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            color: var(--primary);
-            border-radius: 5px;
-            padding: 1px 6px;
-            font-size: 10.5px;
+            background: rgba(255, 255, 255, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 11px;
             font-weight: 700;
             cursor: pointer;
+            transition: var(--transition);
         }
 
         .btn-copy-code:hover {
-            background: var(--primary);
-            color: white;
+            background: #ffffff;
+            color: #0f172a;
         }
 
         .master-control-buttons {
             display: flex;
-            gap: 8px;
+            gap: 9px;
             align-items: center;
+            z-index: 1;
+            flex-wrap: wrap;
         }
 
         .btn-lock-action {
-            padding: 9px 15px;
-            font-size: 13px;
-            border-radius: 11px;
+            padding: 10px 18px;
+            font-size: 13.5px;
+            border-radius: 13px;
             font-weight: 800;
-            box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+            transition: var(--transition);
+            border: 1.5px solid transparent;
         }
 
         .btn-mode-lock {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+        }
+
+        .btn-mode-lock:hover {
+            background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+            transform: translateY(-1px);
         }
 
         .btn-mode-open {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+        }
+
+        .btn-mode-open:hover {
+            background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+            transform: translateY(-1px);
         }
 
         .btn-mode-active-ring {
-            box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.2), 0 6px 14px rgba(15, 23, 42, 0.14);
+            border-color: #ffffff !important;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.28), 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .btn-preview-student {
+            background: rgba(255, 255, 255, 0.12) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
+            backdrop-filter: blur(8px);
+        }
+
+        .btn-preview-student:hover {
+            background: rgba(255, 255, 255, 0.22) !important;
         }
 
         /* Workspace Lower Split (Computers + Whitelist side-by-side) */
@@ -763,23 +873,50 @@
             flex: 1;
             min-height: 0;
             display: grid;
-            grid-template-columns: 1fr 1.15fr;
-            gap: 10px;
+            grid-template-columns: 1.08fr 1fr;
+            gap: 12px;
             overflow: hidden;
         }
 
-        /* Installed Computers High-Density Grid (Zero Scroll) */
+        /* ====== COMPUTERS PANEL & LUXURY STATION CARDS ====== */
+        .pc-filter-pills {
+            display: inline-flex;
+            background: #f1f5f9;
+            padding: 3px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            gap: 2px;
+        }
+
+        .pc-filter-btn {
+            border: none;
+            background: transparent;
+            padding: 4px 9px;
+            border-radius: 7px;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .pc-filter-btn.active {
+            background: #ffffff;
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+        }
+
         .computers-summary-strip {
             display: flex;
             align-items: center;
             gap: 6px;
             flex-wrap: wrap;
-            margin-bottom: 7px;
-            padding: 5px 8px;
+            margin-bottom: 9px;
+            padding: 6px 10px;
             background: #f8fafc;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 11px;
+            border-radius: 11px;
+            font-size: 11.5px;
             font-weight: 700;
             flex-shrink: 0;
         }
@@ -789,53 +926,124 @@
             min-height: 0;
             overflow-y: auto;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
             align-content: start;
-            gap: 6px;
-            padding-left: 2px;
+            gap: 8px;
+            padding-left: 3px;
         }
 
         .computer-card {
-            background: var(--surface-muted);
+            background: #ffffff;
             border: 1.5px solid var(--border);
-            border-radius: 9px;
-            padding: 6px 8px;
+            border-radius: 14px;
+            padding: 10px 12px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 6px;
+            flex-direction: column;
+            gap: 8px;
             transition: var(--transition);
+            position: relative;
+            box-shadow: 0 2px 5px rgba(15, 23, 42, 0.02);
+        }
+
+        .computer-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px -3px rgba(15, 23, 42, 0.07);
         }
 
         .computer-card.is-locked {
-            border-color: #fca5a5;
-            background: linear-gradient(to left, #fff1f2 0%, #ffffff 60%);
+            border-color: #fecaca;
+            background: linear-gradient(145deg, #fff5f5 0%, #ffffff 55%);
         }
 
         .computer-card.is-open {
-            border-color: #6ee7b7;
-            background: linear-gradient(to left, #ecfdf5 0%, #ffffff 60%);
+            border-color: #a7f3d0;
+            background: linear-gradient(145deg, #f0fdf4 0%, #ffffff 55%);
+        }
+
+        .computer-card.is-overridden {
+            border-color: #c4b5fd;
+            box-shadow: 0 4px 12px -2px rgba(124, 58, 237, 0.12);
         }
 
         .computer-card.is-unsynced {
-            border: 2px solid #f59e0b;
-            background: linear-gradient(to left, #fffbeb 0%, #fef3c7 100%);
-            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.22);
+            border: 1.5px solid #f59e0b;
+            background: linear-gradient(145deg, #fffbeb 0%, #ffffff 65%);
         }
 
         .computer-card.is-offline {
             border-color: #e2e8f0;
             background: #f8fafc;
-            opacity: 0.78;
+            opacity: 0.82;
+        }
+
+        .pc-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        .pc-card-title-group {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 0;
+        }
+
+        .pc-led {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .pc-led.online-locked {
+            background: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+        }
+
+        .pc-led.online-open {
+            background: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22);
+        }
+
+        .pc-led.online-sync {
+            background: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+        }
+
+        .pc-led.offline {
+            background: #94a3b8;
+        }
+
+        .computer-name {
+            font-size: 13.5px;
+            font-weight: 800;
+            color: var(--text-main);
+            direction: ltr;
+            font-family: Consolas, Monaco, 'Rubik', monospace;
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pc-card-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            padding-top: 6px;
+            border-top: 1px dashed rgba(203, 213, 225, 0.7);
         }
 
         .pc-state-pill {
             display: inline-flex;
             align-items: center;
             gap: 3px;
-            padding: 1px 6px;
+            padding: 2px 8px;
             border-radius: 999px;
-            font-size: 10px;
+            font-size: 10.5px;
             font-weight: 800;
             white-space: nowrap;
             flex-shrink: 0;
@@ -861,17 +1069,17 @@
 
         .pc-ver-badge {
             display: inline-block;
-            padding: 0px 5px;
-            border-radius: 4px;
-            font-size: 9.5px;
+            padding: 1px 6px;
+            border-radius: 5px;
+            font-size: 10px;
             font-weight: 800;
             direction: ltr;
         }
 
         .pc-ver-badge.ver-ok {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
         }
 
         .pc-ver-badge.ver-old {
@@ -885,64 +1093,55 @@
             background: #fef3c7;
             color: #b45309;
             border: 1px solid #f59e0b;
-            border-radius: 4px;
-            padding: 0px 5px;
-            font-size: 9.5px;
+            border-radius: 5px;
+            padding: 1px 6px;
+            font-size: 10px;
             font-weight: 800;
-        }
-
-        .computer-name {
-            font-size: 12px;
-            font-weight: 800;
-            color: var(--text-main);
-            direction: ltr;
-            display: inline-block;
-            word-break: break-all;
-            font-family: 'Heebo', Consolas, monospace;
         }
 
         .computer-meta {
-            font-size: 10px;
+            font-size: 10.5px;
             color: var(--text-muted);
-            margin-top: 3px;
             display: flex;
             align-items: center;
             gap: 4px;
             flex-wrap: wrap;
+            min-width: 0;
         }
 
         .btn-remove-pc {
-            background: #ffffff;
+            background: transparent;
             color: #94a3b8;
-            border: 1px solid var(--border);
-            border-radius: 5px;
+            border: none;
+            border-radius: 6px;
             width: 22px;
             height: 22px;
             cursor: pointer;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
             flex-shrink: 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            transition: var(--transition);
         }
 
         .btn-remove-pc:hover {
             background: var(--danger-soft);
             color: var(--danger-dark);
-            border-color: var(--danger-border);
         }
 
         .btn-pc-toggle {
-            padding: 2px 7px;
-            border-radius: 6px;
-            font-size: 10.5px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11.5px;
             font-weight: 800;
             cursor: pointer;
             transition: var(--transition);
             display: inline-flex;
             align-items: center;
-            gap: 3px;
+            justify-content: center;
+            gap: 4px;
             white-space: nowrap;
             flex-shrink: 0;
         }
@@ -957,6 +1156,7 @@
             background: #10b981;
             color: #ffffff;
             border-color: #059669;
+            box-shadow: 0 3px 8px rgba(16, 185, 129, 0.25);
         }
 
         .btn-pc-toggle.to-lock {
@@ -969,65 +1169,116 @@
             background: #ef4444;
             color: #ffffff;
             border-color: #dc2626;
+            box-shadow: 0 3px 8px rgba(239, 68, 68, 0.25);
         }
 
         .pc-override-tag {
             display: inline-flex;
             align-items: center;
-            gap: 2px;
+            gap: 3px;
             background: #ede9fe;
             color: #5b21b6;
             border: 1px solid #c4b5fd;
-            border-radius: 4px;
-            padding: 0px 5px;
-            font-size: 9.5px;
+            border-radius: 5px;
+            padding: 1px 6px;
+            font-size: 10px;
             font-weight: 800;
         }
 
         /* Compact Remote Footer inside Computers Card */
         .remote-footer-bar {
-            margin-top: 8px;
-            padding-top: 8px;
+            margin-top: 10px;
+            padding-top: 10px;
             border-top: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             flex-wrap: wrap;
             flex-shrink: 0;
         }
 
-        /* Whitelist Profiles Bar & Panel (Compact Pills — Zero Scroll) */
+        /* ====== WHITELIST & SAVED PROFILES PANEL ====== */
         .profiles-bar {
             display: flex;
-            align-items: center;
-            gap: 6px;
+            flex-direction: column;
+            gap: 7px;
             background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
             border: 1px solid #bfdbfe;
-            border-radius: 10px;
-            padding: 6px 9px;
-            margin-bottom: 7px;
+            border-radius: 14px;
+            padding: 9px 11px;
+            margin-bottom: 9px;
             flex-shrink: 0;
+        }
+
+        .profiles-bar-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
             flex-wrap: wrap;
         }
 
         .profiles-bar select {
             flex: 1;
-            min-width: 150px;
-            padding: 4px 8px;
-            font-size: 12px;
-            font-weight: 800;
-            border-radius: 7px;
+            min-width: 140px;
+            padding: 5px 10px;
+            font-size: 12.5px;
+            font-weight: 700;
+            border-radius: 9px;
             border-color: #93c5fd;
             color: #1e3a8a;
             background: #ffffff;
         }
 
+        .quick-profile-pills {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 2px;
+        }
+
+        .quick-profile-pills::-webkit-scrollbar {
+            display: none;
+        }
+
+        .profile-chip-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 11px;
+            border-radius: 999px;
+            border: 1.5px solid #cbd5e1;
+            background: #ffffff;
+            color: var(--text-secondary);
+            font-size: 11.5px;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        .profile-chip-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .profile-chip-btn.active {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+        }
+
         .profile-modal-list {
             display: flex;
             flex-direction: column;
-            gap: 7px;
-            max-height: 270px;
+            gap: 8px;
+            max-height: 290px;
             overflow-y: auto;
             margin-top: 10px;
             padding-left: 2px;
@@ -1037,24 +1288,27 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
-            padding: 9px 11px;
-            border-radius: 11px;
+            gap: 10px;
+            padding: 11px 13px;
+            border-radius: 13px;
             border: 1.5px solid var(--border);
             background: var(--surface-muted);
+            transition: var(--transition);
         }
 
-        .profile-modal-item.is-active {
-            border-color: var(--primary);
-            background: #eff6ff;
+        .Preset-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-shrink: 0;
         }
 
         .preset-chips-bar {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             flex-wrap: wrap;
-            margin-bottom: 7px;
+            margin-bottom: 9px;
             flex-shrink: 0;
         }
 
@@ -1062,9 +1316,9 @@
             background: var(--surface-muted);
             border: 1px solid var(--border-strong);
             color: var(--text-secondary);
-            padding: 3px 8px;
+            padding: 4px 10px;
             border-radius: 999px;
-            font-size: 11px;
+            font-size: 11.5px;
             font-weight: 700;
             cursor: pointer;
             transition: var(--transition);
@@ -1083,33 +1337,36 @@
             display: flex;
             flex-wrap: wrap;
             align-content: flex-start;
-            gap: 6px;
+            gap: 7px;
+            padding-left: 2px;
         }
 
         .site-pill {
             display: inline-flex;
             align-items: center;
             gap: 7px;
-            padding: 5px 10px;
-            background: var(--surface-muted);
-            border: 1px solid var(--border-strong);
-            border-radius: 999px;
+            padding: 6px 12px;
+            background: #ffffff;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
             transition: var(--transition);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
         }
 
         .site-pill.core {
-            background: #eff6ff;
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
             border-color: #bfdbfe;
         }
 
         .site-pill:hover {
-            background: #ffffff;
             border-color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(37, 99, 235, 0.1);
         }
 
         .site-domain {
             font-weight: 700;
-            font-size: 12.5px;
+            font-size: 13px;
             direction: ltr;
             color: var(--text-main);
         }
@@ -1119,8 +1376,8 @@
             color: #dc2626;
             border: none;
             border-radius: 50%;
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             font-size: 10px;
             font-weight: 900;
             cursor: pointer;
@@ -1128,6 +1385,7 @@
             align-items: center;
             justify-content: center;
             line-height: 1;
+            transition: var(--transition);
         }
 
         .btn-remove-site-pill:hover {
@@ -1135,23 +1393,23 @@
             color: #ffffff;
         }
 
-        /* Tab 2: Users & Institutions Split View (Zero Scroll) */
+        /* Tab 2: Users & Institutions Split View */
         .admin-split-grid {
             flex: 1;
             min-height: 0;
             display: grid;
             grid-template-columns: 1fr 1.45fr;
-            gap: 10px;
+            gap: 12px;
             overflow: hidden;
         }
 
         .table-scroll-box {
             flex: 1;
             min-height: 0;
-            overflow: hidden;
-            border-radius: 10px;
+            overflow-y: auto;
+            border-radius: 12px;
             border: 1px solid var(--border);
-            margin-top: 8px;
+            margin-top: 10px;
         }
 
         .table-list {
@@ -1160,10 +1418,10 @@
         }
 
         .table-list th, .table-list td {
-            padding: 8px 10px;
+            padding: 10px 12px;
             border-bottom: 1px solid var(--border);
             text-align: right;
-            font-size: 12.5px;
+            font-size: 13px;
         }
 
         .table-list th {
@@ -1171,6 +1429,8 @@
             color: var(--text-muted);
             font-weight: 700;
             font-size: 11.5px;
+            position: sticky;
+            top: 0;
         }
 
         /* ====== MODALS & TOAST ====== */
@@ -1178,9 +1438,9 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.72);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 9999;
             align-items: center;
             justify-content: center;
@@ -1189,28 +1449,30 @@
 
         .modal-box {
             background: #ffffff;
-            max-width: 500px;
+            max-width: 520px;
             width: 100%;
-            border-radius: 22px;
+            border-radius: 24px;
             padding: 24px;
             box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
             position: relative;
             border: 1px solid var(--border);
+            max-height: 90dvh;
+            overflow-y: auto;
         }
 
         .toast {
             position: fixed;
-            bottom: 20px;
+            bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.94);
-            backdrop-filter: blur(10px);
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
             color: white;
-            padding: 11px 22px;
+            padding: 12px 24px;
             border-radius: 999px;
             font-size: 13.5px;
             font-weight: 700;
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.35);
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12);
             display: none;
             z-index: 10000;
             text-align: center;
@@ -1238,37 +1500,51 @@
         }
 
         /* =====================================================================
-           📱 NATIVE MOBILE APP UI/UX MODE (Smartphones & Compact Screens <= 820px)
-           Zero-Scroll 100dvh App Architecture with Bottom Tab Bar & Room Pills
+           📱 ULTRA-SLEEK NATIVE SMARTPHONE APP EXPERIENCE (<= 960px)
+           Natural Smooth Scroll + Sticky Glass Header + Floating iOS Dock
            ===================================================================== */
-        @media (max-width: 820px) {
-            .container {
-                padding: 8px 10px calc(6px + env(safe-area-inset-bottom, 0px));
-                gap: 7px;
+        @media (max-width: 960px) {
+            html, body {
+                height: auto !important;
+                min-height: 100dvh;
+                max-height: none !important;
+                overflow-x: hidden !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
             }
 
-            /* Compact Mobile App Header */
+            .container {
+                height: auto !important;
+                max-height: none !important;
+                min-height: 100dvh;
+                padding: 10px 12px calc(98px + env(safe-area-inset-bottom, 0px));
+                gap: 12px;
+                overflow: visible !important;
+            }
+
+            /* Sticky Glass Header on Mobile */
             header {
-                padding: 8px 11px;
-                border-radius: 14px;
+                position: sticky;
+                top: 8px;
+                z-index: 300;
+                padding: 10px 14px;
+                border-radius: 16px;
                 gap: 8px;
+                background: rgba(255, 255, 255, 0.92);
+                box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.1);
             }
 
             .logo-icon {
-                width: 34px;
-                height: 34px;
-                border-radius: 10px;
+                width: 36px;
+                height: 36px;
+                border-radius: 11px;
             }
 
             .brand-text h1 {
-                font-size: 16px;
+                font-size: 17px;
             }
 
-            .brand-subtitle {
-                display: none;
-            }
-
-            /* Hide desktop top nav tabs & role badge on mobile to keep header clean */
+            .brand-subtitle,
             #headerNavTabs,
             #userRoleBadge,
             footer {
@@ -1276,9 +1552,9 @@
             }
 
             .btn-download-header {
-                padding: 6px 10px;
+                padding: 7px 11px;
                 font-size: 11.5px;
-                border-radius: 9px;
+                border-radius: 10px;
             }
 
             .btn-download-header span {
@@ -1286,100 +1562,87 @@
             }
 
             .btn-download-header::after {
-                content: 'הורדה';
+                content: 'התקנה';
             }
 
             #statusBadge {
-                max-width: 115px;
+                max-width: 118px;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                font-size: 10.5px;
-                padding: 4px 8px;
+                font-size: 11px;
+                padding: 4px 9px;
             }
 
             #btnLogout {
-                padding: 5px 8px;
-                font-size: 11px;
+                padding: 6px 10px;
+                font-size: 11.5px;
             }
 
-            /* Mobile Auth / Home Screen */
+            /* Prevent iOS Safari auto-zoom on input focus */
+            input[type="text"],
+            input[type="password"],
+            input[type="email"],
+            input[type="url"],
+            select {
+                font-size: 16px !important;
+                padding: 10px 13px;
+                border-radius: 12px;
+            }
+
+            /* Mobile Auth Card */
+            .auth-wrapper {
+                padding: 16px 4px;
+            }
+
             .auth-card {
-                padding: 18px 16px 16px;
-                border-radius: 20px;
-            }
-
-            .auth-emblem {
-                width: 44px;
-                height: 44px;
-                font-size: 22px;
-                margin-bottom: 6px;
-            }
-
-            .auth-card h2 {
-                font-size: 19px !important;
-            }
-
-            .auth-card p {
-                font-size: 12.5px !important;
-                margin-bottom: 12px !important;
+                padding: 24px 18px 20px;
+                border-radius: 24px;
             }
 
             .features-grid-mini {
                 grid-template-columns: 1fr;
-                gap: 6px;
-                margin-top: 10px;
+                gap: 8px;
             }
 
             .feature-pill-box {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 7px 10px;
+                gap: 10px;
+                padding: 10px 12px;
             }
 
             .feature-pill-box strong {
                 margin-bottom: 0;
                 white-space: nowrap;
-                font-size: 11.5px;
             }
 
-            .feature-pill-box span {
-                font-size: 11px;
+            /* Dashboard on Mobile: Natural Flex Flow */
+            #dashboard {
+                overflow: visible !important;
+                gap: 12px;
             }
 
-            .quick-install-strip {
-                padding: 8px 10px;
-                margin-top: 8px;
-            }
-
-            /* Mobile Top Room Switcher Strip */
+            /* Sticky Horizontal Room Switcher Strip */
             .mobile-top-room-bar {
                 display: flex;
                 flex-direction: column;
-                gap: 6px;
-                background: #ffffff;
-                border: 1px solid var(--border);
-                border-radius: 14px;
-                padding: 7px 10px;
-                box-shadow: var(--shadow-xs);
-                flex-shrink: 0;
-            }
-
-            .mobile-inst-row {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 6px;
+                gap: 8px;
+                background: rgba(255, 255, 255, 0.94);
+                backdrop-filter: blur(16px);
+                border: 1px solid rgba(226, 232, 240, 0.95);
+                border-radius: 18px;
+                padding: 10px 12px;
+                box-shadow: var(--shadow-sm);
             }
 
             .mobile-room-pills {
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 8px;
                 overflow-x: auto;
                 scrollbar-width: none;
                 -ms-overflow-style: none;
-                padding-bottom: 1px;
+                padding-bottom: 2px;
             }
 
             .mobile-room-pills::-webkit-scrollbar {
@@ -1389,13 +1652,13 @@
             .mobile-room-pill {
                 display: inline-flex;
                 align-items: center;
-                gap: 5px;
-                padding: 6px 12px;
-                border-radius: 999px;
+                gap: 7px;
+                padding: 9px 15px;
+                border-radius: 14px;
                 border: 1.5px solid var(--border);
                 background: var(--surface-muted);
                 color: var(--text-secondary);
-                font-size: 12.5px;
+                font-size: 13.5px;
                 font-weight: 800;
                 white-space: nowrap;
                 cursor: pointer;
@@ -1404,49 +1667,44 @@
             }
 
             .mobile-room-pill.active {
-                background: var(--primary);
+                background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
                 color: #ffffff;
-                border-color: var(--primary);
-                box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
-            }
-
-            .mobile-room-pill .pill-dot {
-                width: 7px;
-                height: 7px;
-                border-radius: 50%;
+                border-color: transparent;
+                box-shadow: 0 6px 16px -3px rgba(37, 99, 235, 0.38);
             }
 
             .mobile-add-room-pill {
-                padding: 6px 11px;
-                border-radius: 999px;
+                padding: 9px 14px;
+                border-radius: 14px;
                 border: 1.5px dashed #93c5fd;
                 background: #eff6ff;
                 color: var(--primary);
-                font-size: 12px;
+                font-size: 13px;
                 font-weight: 800;
                 white-space: nowrap;
                 cursor: pointer;
                 flex-shrink: 0;
             }
 
-            /* Mobile Single-View Viewport Controller */
             #roomsSidebarPanel {
                 display: none !important;
             }
 
-            .cockpit-grid {
+            .cockpit-grid,
+            .workspace-col {
                 display: flex !important;
                 flex-direction: column;
-                flex: 1;
-                min-height: 0;
+                gap: 12px;
+                overflow: visible !important;
             }
 
-            .workspace-col {
-                flex: 1;
-                min-height: 0;
+            .panel-card {
+                overflow: visible !important;
+                border-radius: 22px;
+                padding: 16px 15px;
             }
 
-            /* View 1: Mobile Room Remote Control (Default) */
+            /* ====== MOBILE VIEW 1: POCKET REMOTE CONTROL ('control') ====== */
             #dashboard[data-mobile-view="control"] #tabRoomsContent {
                 display: flex !important;
             }
@@ -1456,82 +1714,92 @@
             #dashboard[data-mobile-view="control"] .workspace-split {
                 display: none !important;
             }
-            #dashboard[data-mobile-view="control"] #activeRoomCommandCard {
-                flex: 1;
-                min-height: 0;
+            #dashboard[data-mobile-view="control"] .mobile-only-section {
                 display: flex !important;
-                flex-direction: column;
-                justify-content: space-between;
-                align-items: stretch;
-                padding: 18px 16px;
-                border-radius: 20px;
-                text-align: center;
             }
 
-            /* Mobile Remote Control Hero Visual inside Command Card */
+            #dashboard[data-mobile-view="control"] #activeRoomCommandCard {
+                display: flex !important;
+                flex-direction: column;
+                align-items: stretch;
+                padding: 22px 18px 20px;
+                border-radius: 24px;
+                text-align: center;
+                gap: 16px;
+                box-shadow: 0 18px 38px -10px rgba(15, 23, 42, 0.32);
+            }
+
             .mobile-remote-hero {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 gap: 8px;
-                margin: 4px 0;
+                z-index: 1;
             }
 
             .mobile-status-orb {
-                width: 74px;
-                height: 74px;
-                border-radius: 24px;
+                width: 76px;
+                height: 76px;
+                border-radius: 26px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 36px;
-                background: #fee2e2;
-                border: 2px solid #fca5a5;
-                box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.3);
+                font-size: 38px;
+                background: rgba(239, 68, 68, 0.22);
+                border: 2px solid rgba(252, 165, 165, 0.55);
+                box-shadow: 0 0 35px rgba(239, 68, 68, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+                backdrop-filter: blur(10px);
                 transition: var(--transition);
             }
 
             .command-center-card.room-open-mode .mobile-status-orb {
-                background: #d1fae5;
-                border-color: #6ee7b7;
-                box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.3);
+                background: rgba(16, 185, 129, 0.24);
+                border-color: rgba(110, 231, 183, 0.6);
+                box-shadow: 0 0 35px rgba(16, 185, 129, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.3);
             }
 
             .mobile-quick-stats {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 8px;
+                gap: 10px;
                 width: 100%;
-                margin-top: 6px;
+                margin-top: 4px;
             }
 
             .mobile-stat-Tile {
-                background: rgba(255, 255, 255, 0.88);
-                border: 1px solid var(--border-strong);
-                border-radius: 12px;
-                padding: 8px 10px;
+                background: rgba(255, 255, 255, 0.11);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                backdrop-filter: blur(10px);
+                border-radius: 16px;
+                padding: 11px 12px;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                gap: 2px;
+                gap: 3px;
                 cursor: pointer;
+                transition: var(--transition);
+            }
+
+            .mobile-stat-Tile:active {
+                transform: scale(0.97);
+                background: rgba(255, 255, 255, 0.2);
             }
 
             .mobile-stat-Tile strong {
-                font-size: 15px;
-                font-weight: 900;
-                color: var(--text-main);
+                font-size: 16px;
+                font-weight: 800;
+                color: #ffffff;
             }
 
             .mobile-stat-Tile span {
-                font-size: 11px;
-                color: var(--text-muted);
-                font-weight: 700;
+                font-size: 11.5px;
+                color: rgba(255, 255, 255, 0.8);
+                font-weight: 600;
             }
 
             #dashboard[data-mobile-view="control"] .room-hero-info {
                 align-items: center;
-                gap: 6px;
+                gap: 8px;
             }
 
             #dashboard[data-mobile-view="control"] .room-hero-info > div:first-child {
@@ -1541,59 +1809,140 @@
             #dashboard[data-mobile-view="control"] .master-control-buttons {
                 flex-direction: column;
                 width: 100%;
-                gap: 9px;
+                gap: 10px;
             }
 
             #dashboard[data-mobile-view="control"] .btn-lock-action {
                 width: 100%;
-                padding: 14px 16px;
-                font-size: 15px;
-                border-radius: 14px;
+                padding: 15px 18px;
+                font-size: 15.5px;
+                border-radius: 16px;
             }
 
-            /* View 2: Mobile Allowed Sites (Whitelist) */
+            /* Mobile Quick Sections on Main Control Tab */
+            .mobile-quick-card {
+                background: #ffffff;
+                border-radius: 20px;
+                border: 1px solid var(--border);
+                box-shadow: var(--shadow-sm);
+                padding: 14px 15px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .mobile-quick-card-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+            }
+
+            .mobile-quick-card-title {
+                font-size: 14px;
+                font-weight: 800;
+                color: var(--text-main);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .mobile-mini-pc-list {
+                display: flex;
+                flex-direction: column;
+                gap: 7px;
+            }
+
+            .mobile-mini-pc-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                padding: 9px 12px;
+                border-radius: 13px;
+                border: 1.5px solid var(--border);
+                background: var(--surface-muted);
+            }
+
+            .mobile-mini-pc-row.is-locked {
+                border-color: #fecaca;
+                background: #fff5f5;
+            }
+
+            .mobile-mini-pc-row.is-open {
+                border-color: #a7f3d0;
+                background: #f0fdf4;
+            }
+
+            /* ====== MOBILE VIEW 2: ALLOWED SITES & PROFILES ('sites') ====== */
             #dashboard[data-mobile-view="sites"] #tabRoomsContent {
                 display: flex !important;
             }
             #dashboard[data-mobile-view="sites"] #tabUsersContent,
             #dashboard[data-mobile-view="sites"] #activeRoomCommandCard,
+            #dashboard[data-mobile-view="sites"] .mobile-only-section,
             #dashboard[data-mobile-view="sites"] #computersPanelCard {
                 display: none !important;
             }
             #dashboard[data-mobile-view="sites"] .workspace-split {
                 display: flex !important;
                 flex-direction: column;
-                flex: 1;
             }
             #dashboard[data-mobile-view="sites"] #whitelistPanelCard {
-                flex: 1;
                 display: flex !important;
             }
 
-            /* View 3: Mobile Computers & Remote Maintenance */
+            .sites-list {
+                max-height: none !important;
+                overflow: visible !important;
+            }
+
+            .site-pill {
+                padding: 8px 13px;
+                border-radius: 13px;
+            }
+
+            /* ====== MOBILE VIEW 3: COMPUTERS & MAINTENANCE ('computers') ====== */
             #dashboard[data-mobile-view="computers"] #tabRoomsContent {
                 display: flex !important;
             }
             #dashboard[data-mobile-view="computers"] #tabUsersContent,
             #dashboard[data-mobile-view="computers"] #activeRoomCommandCard,
+            #dashboard[data-mobile-view="computers"] .mobile-only-section,
             #dashboard[data-mobile-view="computers"] #whitelistPanelCard {
                 display: none !important;
             }
             #dashboard[data-mobile-view="computers"] .workspace-split {
                 display: flex !important;
                 flex-direction: column;
-                flex: 1;
             }
             #dashboard[data-mobile-view="computers"] #computersPanelCard {
-                flex: 1;
                 display: flex !important;
             }
 
             .computers-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: 1fr !important;
+                max-height: none !important;
+                overflow: visible !important;
+                gap: 9px;
             }
 
-            /* View 4: Mobile Admin (Teachers & Institutions) */
+            .computer-card {
+                padding: 12px 14px;
+                border-radius: 16px;
+            }
+
+            .computer-name {
+                font-size: 15px;
+            }
+
+            .btn-pc-toggle {
+                padding: 7px 14px;
+                font-size: 13px;
+                border-radius: 10px;
+            }
+
+            /* ====== MOBILE VIEW 4: ADMIN ('admin') ====== */
             #dashboard[data-mobile-view="admin"] #tabRoomsContent,
             #dashboard[data-mobile-view="admin"] .mobile-top-room-bar {
                 display: none !important;
@@ -1601,26 +1950,24 @@
             #dashboard[data-mobile-view="admin"] #tabUsersContent {
                 display: flex !important;
                 flex-direction: column;
-                flex: 1;
-                min-height: 0;
+                gap: 12px;
             }
 
             .mobile-admin-subtabs {
                 display: flex;
                 gap: 6px;
                 background: #e2e8f0;
-                padding: 4px;
-                border-radius: 11px;
-                flex-shrink: 0;
+                padding: 5px;
+                border-radius: 14px;
             }
 
             .mobile-admin-subbtn {
                 flex: 1;
-                padding: 7px 10px;
+                padding: 9px 12px;
                 border: none;
-                border-radius: 8px;
+                border-radius: 10px;
                 background: transparent;
-                font-size: 12.5px;
+                font-size: 13px;
                 font-weight: 800;
                 color: #475569;
                 cursor: pointer;
@@ -1637,29 +1984,31 @@
             }
             #dashboard[data-mobile-admin-sub="users"] #usersAdminCard {
                 display: flex !important;
-                flex: 1;
             }
             #dashboard[data-mobile-admin-sub="insts"] #usersAdminCard {
                 display: none !important;
             }
             #dashboard[data-mobile-admin-sub="insts"] #institutionsAdminCard {
                 display: flex !important;
-                flex: 1;
             }
 
-            /* Native App Fixed Bottom Tab Navigation Bar */
+            /* ====== FLOATING GLASSMORPHIC BOTTOM DOCK (iOS 18 Style) ====== */
             .mobile-bottom-nav {
+                position: fixed;
+                bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+                left: 12px;
+                right: 12px;
+                z-index: 500;
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
-                gap: 4px;
-                background: rgba(255, 255, 255, 0.96);
-                backdrop-filter: blur(16px);
-                -webkit-backdrop-filter: blur(16px);
-                border: 1px solid var(--border-strong);
-                border-radius: 16px;
-                padding: 5px;
-                box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.06);
-                flex-shrink: 0;
+                gap: 6px;
+                background: rgba(15, 23, 42, 0.92);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.14);
+                border-radius: 22px;
+                padding: 6px;
+                box-shadow: 0 16px 40px -6px rgba(15, 23, 42, 0.45);
             }
 
             .mobile-bottom-nav.has-admin {
@@ -1669,31 +2018,33 @@
             .mobile-nav-item {
                 border: none;
                 background: transparent;
-                border-radius: 12px;
-                padding: 6px 4px;
+                border-radius: 16px;
+                padding: 8px 4px;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 2px;
-                color: var(--text-muted);
-                font-size: 11px;
-                font-weight: 800;
+                gap: 3px;
+                color: #94a3b8;
+                font-size: 11.5px;
+                font-weight: 700;
                 cursor: pointer;
                 transition: var(--transition);
+                position: relative;
             }
 
             .mobile-nav-item .nav-icon {
-                font-size: 17px;
+                font-size: 18px;
                 line-height: 1.1;
             }
 
             .mobile-nav-item.active {
-                background: var(--primary-soft);
-                color: var(--primary);
+                background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+                color: #ffffff;
+                box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
             }
 
-            /* Bottom-Sheet Style Modals on Mobile */
+            /* Bottom-Sheet Modals on Mobile */
             .modal-backdrop {
                 align-items: flex-end;
                 padding: 0;
@@ -1701,14 +2052,14 @@
 
             .modal-box {
                 max-width: 100%;
-                border-radius: 24px 24px 0 0;
-                padding: 20px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+                border-radius: 26px 26px 0 0;
+                padding: 22px 18px calc(22px + env(safe-area-inset-bottom, 0px));
             }
 
             .toast {
-                bottom: 74px;
-                font-size: 12.5px;
-                padding: 9px 16px;
+                bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+                font-size: 13px;
+                padding: 11px 18px;
             }
         }
     </style>
@@ -1717,7 +2068,7 @@
 
     <div class="container">
 
-        <!-- סרגל עליון מאוחד וקומפקטי בתוך הקונטיינר -->
+        <!-- סרגל עליון מאוחד וקומפקטי -->
         <header>
             <div class="header-right">
                 <div class="header-brand">
@@ -1729,19 +2080,19 @@
                     </div>
                     <div class="brand-text">
                         <h1>SchoolFilter</h1>
-                        <div class="brand-subtitle">ניהול חדרי מחשבים, עגלות ניידים ומוסדות לימוד</div>
+                        <div class="brand-subtitle">מערכת חכמה לניהול וסינון חדרי מחשבים ועגלות ניידים</div>
                     </div>
                 </div>
 
                 <!-- טאבים משולבים ב-Header למחשב שולחני -->
                 <div id="headerNavTabs" class="nav-tabs">
-                    <button id="tabBtnRooms" class="nav-tab-btn active" onclick="switchMainTab('rooms')">🖥️ חדרי מחשבים ועגלות</button>
-                    <button id="tabBtnUsers" class="nav-tab-btn" onclick="switchMainTab('users')" style="display: none;">👥 מורים ומוסדות</button>
+                    <button id="tabBtnRooms" class="nav-tab-btn active" onclick="switchMainTab('rooms')">🖥️ בקרת חדרים וכיתות</button>
+                    <button id="tabBtnUsers" class="nav-tab-btn" onclick="switchMainTab('users')" style="display: none;">👥 צוות ומוסדות</button>
                 </div>
             </div>
 
             <div class="header-toolbar">
-                <a href="dist/SchoolFilter_Setup.exe?v=3.4.2" download="SchoolFilter_Setup.exe" class="btn-download-header">
+                <a href="dist/SchoolFilter_Setup.exe?v=3.4.4" download="SchoolFilter_Setup.exe" class="btn-download-header">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     <span>הורד תוכנת התקנה</span>
                 </a>
@@ -1754,13 +2105,13 @@
             </div>
         </header>
 
-        <!-- מסך בית והתחברות — ממורכז אנכית ואופקית ללא גלילה -->
+        <!-- מסך בית והתחברות -->
         <div id="authCard" class="auth-wrapper">
             <div class="auth-card">
                 <div class="auth-emblem">🛡️</div>
-                <h2 style="font-size: 22px; font-weight: 900; color: var(--text-main); margin-bottom: 6px;">כניסת מורים ומנהלי מוסדות</h2>
-                <p style="color: var(--text-muted); font-size: 14px; max-width: 440px; margin: 0 auto 18px;">
-                    התחבר מהמחשב או מהטלפון הנייד באמצעות חשבון Google כדי לנעול או לפתוח חדרי מחשבים בזמן אמת.
+                <h2 style="font-size: 24px; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">כניסת מורים ומנהלי מוסדות</h2>
+                <p style="color: var(--text-muted); font-size: 14px; max-width: 440px; margin: 0 auto 20px;">
+                    התחבר מהמחשב או מהטלפון הנייד באמצעות חשבון Google לשליטה מיידית בחדרי המחשבים ובפروפילי הכיתות.
                 </p>
 
                 <button class="btn btn-google" onclick="signInWithGoogle()">
@@ -1776,25 +2127,25 @@
 
                 <div class="features-grid-mini">
                     <div class="feature-pill-box">
-                        <strong>🔒 מצב שיעור מיידי</strong>
-                        <span>חסימת משחקים ואתרים זרים בכל החדר בלחיצה.</span>
+                        <strong>🔒 נעילת כיתה או מחשב בודד</strong>
+                        <span>שליטה מלאה על כל הכיתה או פתיחה פרטנית לתלמיד שסיים מטלה.</span>
                     </div>
                     <div class="feature-pill-box">
-                        <strong>📱 שליטה מהנייד</strong>
-                        <span>ממשק שלט-רחוק מלא למורה מהסמארטפון בכיתה.</span>
+                        <strong>📁 פרופילי רשימה לבנה</strong>
+                        <span>מעבר בלחיצה בין מצב בחינה, שיעור רגיל או פרופיל מותאם לכיתה.</span>
                     </div>
                     <div class="feature-pill-box">
-                        <strong>💻 ניטור ותחזוקה</strong>
-                        <span>צפייה במחשבים המותקנים, עדכון והסרה מרחוק.</span>
+                        <strong>📱 שלט-רחוק מהנייד</strong>
+                        <span>חוויית אפליקציה מהירה למורה מכל טלפון נייד בכיתה.</span>
                     </div>
                 </div>
 
                 <div class="quick-install-strip">
                     <div>
-                        <div style="font-size: 12.5px; font-weight: 800; color: #1e3a8a;">📥 התקנה על מחשב תלמיד</div>
-                        <div style="font-size: 11px; color: var(--text-secondary);">קוד חדר ברירת מחדל: <code>yeshiva-lab</code></div>
+                        <div style="font-size: 13px; font-weight: 800; color: #1e3a8a;">📥 התקנה על מחשב תלמיד</div>
+                        <div style="font-size: 11.5px; color: var(--text-secondary);">קוד חדר ברירת מחדל: <code>yeshiva-lab</code></div>
                     </div>
-                    <a href="dist/SchoolFilter_Setup.exe?v=3.4.2" download="SchoolFilter_Setup.exe" class="btn btn-outline btn-sm" style="border-color: #93c5fd; color: #1d4ed8; text-decoration: none; font-weight: 800;">
+                    <a href="dist/SchoolFilter_Setup.exe?v=3.4.4" download="SchoolFilter_Setup.exe" class="btn btn-outline btn-sm" style="border-color: #93c5fd; color: #1d4ed8; text-decoration: none; font-weight: 800;">
                         הורד תוכנה
                     </a>
                 </div>
@@ -1802,12 +2153,12 @@
             </div>
         </div>
 
-        <!-- לוח בקרה ראשי — מותאם ל-100dvh ללא גלילת עמוד במחשב ובנייד -->
+        <!-- לוח בקרה ראשי -->
         <div id="dashboard" data-desktop-tab="rooms" data-mobile-view="control" data-mobile-admin-sub="users">
 
-            <!-- 📱 סרגל החלפת חדרים אופקי מהיר (מוצג בנייד בלבד) -->
+            <!-- 📱 סרגל החלפת חדרים אופקי מהיר (מוצג בנייד) -->
             <div class="mobile-top-room-bar">
-                <select id="mobileInstitutionSelect" onchange="onMobileInstitutionChange()" style="width: 100%; font-weight: 700; font-size: 12.5px; padding: 5px 10px; display: none;"></select>
+                <select id="mobileInstitutionSelect" onchange="onMobileInstitutionChange()" style="width: 100%; font-weight: 700; display: none;"></select>
                 <div id="mobileRoomsStrip" class="mobile-room-pills"></div>
             </div>
 
@@ -1821,7 +2172,7 @@
                         <button class="btn btn-primary btn-sm" onclick="openAddRoomModal()">➕ חדר חדש</button>
                     </div>
 
-                    <select id="institutionSelect" onchange="onInstitutionChange()" style="width: 100%; font-weight: 700; margin-bottom: 8px; display: none; flex-shrink: 0;"></select>
+                    <select id="institutionSelect" onchange="onInstitutionChange()" style="width: 100%; font-weight: 700; margin-bottom: 10px; display: none; flex-shrink: 0;"></select>
 
                     <div class="sidebar-kpi-row">
                         <div class="mini-kpi">
@@ -1840,19 +2191,19 @@
                 <!-- עמודה שמאלית: סביבת העבודה של החדר הנבחר -->
                 <div class="workspace-col">
 
-                    <!-- כרטיס שליטה מרכזי בחדר (במחשב: סרגל עליון | בנייד: מסך שלט-רחוק מלא) -->
+                    <!-- כרטיס שליטה מרכזי בחדר (Hero Command Deck) -->
                     <div id="activeRoomCommandCard" class="command-center-card">
 
-                        <!-- אלמנט חיווי מרכזי שמעוצב במיוחד למסך השלט-רחוק בנייד -->
+                        <!-- אלמנט חיווי מרכזי לשלט-רחוק בנייד -->
                         <div class="mobile-remote-hero">
                             <div id="mobileStatusOrb" class="mobile-status-orb">🔒</div>
-                            <div style="font-size: 11.5px; font-weight: 800; color: var(--text-muted);">שלט רחוק לחדר מחשבים בזמן אמת</div>
+                            <div style="font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.78);">שלט-רחוק חכם לכיתה בזמן אמת</div>
                         </div>
 
                         <div class="room-hero-info">
-                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                <span id="activeRoomTitle" style="font-size: 18px; font-weight: 900; color: #0f172a;">🖥️ ישיבת נשמת התורה - חדר מחשבים</span>
-                                <span id="filterStateBadge" class="badge badge-offline">🔒 מצב שיעור פעיל (חסימת משחקים)</span>
+                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                <span id="activeRoomTitle">🖥️ ישיבת נשמת התורה - חדר מחשבים</span>
+                                <span id="filterStateBadge" class="badge badge-offline">🔒 מצב שיעור פעיל (נעול)</span>
                                 <span id="remoteCommandBadge" class="badge" style="display: none; background: #fef3c7; color: #92400e; border: 1px solid #fde68a;"></span>
                             </div>
                             <div class="room-code-pill">
@@ -1861,7 +2212,7 @@
                                 <button type="button" class="btn-copy-code" onclick="copyActiveRoomCode()">📋 העתק</button>
                             </div>
 
-                            <!-- אריחי ניווט מהיר בנייד (לחיצה מעבירה למחשבים או לאתרים) -->
+                            <!-- אריחי סטטוס וניווט מהיר בנייד -->
                             <div class="mobile-remote-hero" style="width: 100%; margin-top: 6px;">
                                 <div class="mobile-quick-stats">
                                     <div class="mobile-stat-Tile" onclick="switchMobileView('computers')">
@@ -1878,40 +2229,66 @@
 
                         <div class="master-control-buttons">
                             <button id="btnLockRoomAction" class="btn btn-lock-action btn-mode-lock" onclick="setRoomFilterMode(true)">
-                                🔒 נעל חדר לשיעור (חסימת משחקים)
+                                🔒 נעל כיתה לשיעור (חסימת משחקים)
                             </button>
                             <button id="btnOpenRoomAction" class="btn btn-lock-action btn-mode-open" onclick="setRoomFilterMode(false)">
                                 🔓 פתח אינטרנט חופשי בחדר
                             </button>
-                            <button class="btn btn-outline btn-lock-action" style="background: #ffffff; color: #1e3a8a; border-color: #93c5fd;" onclick="openStudentBlockPreview()">
+                            <button class="btn btn-lock-action btn-preview-student" onclick="openStudentBlockPreview()">
                                 👁️ תצוגת מסך תלמיד
                             </button>
                         </div>
                     </div>
 
-                    <!-- חצי תחתון מפוצל: ימין = מחשבים מותקנים ותחזוקה מרחוק | שמאל = רשימה לבנה -->
+                    <!-- 📱 כרטיסי גישה מהירה בנייד במסך הראשי (החלפת פרופיל כיתה + פתיחת מחשב בודד בלחיצה) -->
+                    <div class="mobile-only-section" style="flex-direction: column; gap: 12px;">
+                        <div class="mobile-quick-card">
+                            <div class="mobile-quick-card-header">
+                                <div class="mobile-quick-card-title">📁 החלפת פרופיל אתרים מהירה לכיתה</div>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="openWhitelistProfilesModal()">⚙️ ערוך פרופילים</button>
+                            </div>
+                            <div id="mobileQuickProfilesStrip" class="quick-profile-pills"></div>
+                        </div>
+
+                        <div class="mobile-quick-card">
+                            <div class="mobile-quick-card-header">
+                                <div class="mobile-quick-card-title">💻 פתיחה / נעילה למחשב בודד בכיתה</div>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="switchMobileView('computers')">לכל המחשבים ⬅️</button>
+                            </div>
+                            <div id="mobileQuickComputersList" class="mobile-mini-pc-list"></div>
+                        </div>
+                    </div>
+
+                    <!-- חצי תחתון מפוצל: ימין = מחשבים מותקנים ותחזוקה מרחוק | שמאל = רשימה לבנה ופרופילים -->
                     <div class="workspace-split">
 
                         <!-- פאנל מחשבים מותקנים בחדר + תחזוקה מרחוק -->
                         <div id="computersPanelCard" class="panel-card">
                             <div class="panel-header">
                                 <div class="panel-title">
-                                    <span>💻 מחשבים מותקנים בחדר</span>
+                                    <span>💻 מחשבים בחדר</span>
                                     <span id="roomComputersCountBadge" class="badge badge-role">0 מחשבים</span>
                                 </div>
-                                <button class="btn btn-outline btn-sm" onclick="refreshRoomComputers()" title="רענן רשימת מחשבים">
-                                    🔄 רענן
-                                </button>
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <div class="pc-filter-pills">
+                                        <button type="button" id="pcFilterAll" class="pc-filter-btn active" onclick="setComputerFilterMode('all')">הכל</button>
+                                        <button type="button" id="pcFilterOnline" class="pc-filter-btn" onclick="setComputerFilterMode('online')">🟢 דלוקים</button>
+                                        <button type="button" id="pcFilterCustom" class="pc-filter-btn" onclick="setComputerFilterMode('custom')">🎯 אישי</button>
+                                    </div>
+                                    <button class="btn btn-outline btn-sm" onclick="refreshRoomComputers()" title="רענן רשימת מחשבים">
+                                        🔄 רענן
+                                    </button>
+                                </div>
                             </div>
 
                             <div id="roomComputersSummaryBar" class="computers-summary-strip" style="display: none;"></div>
                             <div id="roomComputersList" class="computers-grid"></div>
 
-                            <!-- סרגל תחתון קומפקטי לעדכון/הסרה מרחוק (מבוצע ע"י שירות ה-SYSTEM המקומי המוקשח) -->
+                            <!-- סרגל תחתון קומפקטי לעדכון/הסרה מרחוק -->
                             <div class="remote-footer-bar">
                                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                                     <button class="btn btn-outline btn-sm" style="border-color: #93c5fd; color: #1d4ed8;" onclick="triggerRemoteRoomCommand('update')">
-                                        🔄 עדכון מרחוק
+                                        🔄 עדכון תוכנה מרחוק
                                     </button>
                                     <button class="btn btn-danger btn-sm" onclick="triggerRemoteRoomCommand('uninstall')">
                                         🗑️ הסרה מרחוק
@@ -1928,9 +2305,9 @@
                         <div id="whitelistPanelCard" class="panel-card">
                             <div class="panel-header">
                                 <div class="panel-title">
-                                    <span>🌐 אתרים מותרים (<span id="whitelistRoomLabel" style="color: var(--primary);">חדר מחשבים</span>)</span>
+                                    <span>🌐 רשימה לבנה (<span id="whitelistRoomLabel" style="color: var(--primary);">חדר מחשבים</span>)</span>
                                 </div>
-                                <div style="display: flex; gap: 6px;">
+                                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                                     <button class="btn btn-outline btn-sm" onclick="openWhitelistProfilesModal()" title="ניהול ושמירת פרופילים לרשימה לבנה">
                                         📁 פרופילים
                                     </button>
@@ -1945,20 +2322,23 @@
 
                             <!-- סרגל פרופילים שמורים לרשימה לבנה (מעבר מהיר בין כיתות/שיעורים) -->
                             <div class="profiles-bar">
-                                <span style="font-size: 11.5px; font-weight: 800; color: #1e3a8a; white-space: nowrap;">📁 פרופיל כיתה:</span>
-                                <select id="whitelistProfileSelect" onchange="onWhitelistProfileSelectChange(this.value)" title="בחר פרופיל שמור להחלה מיידית על החדר"></select>
-                                <button type="button" class="btn btn-primary btn-sm" onclick="saveCurrentWhitelistAsNewProfilePrompt()" title="שמור את רשימת האתרים הנוכחית כפרופיל קבוע">
-                                    ➕ שמור כפרופיל
-                                </button>
+                                <div class="profiles-bar-top">
+                                    <span style="font-size: 12px; font-weight: 800; color: #1e3a8a; white-space: nowrap;">📁 פרופיל כיתה:</span>
+                                    <select id="whitelistProfileSelect" onchange="onWhitelistProfileSelectChange(this.value)" title="בחר פרופיל שמור להחלה מיידית על החדר"></select>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="saveCurrentWhitelistAsNewProfilePrompt()" title="שמור את רשימת האתרים הנוכחית כפרופיל קבוע">
+                                        ➕ שמור כפרופיל
+                                    </button>
+                                </div>
+                                <div id="desktopQuickProfilesStrip" class="quick-profile-pills"></div>
                             </div>
 
-                            <div style="display: flex; gap: 8px; margin-bottom: 7px; flex-shrink: 0;">
-                                <input type="url" inputmode="url" id="newSiteInput" placeholder="הקלד כתובת אתר (למשל: kahoot.it או cet.ac.il)..." style="flex: 1; direction: ltr; text-align: right;" onkeypress="if(event.key === 'Enter') addSiteToRoom()">
+                            <div class="Preset-input-group">
+                                <input type="url" inputmode="url" id="newSiteInput" placeholder="הקלד כתובת אתר להוספה (למשל: kahoot.it או cet.ac.il)..." style="flex: 1; direction: ltr; text-align: right;" onkeypress="if(event.key === 'Enter') addSiteToRoom()">
                                 <button class="btn btn-primary btn-sm" onclick="addSiteToRoom()">+ הוסף אתר</button>
                             </div>
 
                             <div class="preset-chips-bar">
-                                <span style="font-size: 11.5px; font-weight: 700; color: var(--text-muted);">⚡ מהיר:</span>
+                                <span style="font-size: 11.5px; font-weight: 700; color: var(--text-muted);">⚡ הוספה מהירה:</span>
                                 <button type="button" class="preset-chip" onclick="quickAddPresetSite('wikipedia.org')">Wikipedia</button>
                                 <button type="button" class="preset-chip" onclick="quickAddPresetSite('cet.ac.il')">מט״ח / אופק</button>
                                 <button type="button" class="preset-chip" onclick="quickAddPresetSite('kahoot.it')">Kahoot</button>
@@ -1976,7 +2356,7 @@
 
             </div>
 
-            <!-- טאב 2: ניהול מורים ומוסדות לימוד (ללא גלילת עמוד) -->
+            <!-- טאב 2: ניהול מורים ומוסדות לימוד -->
             <div id="tabUsersContent" class="admin-split-grid">
 
                 <!-- מתג פנימי בנייד בין מורים למוסדות -->
@@ -2016,10 +2396,10 @@
                     <div class="panel-header">
                         <div class="panel-title">👩‍🏫 מורים ומנהלים מורשים (Google)</div>
                     </div>
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0;">
-                        <input type="email" id="newUserEmail" placeholder="כתובת Gmail..." style="flex: 1.2; min-width: 140px; direction: ltr;">
-                        <input type="text" id="newUserName" placeholder="שם המורה..." style="flex: 1; min-width: 110px;">
-                        <select id="newUserInstSelect" style="min-width: 110px;"></select>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0;">
+                        <input type="email" id="newUserEmail" placeholder="כתובת Gmail..." style="flex: 1.2; min-width: 150px; direction: ltr;">
+                        <input type="text" id="newUserName" placeholder="שם המורה..." style="flex: 1; min-width: 120px;">
+                        <select id="newUserInstSelect" style="min-width: 115px;"></select>
                         <select id="newUserRoleSelect" style="min-width: 115px;">
                             <option value="teacher">מורה</option>
                             <option value="inst_admin">מנהל מוסד</option>
@@ -2046,23 +2426,23 @@
 
             </div>
 
-            <!-- 📱 סרגל ניווט תחתון קבוע של אפליקציית המובייל -->
+            <!-- 📱 סרגל ניווט תחתון מרחף (iOS Floating Dock) -->
             <nav id="mobileBottomNav" class="mobile-bottom-nav" aria-label="ניווט בנייד">
                 <button type="button" id="mNavControl" class="mobile-nav-item active" onclick="switchMobileView('control')">
                     <span class="nav-icon">🎛️</span>
-                    <span>שליטה בחדר</span>
-                </button>
-                <button type="button" id="mNavSites" class="mobile-nav-item" onclick="switchMobileView('sites')">
-                    <span class="nav-icon">🌐</span>
-                    <span>אתרים מותרים</span>
+                    <span>שלט כיתה</span>
                 </button>
                 <button type="button" id="mNavComputers" class="mobile-nav-item" onclick="switchMobileView('computers')">
                     <span class="nav-icon">💻</span>
-                    <span>מחשבים</span>
+                    <span id="mNavComputersLabel">מחשבים</span>
+                </button>
+                <button type="button" id="mNavSites" class="mobile-nav-item" onclick="switchMobileView('sites')">
+                    <span class="nav-icon">🌐</span>
+                    <span id="mNavSitesLabel">אתרים ופרופילים</span>
                 </button>
                 <button type="button" id="mNavAdmin" class="mobile-nav-item" style="display: none;" onclick="switchMobileView('admin')">
                     <span class="nav-icon">👥</span>
-                    <span>ניהול צוות</span>
+                    <span>צוות ומוסדות</span>
                 </button>
             </nav>
 
@@ -2079,12 +2459,12 @@
     <!-- חלונית הוספת חדר מחשבים / עגלה חדשה -->
     <div id="addRoomModal" class="modal-backdrop" onclick="if(event.target===this) closeAddRoomModal()">
         <div class="modal-box">
-            <button onclick="closeAddRoomModal()" style="position:absolute; top:16px; left:16px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:50%; width:32px; height:32px; font-size:14px; cursor:pointer; font-weight:bold; color:#334155;">✕</button>
-            <h3 style="font-size: 19px; font-weight: 900; color: var(--text-main); margin-bottom: 6px;">➕ הוספת חדר מחשבים או עגלת ניידים</h3>
+            <button onclick="closeAddRoomModal()" style="position:absolute; top:16px; left:16px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:50%; width:34px; height:34px; font-size:14px; cursor:pointer; font-weight:bold; color:#334155;">✕</button>
+            <h3 style="font-size: 19px; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">➕ הוספת חדר מחשבים או עגלת ניידים</h3>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
                 הגדר שם וקוד מזהה לחדר החדש. הקוד ישמש בעת התקנת התוכנה במחשבי החדר.
             </p>
-            <div style="display: flex; flex-direction: column; gap: 11px;">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
                 <div>
                     <label style="font-size: 12.5px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 4px;">שם החדר או העגלה:</label>
                     <input type="text" id="modalRoomNameInput" placeholder="למשל: חדר מחשבים 2 / עגלת ניידים מדעים..." style="width: 100%;" oninput="autoSuggestRoomCode()">
@@ -2100,7 +2480,7 @@
                     <label style="font-size: 12.5px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 4px;">קוד חדר באנגלית (לשיוך המחשבים בהתקנה):</label>
                     <input type="text" id="modalRoomCodeInput" placeholder="yeshiva-lab2" style="width: 100%; direction: ltr; font-family: Consolas, monospace; font-weight: 700;">
                 </div>
-                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px;">
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
                     <button type="button" class="btn btn-outline" onclick="closeAddRoomModal()">ביטול</button>
                     <button type="button" class="btn btn-primary" onclick="confirmAddRoomModal()">צור חדר חדש</button>
                 </div>
@@ -2113,11 +2493,11 @@
         <div class="modal-box" style="max-width:600px; border-top:7px solid #dc2626; text-align:center;">
             <button onclick="closeStudentBlockPreview()" style="position:absolute; top:14px; left:14px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:50%; width:34px; height:34px; font-size:15px; cursor:pointer; font-weight:bold; color:#334155;">✕</button>
             <div style="font-size:12px; font-weight:700; color:#64748b; margin-bottom:8px;">👁️ תצוגה מקדימה — מסך התלמיד בזמן חסימה:</div>
-            <div style="width:52px; height:52px; background:#fef2f2; color:#dc2626; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:26px; margin-bottom:8px; border:2px solid #fecaca;">🛑</div>
-            <h2 style="color:#dc2626; margin:0 0 8px 0; font-size:20px; font-weight:900;">הגלישה לאתר זה נחסמה</h2>
+            <div style="width:54px; height:54px; background:#fef2f2; color:#dc2626; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:26px; margin-bottom:8px; border:2px solid #fecaca;">🛑</div>
+            <h2 style="color:#dc2626; margin:0 0 8px 0; font-size:21px; font-weight:800;">הגלישה לאתר זה נחסמה</h2>
             <div id="previewRoomBadge" style="display:inline-block; background:#fef3c7; color:#92400e; font-weight:700; padding:4px 12px; border-radius:999px; font-size:12px; margin-bottom:8px; border:1px solid #fde68a;">📚 מצב שיעור פעיל: ישיבת נשמת התורה - חדר מחשבים</div>
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:6px 10px; margin:4px 0 10px 0; font-family:Consolas,monospace; font-size:12.5px; color:#334155; direction:ltr; font-weight:700;">www.youtube.com / RobloxPlayerBeta.exe</div>
-            <p style="color:#475569; font-size:12.5px; line-height:1.45; margin:0 0 12px 0;">
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:7px 12px; margin:4px 0 10px 0; font-family:Consolas,monospace; font-size:12.5px; color:#334155; direction:ltr; font-weight:700;">www.youtube.com / RobloxPlayerBeta.exe</div>
+            <p style="color:#475569; font-size:13px; line-height:1.45; margin:0 0 12px 0;">
                 הכניסה לאתר או למשחק זה חסומה כעת מאחר שהמחשב נמצא <strong>במצב שיעור</strong>.
             </p>
             <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:14px; padding:12px; text-align:center;">
@@ -2133,24 +2513,24 @@
     <!-- חלונית ניהול ושמירת פרופילים לרשימה לבנה -->
     <div id="whitelistProfilesModal" class="modal-backdrop" onclick="if(event.target===this) closeWhitelistProfilesModal()">
         <div class="modal-box" style="max-width: 560px;">
-            <button onclick="closeWhitelistProfilesModal()" style="position:absolute; top:16px; left:16px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:50%; width:32px; height:32px; font-size:14px; cursor:pointer; font-weight:bold; color:#334155;">✕</button>
-            <h3 style="font-size: 19px; font-weight: 900; color: var(--text-main); margin-bottom: 5px;">📁 פרופילים שמורים לרשימה לבנה</h3>
-            <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px;">
+            <button onclick="closeWhitelistProfilesModal()" style="position:absolute; top:16px; left:16px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:50%; width:34px; height:34px; font-size:14px; cursor:pointer; font-weight:bold; color:#334155;">✕</button>
+            <h3 style="font-size: 19px; font-weight: 800; color: var(--text-main); margin-bottom: 5px;">📁 פרופילים שמורים לרשימה לבנה</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
                 שמור רשימות אתרים מוכנות לכיתות או שיעורים שונים (למשל: מבחן סגור, שיעור רגיל, מגמת תכנות) והחלף ביניהן בלחיצה אחת.
             </p>
 
-            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 10px 12px; margin-bottom: 10px;">
-                <div style="font-size: 12px; font-weight: 800; color: #1e3a8a; margin-bottom: 6px;">➕ שמירת הרשימה הנוכחית של החדר כפרופיל חדש:</div>
-                <div style="display: flex; gap: 7px;">
-                    <input type="text" id="newProfileNameInput" placeholder="שם הפרופיל (למשל: כיתה ט׳ - היסטוריה / מבחן בגרות)..." style="flex: 1;" onkeypress="if(event.key === 'Enter') createOrUpdateProfileFromModal()">
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 14px; padding: 12px; margin-bottom: 12px;">
+                <div style="font-size: 12.5px; font-weight: 800; color: #1e3a8a; margin-bottom: 7px;">➕ שמירת הרשימה הנוכחית של החדר כפרופיל חדש:</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <input type="text" id="newProfileNameInput" placeholder="שם הפרופיל (למשל: כיתה ט׳ - היסטוריה / מבחן)..." style="flex: 1; min-width: 180px;" onkeypress="if(event.key === 'Enter') createOrUpdateProfileFromModal()">
                     <button type="button" class="btn btn-primary btn-sm" onclick="createOrUpdateProfileFromModal()">💾 שמור פרופיל</button>
                 </div>
             </div>
 
-            <div style="font-size: 12px; font-weight: 800; color: var(--text-secondary);">בחר פרופיל להחלה על החדר הנוכחי:</div>
+            <div style="font-size: 12.5px; font-weight: 800; color: var(--text-secondary);">בחר פרופיל להחלה על החדר הנוכחי:</div>
             <div id="whitelistProfilesModalList" class="profile-modal-list"></div>
 
-            <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+            <div style="display: flex; justify-content: flex-end; margin-top: 14px;">
                 <button type="button" class="btn btn-outline" onclick="closeWhitelistProfilesModal()">סגור</button>
             </div>
         </div>
@@ -2766,10 +3146,12 @@
                     const isActive = (r.roomId === selectedRoomId);
                     const shortTitle = formatShortRoomName(r);
                     const stateEmoji = r.filterEnabled ? '🔒' : '🔓';
+                    const pcCount = allComputers.filter(c => c.roomId.toLowerCase() === r.roomId.toLowerCase()).length;
                     return `
                         <button type="button" class="mobile-room-pill ${isActive ? 'active' : ''}" onclick="selectRoom('${escapeJsStr(r.roomId)}')">
                             <span>${escapeHtml(r.icon)} ${escapeHtml(shortTitle)}</span>
                             <span>${stateEmoji}</span>
+                            <span style="font-size:11px;opacity:0.85;">(${pcCount})</span>
                         </button>
                     `;
                 }).join('');
@@ -2781,6 +3163,18 @@
             const set = new Set();
             (list || []).forEach(s => set.add(s.replace(/^\*\./, '')));
             return set.size;
+        }
+
+        let currentComputerFilterMode = 'all';
+
+        function setComputerFilterMode(mode) {
+            currentComputerFilterMode = mode || 'all';
+            ['all', 'online', 'custom'].forEach(m => {
+                const btn = document.getElementById(m === 'all' ? 'pcFilterAll' : (m === 'online' ? 'pcFilterOnline' : 'pcFilterCustom'));
+                if (btn) btn.classList.toggle('active', m === currentComputerFilterMode);
+            });
+            const room = getCurrentRoom();
+            if (room) renderRoomComputersList(room);
         }
 
         function renderActiveRoomPanel() {
@@ -2801,27 +3195,32 @@
 
             if (room.filterEnabled) {
                 badge.className = 'badge badge-offline';
-                badge.textContent = '🔒 הוראת השרת לחדר: נעול (מצב שיעור)';
+                badge.textContent = '🔒 מצב שיעור פעיל (נעול)';
                 if (cmdCard) cmdCard.classList.remove('room-open-mode');
                 if (btnLock) btnLock.classList.add('btn-mode-active-ring');
                 if (btnOpen) btnOpen.classList.remove('btn-mode-active-ring');
                 if (mobileOrb) mobileOrb.textContent = '🔒';
             } else {
                 badge.className = 'badge badge-online';
-                badge.textContent = '🔓 הוראת השרת לחדר: פתוח (אינטרנט חופשי)';
+                badge.textContent = '🔓 אינטרנט חופשי (פתוח)';
                 if (cmdCard) cmdCard.classList.add('room-open-mode');
                 if (btnOpen) btnOpen.classList.add('btn-mode-active-ring');
                 if (btnLock) btnLock.classList.remove('btn-mode-active-ring');
                 if (mobileOrb) mobileOrb.textContent = '🔓';
             }
 
-            // Update Mobile Quick Stats tiles
+            // Update Mobile Quick Stats tiles & Floating Dock labels
             const roomComputersCount = allComputers.filter(c => c.roomId.toLowerCase() === room.roomId.toLowerCase()).length;
             const sitesCount = CountBaseDomains(room.whitelist);
             const mStatComp = document.getElementById('mobileStatComputers');
             const mStatSites = document.getElementById('mobileStatSites');
             if (mStatComp) mStatComp.textContent = `💻 ${roomComputersCount}`;
             if (mStatSites) mStatSites.textContent = `🌐 ${sitesCount}`;
+
+            const mNavCompLbl = document.getElementById('mNavComputersLabel');
+            const mNavSitesLbl = document.getElementById('mNavSitesLabel');
+            if (mNavCompLbl) mNavCompLbl.textContent = `מחשבים (${roomComputersCount})`;
+            if (mNavSitesLbl) mNavSitesLbl.textContent = `אתרים (${sitesCount})`;
 
             const remoteBadge = document.getElementById('remoteCommandBadge');
             const btnClearRemote = document.getElementById('btnClearRemoteCmd');
@@ -2844,6 +3243,7 @@
 
         function renderRoomComputersList(room) {
             const container = document.getElementById('roomComputersList');
+            const mobileQuickList = document.getElementById('mobileQuickComputersList');
             const summaryBar = document.getElementById('roomComputersSummaryBar');
             const countBadge = document.getElementById('roomComputersCountBadge');
             if (!container || !room) return;
@@ -2861,16 +3261,20 @@
             }
             const mStatComp = document.getElementById('mobileStatComputers');
             if (mStatComp) mStatComp.textContent = `💻 ${roomComputers.length}`;
+            const mNavCompLbl = document.getElementById('mNavComputersLabel');
+            if (mNavCompLbl) mNavCompLbl.textContent = `מחשבים (${roomComputers.length})`;
 
             if (roomComputers.length === 0) {
                 if (summaryBar) summaryBar.style.display = 'none';
-                container.innerHTML = `
-                    <div style="grid-column: 1/-1; background: var(--surface-muted); border: 1.5px dashed var(--border-strong); border-radius: 12px; padding: 18px 12px; font-size: 12.5px; color: var(--text-muted); text-align: center;">
-                        <div style="font-size: 22px; margin-bottom: 4px;">🖥️</div>
+                const emptyHtml = `
+                    <div style="grid-column: 1/-1; background: var(--surface-muted); border: 1.5px dashed var(--border-strong); border-radius: 14px; padding: 20px 14px; font-size: 13px; color: var(--text-muted); text-align: center;">
+                        <div style="font-size: 24px; margin-bottom: 6px;">🖥️</div>
                         <strong style="color: var(--text-secondary);">אין מחשבים רשומים בחדר זה (<code>${escapeHtml(room.roomId)}</code>)</strong><br>
                         עם התקנת התוכנה במחשב תלמיד עם קוד החדר <code>${escapeHtml(room.roomId)}</code>, שמו יופיע כאן אוטומטית.
                     </div>
                 `;
+                container.innerHTML = emptyHtml;
+                if (mobileQuickList) mobileQuickList.innerHTML = emptyHtml;
                 return;
             }
 
@@ -2882,7 +3286,7 @@
             let updatedVerCount = 0;
             let overriddenCount = 0;
 
-            const cardsHtml = roomComputers.map(c => {
+            const enriched = roomComputers.map(c => {
                 const seenMs = c.lastSeen ? Date.parse(c.lastSeen) : 0;
                 const hbEntry = computerHeartbeatCache[c.docId];
                 const isOnlineByServerTs = c.lastSeenMs > 0 && (nowMs - c.lastSeenMs) < 90000;
@@ -2913,82 +3317,147 @@
                     if (isUnsynced) unsyncedCount++;
                 }
 
-                let cardStateClass = 'is-offline';
-                if (isOnlineNow) {
-                    if (isUnsynced) cardStateClass = 'is-unsynced';
-                    else if (isLocked) cardStateClass = 'is-locked';
-                    else cardStateClass = 'is-open';
-                }
+                return {
+                    c,
+                    isOnlineNow,
+                    isLocked,
+                    overrideMode,
+                    expectedLocked,
+                    isUnsynced,
+                    verRaw,
+                    isLatestVer
+                };
+            });
 
-                const dotColor = !isOnlineNow
-                    ? '#94a3b8'
-                    : (isUnsynced ? '#f59e0b' : (isLocked ? '#ef4444' : '#10b981'));
+            // Filter for main computers grid
+            const filteredItems = enriched.filter(item => {
+                if (currentComputerFilterMode === 'online') return item.isOnlineNow;
+                if (currentComputerFilterMode === 'custom') return item.overrideMode === 'open' || item.overrideMode === 'locked';
+                return true;
+            });
 
-                const statePillHtml = !isOnlineNow
-                    ? `<span class="pc-state-pill offline">⚪ כבוי</span>`
-                    : (isLocked
-                        ? `<span class="pc-state-pill locked">🔒 נעול</span>`
-                        : `<span class="pc-state-pill open">🔓 פתוח</span>`);
+            const cardsHtml = filteredItems.length === 0
+                ? `<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--surface-muted);border-radius:12px;border:1px dashed var(--border-strong);">אין מחשבים התואמים לסינון שנבחר. <button type="button" class="btn btn-outline btn-sm" style="margin-right:8px;" onclick="setComputerFilterMode('all')">הצג הכל</button></div>`
+                : filteredItems.map(item => {
+                    const { c, isOnlineNow, isLocked, overrideMode, expectedLocked, isUnsynced, verRaw, isLatestVer } = item;
 
-                const toggleBtnHtml = expectedLocked
-                    ? `<button type="button" class="btn-pc-toggle to-open" onclick="toggleSingleComputerMode('${escapeJsStr(c.computerName)}', false)" title="פתח אינטרנט חופשי רק למחשב ${escapeHtml(c.computerName)}">🔓 פתח</button>`
-                    : `<button type="button" class="btn-pc-toggle to-lock" onclick="toggleSingleComputerMode('${escapeJsStr(c.computerName)}', true)" title="נעל למצגת/שיעור רק את מחשב ${escapeHtml(c.computerName)}">🔒 נעל</button>`;
+                    let cardStateClass = 'is-offline';
+                    if (isOnlineNow) {
+                        if (isUnsynced) cardStateClass = 'is-unsynced';
+                        else if (isLocked) cardStateClass = 'is-locked';
+                        else cardStateClass = 'is-open';
+                    }
+                    if (overrideMode === 'open' || overrideMode === 'locked') {
+                        cardStateClass += ' is-overridden';
+                    }
 
-                const overrideTagHtml = overrideMode === 'open'
-                    ? `<span class="pc-override-tag" title="מחשב זה הוגדר ידנית כפתוח (שונה משאר החדר)">🎯 פתוח אישית</span>`
-                    : (overrideMode === 'locked'
-                        ? `<span class="pc-override-tag" title="מחשב זה הוגדר ידנית כנעול (שונה משאר החדר)">🎯 נעול אישית</span>`
-                        : '');
+                    const ledClass = !isOnlineNow
+                        ? 'offline'
+                        : (isUnsynced ? 'online-sync' : (isLocked ? 'online-locked' : 'online-open'));
 
-                const verBadgeHtml = isLatestVer
-                    ? `<span class="pc-ver-badge ver-ok" title="מותקנת גרסה 3.4 המוקשחת">v${escapeHtml(verRaw)} ✓</span>`
-                    : `<span class="pc-ver-badge ver-old" title="מותקנת גרסה ישנה (לפני 3.4) — מומלץ לעדכן">${verRaw ? 'v' + escapeHtml(verRaw) : 'v3.1 (ישנה)'}</span>`;
+                    const statePillHtml = !isOnlineNow
+                        ? `<span class="pc-state-pill offline">⚪ כבוי</span>`
+                        : (isLocked
+                            ? `<span class="pc-state-pill locked">🔒 נעול</span>`
+                            : `<span class="pc-state-pill open">🔓 פתוח</span>`);
 
-                const unsyncBadgeHtml = isUnsynced
-                    ? `<span class="pc-unsync-tag" title="המחשב מתנהג בניגוד להוראת השרת!">⚠️ מסתנכרן...</span>`
-                    : '';
+                    const toggleBtnHtml = expectedLocked
+                        ? `<button type="button" class="btn-pc-toggle to-open" onclick="toggleSingleComputerMode('${escapeJsStr(c.computerName)}', false)" title="פתח אינטרנט חופשי רק למחשב ${escapeHtml(c.computerName)}">🔓 פתח מחשב</button>`
+                        : `<button type="button" class="btn-pc-toggle to-lock" onclick="toggleSingleComputerMode('${escapeJsStr(c.computerName)}', true)" title="נעל למצגת/שיעור רק את מחשב ${escapeHtml(c.computerName)}">🔒 נעל מחשב</button>`;
 
-                return `
-                    <div class="computer-card ${cardStateClass}">
-                        <div style="min-width: 0; flex: 1;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
-                                <div style="display: flex; align-items: center; gap: 5px; min-width: 0;">
-                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: ${dotColor}; display: inline-block; flex-shrink: 0;"></span>
+                    const overrideTagHtml = overrideMode === 'open'
+                        ? `<span class="pc-override-tag" title="מחשב זה הוגדר ידנית כפתוח (שונה משאר החדר)">🎯 פתוח אישית</span>`
+                        : (overrideMode === 'locked'
+                            ? `<span class="pc-override-tag" title="מחשב זה הוגדר ידנית כנעול (שונה משאר החדר)">🎯 נעול אישית</span>`
+                            : '');
+
+                    const verBadgeHtml = isLatestVer
+                        ? `<span class="pc-ver-badge ver-ok" title="מותקנת גרסה 3.4 המוקשחת">v${escapeHtml(verRaw)} ✓</span>`
+                        : `<span class="pc-ver-badge ver-old" title="מותקנת גרסה ישנה (לפני 3.4) — מומלץ לעדכן">${verRaw ? 'v' + escapeHtml(verRaw) : 'v3.1'}</span>`;
+
+                    const unsyncBadgeHtml = isUnsynced
+                        ? `<span class="pc-unsync-tag" title="המחשב מתעדכן מול השרת כעת">⏳ מסתנכרן</span>`
+                        : '';
+
+                    return `
+                        <div class="computer-card ${cardStateClass}">
+                            <div class="pc-card-top">
+                                <div class="pc-card-title-group">
+                                    <span class="pc-led ${ledClass}"></span>
                                     <span class="computer-name">${escapeHtml(c.computerName)}</span>
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                                <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
                                     ${statePillHtml}
-                                    ${toggleBtnHtml}
+                                    <button class="btn-remove-pc" onclick="removeComputerFromRoom('${escapeJsStr(c.docId)}', '${escapeJsStr(c.computerName)}')" title="הסר מחשב מהרשימה">✕</button>
                                 </div>
                             </div>
-                            <div class="computer-meta">
-                                ${verBadgeHtml}
-                                ${overrideTagHtml}
-                                ${unsyncBadgeHtml}
-                                ${c.userName ? `<span style="direction:ltr;display:inline-block;color:#475569;font-weight:600;">👤 ${escapeHtml(c.userName)}</span>` : ''}
+                            <div class="pc-card-bottom">
+                                <div class="computer-meta">
+                                    ${verBadgeHtml}
+                                    ${overrideTagHtml}
+                                    ${unsyncBadgeHtml}
+                                    ${c.userName ? `<span style="direction:ltr;display:inline-block;color:#475569;font-weight:700;">👤 ${escapeHtml(c.userName)}</span>` : ''}
+                                </div>
+                                ${toggleBtnHtml}
                             </div>
                         </div>
-                        <button class="btn-remove-pc" onclick="removeComputerFromRoom('${escapeJsStr(c.docId)}', '${escapeJsStr(c.computerName)}')" title="הסר מחשב מהרשימה">✕</button>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+
+            // Render Mobile Quick Computers List on Main Control Tab (prioritizing online & overridden PCs first)
+            if (mobileQuickList) {
+                const sortedForQuick = [...enriched].sort((a, b) => {
+                    if (a.isOnlineNow !== b.isOnlineNow) return a.isOnlineNow ? -1 : 1;
+                    const aOver = Boolean(a.overrideMode);
+                    const bOver = Boolean(b.overrideMode);
+                    if (aOver !== bOver) return aOver ? -1 : 1;
+                    return a.c.computerName.localeCompare(b.c.computerName, undefined, { numeric: true });
+                });
+
+                mobileQuickList.innerHTML = sortedForQuick.map(item => {
+                    const { c, isOnlineNow, isLocked, overrideMode, expectedLocked } = item;
+                    const ledClass = !isOnlineNow ? 'offline' : (isLocked ? 'online-locked' : 'online-open');
+                    const rowClass = !isOnlineNow ? '' : (isLocked ? 'is-locked' : 'is-open');
+                    const statePill = !isOnlineNow
+                        ? `<span class="pc-state-pill offline">⚪ כבוי</span>`
+                        : (isLocked ? `<span class="pc-state-pill locked">🔒 נעול</span>` : `<span class="pc-state-pill open">🔓 פתוח</span>`);
+                    const overBadge = overrideMode === 'open'
+                        ? `<span class="pc-override-tag">🎯 פתוח אישית</span>`
+                        : (overrideMode === 'locked' ? `<span class="pc-override-tag">🎯 נעול אישית</span>` : '');
+                    const btnHtml = expectedLocked
+                        ? `<button type="button" class="btn-pc-toggle to-open" onclick="toggleSingleComputerMode('${escapeJsStr(c.computerName)}', false)">🔓 פתח</button>`
+                        : `<button type="button" class="btn-pc-toggle to-lock" onclick="toggleSingleComputerMode('${escapeJsStr(c.computerName)}', true)">🔒 נעל</button>`;
+
+                    return `
+                        <div class="mobile-mini-pc-row ${rowClass}">
+                            <div style="display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap;">
+                                <span class="pc-led ${ledClass}"></span>
+                                <span class="computer-name" style="font-size:14px;">${escapeHtml(c.computerName)}</span>
+                                ${statePill}
+                                ${overBadge}
+                            </div>
+                            ${btnHtml}
+                        </div>
+                    `;
+                }).join('');
+            }
 
             if (summaryBar) {
                 summaryBar.style.display = 'flex';
                 const syncPill = unsyncedCount > 0
-                    ? `<span style="background:#fef3c7;color:#b45309;border:1px solid #f59e0b;padding:2px 7px;border-radius:6px;">⚠️ ${unsyncedCount} מסתנכרנים לשרת...</span>`
-                    : `<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;padding:2px 7px;border-radius:6px;">✅ כל המחוברים מסונכרנים לשרת</span>`;
+                    ? `<span style="background:#fef3c7;color:#b45309;border:1px solid #f59e0b;padding:3px 8px;border-radius:7px;">⏳ ${unsyncedCount} מסתנכרנים...</span>`
+                    : `<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;padding:3px 8px;border-radius:7px;">✅ מחוברים: ${onlineCount}</span>`;
 
                 const overrideSummaryPill = overriddenCount > 0
-                    ? `<button type="button" onclick="clearAllComputerOverrides()" style="background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd;padding:2px 8px;border-radius:6px;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;" title="לחץ לאיפוס כל ההחרגות האישיות והחזרת כל המחשבים למצב הכללי של החדר">🎯 ${overriddenCount} במצב אישי (איפוס ↺)</button>`
+                    ? `<button type="button" onclick="clearAllComputerOverrides()" style="background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd;padding:3px 9px;border-radius:7px;font-family:inherit;font-size:11.5px;font-weight:800;cursor:pointer;" title="לחץ לאיפוס כל ההחרגות האישיות והחזרת כל המחשבים למצב הכללי של החדר">🎯 ${overriddenCount} במצב אישי (איפוס ↺)</button>`
                     : '';
 
                 summaryBar.innerHTML = `
-                    <span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:6px;">🔒 נעולים: ${lockedCount}</span>
-                    <span style="background:#d1fae5;color:#065f46;padding:2px 7px;border-radius:6px;">🔓 פתוחים: ${openCount}</span>
+                    <span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:7px;">🔒 נעולים: ${lockedCount}</span>
+                    <span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:7px;">🔓 פתוחים: ${openCount}</span>
                     ${overrideSummaryPill}
                     ${syncPill}
-                    <span style="background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:6px;margin-right:auto;">📦 גרסה 3.4: ${updatedVerCount}/${roomComputers.length}</span>
+                    <span style="background:#dbeafe;color:#1e40af;padding:3px 8px;border-radius:7px;margin-right:auto;">📦 v3.4: ${updatedVerCount}/${roomComputers.length}</span>
                 `;
             }
 
@@ -3063,27 +3532,48 @@
         }
 
         function renderWhitelistProfilesDropdown(room) {
+            if (!room) return;
             const sel = document.getElementById('whitelistProfileSelect');
-            if (!sel || !room) return;
-
             const matchedId = getMatchingProfileId(room.whitelist);
-            const builtinOptions = builtinWhitelistProfiles.map(p => {
-                const count = normalizeBaseDomainsSet(p.domains).size;
-                return `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} (${count} אתרים)</option>`;
-            }).join('');
 
-            const customOptions = customWhitelistProfiles.map(p => {
-                const count = normalizeBaseDomainsSet(p.domains).size;
-                return `<option value="${escapeHtml(p.id)}">⭐ ${escapeHtml(p.name)} (${count} אתרים)</option>`;
-            }).join('');
+            if (sel) {
+                const builtinOptions = builtinWhitelistProfiles.map(p => {
+                    const count = normalizeBaseDomainsSet(p.domains).size;
+                    return `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} (${count} אתרים)</option>`;
+                }).join('');
 
-            let html = `<option value="">-- התאמה אישית (${CountBaseDomains(room.whitelist)} אתרים פעילים כעת) --</option>`;
-            html += `<optgroup label="תבניות מובנות להחלפה מהירה">${builtinOptions}</optgroup>`;
-            if (customWhitelistProfiles.length > 0) {
-                html += `<optgroup label="הפרופילים השמורים שלי">${customOptions}</optgroup>`;
+                const customOptions = customWhitelistProfiles.map(p => {
+                    const count = normalizeBaseDomainsSet(p.domains).size;
+                    return `<option value="${escapeHtml(p.id)}">⭐ ${escapeHtml(p.name)} (${count} אתרים)</option>`;
+                }).join('');
+
+                let html = `<option value="">-- התאמה אישית (${CountBaseDomains(room.whitelist)} אתרים פעילים כעת) --</option>`;
+                html += `<optgroup label="תבניות מובנות להחלפה מהירה">${builtinOptions}</optgroup>`;
+                if (customWhitelistProfiles.length > 0) {
+                    html += `<optgroup label="הפרופילים השמורים שלי">${customOptions}</optgroup>`;
+                }
+                sel.innerHTML = html;
+                sel.value = matchedId;
             }
-            sel.innerHTML = html;
-            sel.value = matchedId;
+
+            // Render 1-tap quick profile pills on Desktop & Mobile
+            const allProfiles = getAllWhitelistProfiles();
+            const pillsHtml = allProfiles.map(p => {
+                const isActive = (p.id === matchedId);
+                const shortLabel = p.builtin
+                    ? p.name.split('—')[0].split('(')[0].trim()
+                    : `⭐ ${p.name}`;
+                return `
+                    <button type="button" class="profile-chip-btn ${isActive ? 'active' : ''}" onclick="applyWhitelistProfile('${escapeJsStr(p.id)}')" title="${escapeHtml(p.name)}">
+                        <span>${escapeHtml(shortLabel)}</span>
+                    </button>
+                `;
+            }).join('');
+
+            const dStrip = document.getElementById('desktopQuickProfilesStrip');
+            const mStrip = document.getElementById('mobileQuickProfilesStrip');
+            if (dStrip) dStrip.innerHTML = pillsHtml;
+            if (mStrip) mStrip.innerHTML = pillsHtml;
         }
 
         async function onWhitelistProfileSelectChange(profileId) {
@@ -3276,6 +3766,8 @@
 
             const mStatSites = document.getElementById('mobileStatSites');
             if (mStatSites) mStatSites.textContent = `🌐 ${uniqueDomains.length}`;
+            const mNavSitesLbl = document.getElementById('mNavSitesLabel');
+            if (mNavSitesLbl) mNavSitesLbl.textContent = `אתרים (${uniqueDomains.length})`;
 
             renderWhitelistProfilesDropdown(room);
 
@@ -3589,7 +4081,7 @@
             }
         }
 
-        // Mobile App Bottom Bar View Switcher (Zero-Scroll Single Screen Views)
+        // Mobile App Bottom Bar View Switcher
         function switchMobileView(view) {
             const dash = document.getElementById('dashboard');
             dash.setAttribute('data-mobile-view', view);
@@ -3608,6 +4100,7 @@
             if (view === 'admin') {
                 renderAdminTables();
             }
+            try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
         }
 
         // Mobile Admin Sub-Switcher (Teachers vs Institutions)
