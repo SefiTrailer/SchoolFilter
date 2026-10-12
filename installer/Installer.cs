@@ -103,6 +103,10 @@ namespace SchoolFilter.Setup
             try
             {
                 string existingConfig = Path.Combine(TargetDir, "config.ini");
+                if (!File.Exists(existingConfig))
+                {
+                    existingConfig = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), AppName, "config.ini");
+                }
                 if (File.Exists(existingConfig))
                 {
                     foreach (string rawLine in File.ReadAllLines(existingConfig, Encoding.UTF8))

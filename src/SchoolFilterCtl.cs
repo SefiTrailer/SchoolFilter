@@ -634,7 +634,12 @@ namespace SchoolFilter.Controller
 
         private static void SaveLocalOverride(string mode)
         {
-            if (!IsAdministrator()) return;
+            if (!IsAdministrator() &&
+                !string.Equals(mode, "auto", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(mode, "block", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
             try
             {
                 if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
@@ -1012,6 +1017,28 @@ namespace SchoolFilter.Controller
 
         private static void EnsureSinkholeRunning()
         {
+            try
+            {
+                string myExePath = Assembly.GetExecutingAssembly().Location;
+                int myPid = Process.GetCurrentProcess().Id;
+                foreach (Process p in Process.GetProcessesByName("SchoolFilterCtl"))
+                {
+                    try
+                    {
+                        if (p.Id == myPid) continue;
+                        string otherPath = p.MainModule.FileName;
+                        if (!string.IsNullOrEmpty(otherPath) &&
+                            !string.Equals(otherPath, myExePath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            p.Kill();
+                            p.WaitForExit(800);
+                        }
+                    }
+                    catch {}
+                }
+            }
+            catch {}
+
             try
             {
                 using (TcpClient client = new TcpClient())
