@@ -12,7 +12,7 @@ $ErrorActionPreference = "SilentlyContinue"
 
 $scriptStartUtc = [DateTime]::UtcNow.AddSeconds(-10)
 
-# 1. Temporarily clear current user's WinINet AutoConfigURL so download cannot be blocked by a stopped sinkhole
+# 1. Clear current user's WinINet AutoConfigURL temporarily so download is never proxied
 try {
     $inetKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
     Remove-ItemProperty -Path $inetKey -Name "AutoConfigURL" -ErrorAction SilentlyContinue
@@ -45,6 +45,7 @@ try {
 # 2. Download latest v3.4 Setup directly bypassing any system proxy
 $wc = New-Object System.Net.WebClient
 $wc.Proxy = $null
+$wc.Encoding = [System.Text.Encoding]::UTF8
 $urls = @(
     "https://raw.githubusercontent.com/SefiTrailer/SchoolFilter/main/dist/SchoolFilter_Setup.exe",
     "https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe"
@@ -120,10 +121,7 @@ for ($k = 0; $k -lt 3; $k++) {
     Start-Sleep -Milliseconds 200
 }
 
-$launchedCtl = $null
-
 if ($pfUpdated) {
-    $launchedCtl = $legacyCtl
     Start-Process -FilePath $legacyCtl -ArgumentList "watchdog" -WindowStyle Hidden
 } else {
     # 5. Guaranteed Fallback: Install latest v3.4 directly into user-writable directory and take over user session immediately
@@ -149,7 +147,6 @@ if ($pfUpdated) {
 
     $newCtl = "$fallbackDir\SchoolFilterCtl.exe"
     if (Test-Path $newCtl) {
-        $launchedCtl = $newCtl
         try {
             $runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
             Set-ItemProperty -Path $runKey -Name "SchoolFilter" -Value "`"$newCtl`" watchdog" -Force
@@ -158,11 +155,11 @@ if ($pfUpdated) {
     }
 }
 
-# 6. Send immediate heartbeat to Firebase Realtime Database so the web dashboard updates within 1 second
+# 6. Send immediate heartbeat to Firebase Realtime Database (pure ASCII JSON)
 try {
     $roomId = "yeshiva-lab"
-    $roomName = "ישיבת נשמת התורה - חדר מחשבים"
-    $instName = "ישיבת נשמת התורה"
+    $roomName = "Yeshiva Computer Lab"
+    $instName = "Yeshiva"
     $cfgPaths = @("$dataDir\App\config.ini", "$env:LOCALAPPDATA\SchoolFilter\config.ini", "C:\Program Files\SchoolFilter\config.ini")
     foreach ($cp in $cfgPaths) {
         if (Test-Path $cp) {
