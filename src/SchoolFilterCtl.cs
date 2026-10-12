@@ -632,6 +632,8 @@ namespace SchoolFilter.Controller
             return false;
         }
 
+        private static volatile string InMemoryOverrideMode = null;
+
         private static void SaveLocalOverride(string mode)
         {
             if (!IsAdministrator() &&
@@ -640,6 +642,7 @@ namespace SchoolFilter.Controller
             {
                 return;
             }
+            InMemoryOverrideMode = (mode ?? "auto").Trim().ToLowerInvariant();
             try
             {
                 if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
@@ -647,13 +650,17 @@ namespace SchoolFilter.Controller
                 {
                     File.SetAttributes(StateFilePath, FileAttributes.Normal);
                 }
-                File.WriteAllText(StateFilePath, mode);
+                File.WriteAllText(StateFilePath, InMemoryOverrideMode);
             }
             catch {}
         }
 
         private static string ReadLocalOverride()
         {
+            if (!string.IsNullOrEmpty(InMemoryOverrideMode))
+            {
+                return InMemoryOverrideMode;
+            }
             try
             {
                 if (File.Exists(StateFilePath))
@@ -908,26 +915,23 @@ namespace SchoolFilter.Controller
                 string pcName = Environment.MachineName;
                 string userName = GetEffectiveUserName();
                 string docId = SanitizeDocIdPart(roomId) + "__" + SanitizeDocIdPart(pcName);
-                string url = "https://firestore.googleapis.com/v1/projects/" + projectId +
-                             "/databases/(default)/documents/computers/" + Uri.EscapeDataString(docId);
 
                 string nowIso = DateTime.UtcNow.ToString("o");
-                string json = "{" +
-                    "\"fields\":{" +
-                        "\"computerName\":{\"stringValue\":\"" + EscapeJsonStr(pcName) + "\"}," +
-                        "\"userName\":{\"stringValue\":\"" + EscapeJsonStr(userName) + "\"}," +
-                        "\"roomId\":{\"stringValue\":\"" + EscapeJsonStr(roomId) + "\"}," +
-                        "\"roomName\":{\"stringValue\":\"" + EscapeJsonStr(roomName) + "\"}," +
-                        "\"institutionName\":{\"stringValue\":\"" + EscapeJsonStr(instName) + "\"}," +
-                        "\"version\":{\"stringValue\":\"3.4\"}," +
-                        "\"filterActive\":{\"booleanValue\":" + (filterActive ? "true" : "false") + "}," +
-                        "\"lastSeen\":{\"stringValue\":\"" + nowIso + "\"}" +
-                    "}" +
+                string rtdbUrl = "https://" + projectId + "-default-rtdb.firebaseio.com/computers/" + Uri.EscapeDataString(docId) + ".json";
+                string rtdbJson = "{" +
+                    "\"computerName\":\"" + EscapeJsonStr(pcName) + "\"," +
+                    "\"userName\":\"" + EscapeJsonStr(userName) + "\"," +
+                    "\"roomId\":\"" + EscapeJsonStr(roomId) + "\"," +
+                    "\"roomName\":\"" + EscapeJsonStr(roomName) + "\"," +
+                    "\"institutionName\":\"" + EscapeJsonStr(instName) + "\"," +
+                    "\"version\":\"3.4\"," +
+                    "\"filterActive\":" + (filterActive ? "true" : "false") + "," +
+                    "\"lastSeen\":\"" + nowIso + "\"" +
                 "}";
 
-                byte[] bodyBytes = Encoding.UTF8.GetBytes(json);
-                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-                req.Method = "PATCH";
+                byte[] bodyBytes = Encoding.UTF8.GetBytes(rtdbJson);
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(rtdbUrl);
+                req.Method = "PUT";
                 req.Proxy = null;
                 req.Timeout = 3000;
                 req.ContentType = "application/json; charset=utf-8";
@@ -950,6 +954,18 @@ namespace SchoolFilter.Controller
                 string roomId = GetConfigValue("RoomId", DefaultRoomId);
                 string pcName = Environment.MachineName;
                 string docId = SanitizeDocIdPart(roomId) + "__" + SanitizeDocIdPart(pcName);
+
+                try
+                {
+                    string rtdbUrl = "https://" + projectId + "-default-rtdb.firebaseio.com/computers/" + Uri.EscapeDataString(docId) + ".json";
+                    HttpWebRequest rtdbReq = (HttpWebRequest)WebRequest.Create(rtdbUrl);
+                    rtdbReq.Method = "DELETE";
+                    rtdbReq.Proxy = null;
+                    rtdbReq.Timeout = 3000;
+                    using (HttpWebResponse resp = (HttpWebResponse)rtdbReq.GetResponse()) {}
+                }
+                catch {}
+
                 string url = "https://firestore.googleapis.com/v1/projects/" + projectId +
                              "/databases/(default)/documents/computers/" + Uri.EscapeDataString(docId);
 
@@ -1138,10 +1154,11 @@ namespace SchoolFilter.Controller
         {
             List<string> effectiveList = new List<string>(userWhitelist);
 
-            // Only allow the web portal & Firestore API for teacher management (no raw.githubusercontent.com in browser!)
+            // Only allow the web portal & Firebase/Firestore API for teacher management (no raw.githubusercontent.com in browser!)
             string[] coreInfraDomains = new string[]
             {
-                "sefitrailer.github.io", "firestore.googleapis.com"
+                "sefitrailer.github.io", "firestore.googleapis.com",
+                "*.firebaseio.com", "*.firebasedatabase.app"
             };
             foreach (string infra in coreInfraDomains)
             {
@@ -1236,6 +1253,48 @@ namespace SchoolFilter.Controller
             return baseDomains;
         }
 
+        private static string FetchCloudRoomJson(string projectId, string roomId, string userAgent)
+        {
+            string rtdbUrl = "https://" + projectId + "-default-rtdb.firebaseio.com/rooms/" + Uri.EscapeDataString(roomId) + ".json";
+            try
+            {
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(rtdbUrl);
+                req.Proxy = null;
+                req.Timeout = 3500;
+                req.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
+                req.Headers[HttpRequestHeader.CacheControl] = "no-cache, no-store, must-revalidate";
+                req.Headers[HttpRequestHeader.Pragma] = "no-cache";
+                req.UserAgent = userAgent;
+
+                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
+                using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
+                {
+                    string json = sr.ReadToEnd();
+                    if (!string.IsNullOrEmpty(json) && json.Trim() != "null")
+                    {
+                        return json;
+                    }
+                }
+            }
+            catch {}
+
+            string firestoreUrl = "https://firestore.googleapis.com/v1/projects/" + projectId +
+                                  "/databases/(default)/documents/rooms/" + Uri.EscapeDataString(roomId);
+            HttpWebRequest fsReq = (HttpWebRequest)WebRequest.Create(firestoreUrl);
+            fsReq.Proxy = null;
+            fsReq.Timeout = 3500;
+            fsReq.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
+            fsReq.Headers[HttpRequestHeader.CacheControl] = "no-cache, no-store, must-revalidate";
+            fsReq.Headers[HttpRequestHeader.Pragma] = "no-cache";
+            fsReq.UserAgent = userAgent;
+
+            using (HttpWebResponse fsResp = (HttpWebResponse)fsReq.GetResponse())
+            using (StreamReader fsSr = new StreamReader(fsResp.GetResponseStream(), Encoding.UTF8))
+            {
+                return fsSr.ReadToEnd();
+            }
+        }
+
         private static bool ParseFirestoreRoomJson(
             string json,
             out bool filterEnabled,
@@ -1252,35 +1311,36 @@ namespace SchoolFilter.Controller
             remoteCommand = "none";
             remoteCommandId = "0";
 
-            if (string.IsNullOrEmpty(json)) return false;
+            if (string.IsNullOrEmpty(json) || json.Trim() == "null") return false;
 
             try
             {
-                Match boolMatch = Regex.Match(json, "\"filterEnabled\"\\s*:\\s*\\{\\s*\"booleanValue\"\\s*:\\s*(true|false)", RegexOptions.IgnoreCase);
+                // Support both clean RTDB JSON ("filterEnabled":true) and Firestore JSON ("filterEnabled":{"booleanValue":true})
+                Match boolMatch = Regex.Match(json, "\"filterEnabled\"\\s*:\\s*(?:\\{\\s*\"booleanValue\"\\s*:\\s*)?(true|false)", RegexOptions.IgnoreCase);
                 if (boolMatch.Success)
                 {
                     filterEnabled = string.Equals(boolMatch.Groups[1].Value, "true", StringComparison.OrdinalIgnoreCase);
                 }
 
-                Match rMatch = Regex.Match(json, "\"name\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
-                if (rMatch.Success && !string.IsNullOrEmpty(rMatch.Groups[1].Value))
+                Match rMatch = Regex.Match(json, "\"name\"\\s*:\\s*(?:\\{\\s*\"stringValue\"\\s*:\\s*)?\"([^\"]+)\"");
+                if (rMatch.Success && !string.IsNullOrEmpty(rMatch.Groups[1].Value) && !rMatch.Groups[1].Value.StartsWith("projects/"))
                 {
                     roomLabel = rMatch.Groups[1].Value;
                 }
 
-                Match uMatch = Regex.Match(json, "\"updatedAt\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
+                Match uMatch = Regex.Match(json, "\"updatedAt\"\\s*:\\s*(?:\\{\\s*\"stringValue\"\\s*:\\s*)?\"([^\"]+)\"");
                 if (uMatch.Success)
                 {
                     updatedAt = uMatch.Groups[1].Value;
                 }
 
-                Match cmdMatch = Regex.Match(json, "\"remoteCommand\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
+                Match cmdMatch = Regex.Match(json, "\"remoteCommand\"\\s*:\\s*(?:\\{\\s*\"stringValue\"\\s*:\\s*)?\"([^\"]+)\"");
                 if (cmdMatch.Success)
                 {
                     remoteCommand = cmdMatch.Groups[1].Value.Trim().ToLowerInvariant();
                 }
 
-                Match cmdIdMatch = Regex.Match(json, "\"remoteCommandId\"\\s*:\\s*\\{\\s*\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
+                Match cmdIdMatch = Regex.Match(json, "\"remoteCommandId\"\\s*:\\s*(?:\\{\\s*\"stringValue\"\\s*:\\s*)?\"([^\"]+)\"");
                 if (cmdIdMatch.Success)
                 {
                     remoteCommandId = cmdIdMatch.Groups[1].Value.Trim();
@@ -1289,21 +1349,42 @@ namespace SchoolFilter.Controller
                 int wlIdx = json.IndexOf("\"whitelist\"", StringComparison.OrdinalIgnoreCase);
                 if (wlIdx >= 0)
                 {
-                    int arrEnd = json.IndexOf("]", wlIdx);
-                    if (arrEnd > wlIdx)
+                    int arrStart = json.IndexOf("[", wlIdx);
+                    int arrEnd = (arrStart >= 0) ? json.IndexOf("]", arrStart) : -1;
+                    if (arrStart >= 0 && arrEnd > arrStart)
                     {
-                        string wlSection = json.Substring(wlIdx, arrEnd - wlIdx);
-                        MatchCollection matches = Regex.Matches(wlSection, "\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
-                        foreach (Match m in matches)
+                        string wlSection = json.Substring(arrStart + 1, arrEnd - arrStart - 1);
+                        MatchCollection fsMatches = Regex.Matches(wlSection, "\"stringValue\"\\s*:\\s*\"([^\"]+)\"");
+                        if (fsMatches.Count > 0)
                         {
-                            string domain = m.Groups[1].Value.Trim().ToLowerInvariant();
-                            if (!string.IsNullOrEmpty(domain))
+                            foreach (Match m in fsMatches)
                             {
-                                string baseDom = domain.StartsWith("*.") ? domain.Substring(2) : domain;
-                                if (IsSafePacDomainPattern(baseDom))
+                                string domain = m.Groups[1].Value.Trim().ToLowerInvariant();
+                                if (!string.IsNullOrEmpty(domain))
                                 {
-                                    if (!whitelist.Contains(baseDom)) whitelist.Add(baseDom);
-                                    if (!whitelist.Contains("*." + baseDom)) whitelist.Add("*." + baseDom);
+                                    string baseDom = domain.StartsWith("*.") ? domain.Substring(2) : domain;
+                                    if (IsSafePacDomainPattern(baseDom))
+                                    {
+                                        if (!whitelist.Contains(baseDom)) whitelist.Add(baseDom);
+                                        if (!whitelist.Contains("*." + baseDom)) whitelist.Add("*." + baseDom);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            MatchCollection rtdbMatches = Regex.Matches(wlSection, "\"([^\"]+)\"");
+                            foreach (Match m in rtdbMatches)
+                            {
+                                string domain = m.Groups[1].Value.Trim().ToLowerInvariant();
+                                if (!string.IsNullOrEmpty(domain))
+                                {
+                                    string baseDom = domain.StartsWith("*.") ? domain.Substring(2) : domain;
+                                    if (IsSafePacDomainPattern(baseDom))
+                                    {
+                                        if (!whitelist.Contains(baseDom)) whitelist.Add(baseDom);
+                                        if (!whitelist.Contains("*." + baseDom)) whitelist.Add("*." + baseDom);
+                                    }
                                 }
                             }
                         }
@@ -1725,117 +1806,103 @@ namespace SchoolFilter.Controller
                     {
                         string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                         string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                        string firestoreUrl = "https://firestore.googleapis.com/v1/projects/" + projectId +
-                                              "/databases/(default)/documents/rooms/" + Uri.EscapeDataString(roomId);
+                        string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-SystemAgent/3.4");
+                        bool cloudFilterEnabled;
+                        List<string> whitelist;
+                        string roomLabel;
+                        string roomUpdatedAt;
+                        string remoteCommand;
+                        string remoteCommandId;
 
-                        HttpWebRequest req = (HttpWebRequest)WebRequest.Create(firestoreUrl);
-                        req.Proxy = null;
-                        req.Timeout = 4000;
-                        req.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
-                        req.Headers[HttpRequestHeader.CacheControl] = "no-cache, no-store, must-revalidate";
-                        req.Headers[HttpRequestHeader.Pragma] = "no-cache";
-                        req.UserAgent = "SchoolFilter-SystemAgent/3.4";
-
-                        using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
-                        using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
+                        if (ParseFirestoreRoomJson(json, out cloudFilterEnabled, out whitelist, out roomLabel, out roomUpdatedAt, out remoteCommand, out remoteCommandId))
                         {
-                            string json = sr.ReadToEnd();
-                            bool cloudFilterEnabled;
-                            List<string> whitelist;
-                            string roomLabel;
-                            string roomUpdatedAt;
-                            string remoteCommand;
-                            string remoteCommandId;
-
-                            if (ParseFirestoreRoomJson(json, out cloudFilterEnabled, out whitelist, out roomLabel, out roomUpdatedAt, out remoteCommand, out remoteCommandId))
+                            if (ShouldExecuteRemoteCommand(remoteCommand, remoteCommandId, true))
                             {
-                                if (ShouldExecuteRemoteCommand(remoteCommand, remoteCommandId, true))
+                                SaveLastExecutedCommandId(remoteCommandId, true);
+                                if (remoteCommand == "uninstall")
                                 {
-                                    SaveLastExecutedCommandId(remoteCommandId, true);
-                                    if (remoteCommand == "uninstall")
+                                    running = false;
+                                    ExecuteRemoteUninstall();
+                                    return;
+                                }
+                                else if (remoteCommand == "update")
+                                {
+                                    if (ExecuteRemoteUpdate())
                                     {
                                         running = false;
-                                        ExecuteRemoteUninstall();
                                         return;
                                     }
-                                    else if (remoteCommand == "update")
-                                    {
-                                        if (ExecuteRemoteUpdate())
-                                        {
-                                            running = false;
-                                            return;
-                                        }
-                                    }
                                 }
+                            }
 
-                                if (!string.IsNullOrEmpty(roomUpdatedAt))
+                            if (!string.IsNullOrEmpty(roomUpdatedAt))
+                            {
+                                if (lastSeenUpdatedAt == null || roomUpdatedAt != lastSeenUpdatedAt)
                                 {
-                                    if (lastSeenUpdatedAt == null || roomUpdatedAt != lastSeenUpdatedAt)
-                                    {
-                                        lastSeenUpdatedAt = roomUpdatedAt;
-                                        SaveLocalOverride("auto");
-                                    }
-                                }
-                                else if (lastSeenUpdatedAt == null)
-                                {
-                                    lastSeenUpdatedAt = "init";
+                                    lastSeenUpdatedAt = roomUpdatedAt;
                                     SaveLocalOverride("auto");
                                 }
+                            }
+                            else if (lastSeenUpdatedAt == null)
+                            {
+                                lastSeenUpdatedAt = "init";
+                                SaveLocalOverride("auto");
+                            }
 
-                                string localOverride = ReadLocalOverride();
-                                bool shouldEnforce = (localOverride == "allow") ? false : ((localOverride == "block") ? true : cloudFilterEnabled);
+                            string localOverride = ReadLocalOverride();
+                            bool shouldEnforce = (localOverride == "allow") ? false : ((localOverride == "block") ? true : cloudFilterEnabled);
 
-                                try
-                                {
-                                    string newPac = GenerateDynamicPacScript(shouldEnforce, whitelist);
-                                    if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
-                                    File.WriteAllText(CachedPacFilePath, newPac, Encoding.ASCII);
-                                }
-                                catch {}
+                            try
+                            {
+                                string newPac = GenerateDynamicPacScript(shouldEnforce, whitelist);
+                                if (!Directory.Exists(DataDir)) Directory.CreateDirectory(DataDir);
+                                File.WriteAllText(CachedPacFilePath, newPac, Encoding.ASCII);
+                            }
+                            catch {}
 
-                                if (shouldEnforce)
+                            if (shouldEnforce)
+                            {
+                                if (lastEnforcedState != true || !AreAllUsersProxyEnforced())
                                 {
-                                    if (lastEnforcedState != true || !AreAllUsersProxyEnforced())
-                                    {
-                                        long ts = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-                                        ApplyPacToAllLoadedUsers(true, GetLocalPacEndpointUrl(ts));
-                                        NotifyBrowserSettingsChanged();
-                                    }
-                                    if (!lastAppliedFirewall || lastEnforcedState != true)
-                                    {
-                                        ConfigureGameFirewallRules(true);
-                                        EnforceBrowserExtensionPolicies(true);
-                                        lastAppliedFirewall = true;
-                                    }
-                                    PurgeUnauthorizedBrowserExtensions();
-                                    EnforceInstalledGameBlock();
-                                    lastEnforcedState = true;
+                                    long ts = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                                    ApplyPacToAllLoadedUsers(true, GetLocalPacEndpointUrl(ts));
+                                    NotifyBrowserSettingsChanged();
+                                    ReportComputerHeartbeatToFirestore(true);
                                 }
-                                else
+                                if (!lastAppliedFirewall || lastEnforcedState != true)
                                 {
-                                    if (lastEnforcedState != false || IsAnyUserProxyEnforced())
-                                    {
-                                        ApplyPacToAllLoadedUsers(false, "");
-                                        NotifyBrowserSettingsChanged();
-                                        ReportComputerHeartbeatToFirestore(false);
-                                    }
-                                    if (lastAppliedFirewall || lastEnforcedState != false)
-                                    {
-                                        ConfigureGameFirewallRules(false);
-                                        lastAppliedFirewall = false;
-                                    }
-                                    lastEnforcedState = false;
+                                    ConfigureGameFirewallRules(true);
+                                    EnforceBrowserExtensionPolicies(true);
+                                    lastAppliedFirewall = true;
                                 }
+                                PurgeUnauthorizedBrowserExtensions();
+                                EnforceInstalledGameBlock();
+                                lastEnforcedState = true;
+                            }
+                            else
+                            {
+                                if (lastEnforcedState != false || IsAnyUserProxyEnforced())
+                                {
+                                    ApplyPacToAllLoadedUsers(false, "");
+                                    NotifyBrowserSettingsChanged();
+                                    ReportComputerHeartbeatToFirestore(false);
+                                }
+                                if (lastAppliedFirewall || lastEnforcedState != false)
+                                {
+                                    ConfigureGameFirewallRules(false);
+                                    lastAppliedFirewall = false;
+                                }
+                                lastEnforcedState = false;
+                            }
 
-                                if (!IsSinkholeRunning())
-                                {
-                                    EnsureSinkholeRunning();
-                                }
+                            if (!IsSinkholeRunning())
+                            {
+                                EnsureSinkholeRunning();
+                            }
 
-                                if (tickCounter % 6 == 0)
-                                {
-                                    ReportComputerHeartbeatToFirestore(shouldEnforce);
-                                }
+                            if (tickCounter % 6 == 0)
+                            {
+                                ReportComputerHeartbeatToFirestore(shouldEnforce);
                             }
                         }
                     }
@@ -1916,85 +1983,70 @@ namespace SchoolFilter.Controller
                                 {
                                     string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                                     string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                                    string firestoreUrl = "https://firestore.googleapis.com/v1/projects/" + projectId +
-                                                          "/databases/(default)/documents/rooms/" + Uri.EscapeDataString(roomId);
+                                    string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-RoomDaemon/3.4");
+                                    bool cloudFilterEnabled;
+                                    List<string> whitelist;
+                                    string roomLabel;
+                                    string roomUpdatedAt;
+                                    string remoteCommand;
+                                    string remoteCommandId;
 
-                                    HttpWebRequest req = (HttpWebRequest)WebRequest.Create(firestoreUrl);
-                                    req.Proxy = null;
-                                    req.Timeout = 4000;
-                                    req.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
-                                    req.Headers[HttpRequestHeader.CacheControl] = "no-cache, no-store, must-revalidate";
-                                    req.Headers[HttpRequestHeader.Pragma] = "no-cache";
-                                    req.UserAgent = "SchoolFilter-RoomDaemon/3.4";
-
-                                    using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
-                                    using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
+                                    if (ParseFirestoreRoomJson(json, out cloudFilterEnabled, out whitelist, out roomLabel, out roomUpdatedAt, out remoteCommand, out remoteCommandId))
                                     {
-                                        string json = sr.ReadToEnd();
-                                        bool cloudFilterEnabled;
-                                        List<string> whitelist;
-                                        string roomLabel;
-                                        string roomUpdatedAt;
-                                        string remoteCommand;
-                                        string remoteCommandId;
-
-                                        if (ParseFirestoreRoomJson(json, out cloudFilterEnabled, out whitelist, out roomLabel, out roomUpdatedAt, out remoteCommand, out remoteCommandId))
+                                        // Check for Remote Uninstall or Remote Update command
+                                        if (ShouldExecuteRemoteCommand(remoteCommand, remoteCommandId, false))
                                         {
-                                            // Check for Remote Uninstall or Remote Update command
-                                            if (ShouldExecuteRemoteCommand(remoteCommand, remoteCommandId, false))
+                                            SaveLastExecutedCommandId(remoteCommandId, false);
+                                            if (remoteCommand == "uninstall")
                                             {
-                                                SaveLastExecutedCommandId(remoteCommandId, false);
-                                                if (remoteCommand == "uninstall")
+                                                running = false;
+                                                try { if (listener != null) listener.Stop(); } catch {}
+                                                // Always restore current user's HKCU internet settings immediately
+                                                DisableFilter(false);
+                                                if (IsAdministrator())
+                                                {
+                                                    ExecuteRemoteUninstall();
+                                                }
+                                                return;
+                                            }
+                                            else if (remoteCommand == "update")
+                                            {
+                                                if (!IsAdministrator())
+                                                {
+                                                    // Let the SYSTEM agent perform the elevated update while we unlock SchoolFilterCtl.exe
+                                                    // and schedule a user-session restart once the update finishes.
+                                                    SpawnDelayedUserSessionRestart();
+                                                    running = false;
+                                                    try { if (listener != null) listener.Stop(); } catch {}
+                                                    return;
+                                                }
+                                                else if (ExecuteRemoteUpdate())
                                                 {
                                                     running = false;
                                                     try { if (listener != null) listener.Stop(); } catch {}
-                                                    // Always restore current user's HKCU internet settings immediately
-                                                    DisableFilter(false);
-                                                    if (IsAdministrator())
-                                                    {
-                                                        ExecuteRemoteUninstall();
-                                                    }
                                                     return;
                                                 }
-                                                else if (remoteCommand == "update")
-                                                {
-                                                    if (!IsAdministrator())
-                                                    {
-                                                        // Let the SYSTEM agent perform the elevated update while we unlock SchoolFilterCtl.exe
-                                                        // and schedule a user-session restart once the update finishes.
-                                                        SpawnDelayedUserSessionRestart();
-                                                        running = false;
-                                                        try { if (listener != null) listener.Stop(); } catch {}
-                                                        return;
-                                                    }
-                                                    else if (ExecuteRemoteUpdate())
-                                                    {
-                                                        running = false;
-                                                        try { if (listener != null) listener.Stop(); } catch {}
-                                                        return;
-                                                    }
-                                                }
                                             }
+                                        }
 
-                                            CurrentRoomDisplayLabel = roomLabel;
-                                            currentRawWhitelist = whitelist;
-                                            CurrentRoomWhitelist = ExtractCleanBaseDomains(whitelist);
-                                            lastCloudFilterEnabled = cloudFilterEnabled;
+                                        CurrentRoomDisplayLabel = roomLabel;
+                                        currentRawWhitelist = whitelist;
+                                        CurrentRoomWhitelist = ExtractCleanBaseDomains(whitelist);
+                                        lastCloudFilterEnabled = cloudFilterEnabled;
 
-                                            // Clear any local override on initial cloud sync or whenever teacher clicks a button in the web portal (updatedAt changed)
-                                            if (!string.IsNullOrEmpty(roomUpdatedAt))
+                                        // Clear any local override on initial cloud sync or whenever teacher clicks a button in the web portal (updatedAt changed)
+                                        if (!string.IsNullOrEmpty(roomUpdatedAt))
+                                        {
+                                            if (lastSeenUpdatedAt == null || roomUpdatedAt != lastSeenUpdatedAt)
                                             {
-                                                if (lastSeenUpdatedAt == null || roomUpdatedAt != lastSeenUpdatedAt)
-                                                {
-                                                    lastSeenUpdatedAt = roomUpdatedAt;
-                                                    SaveLocalOverride("auto");
-                                                }
-                                            }
-                                            else if (lastSeenUpdatedAt == null)
-                                            {
-                                                lastSeenUpdatedAt = "init";
+                                                lastSeenUpdatedAt = roomUpdatedAt;
                                                 SaveLocalOverride("auto");
                                             }
+                                        }
+                                        else if (lastSeenUpdatedAt == null)
+                                        {
+                                            lastSeenUpdatedAt = "init";
+                                            SaveLocalOverride("auto");
                                         }
                                     }
                                 }
@@ -2040,6 +2092,7 @@ namespace SchoolFilter.Controller
                                 if (shouldEnforceBlock)
                                 {
                                     RefreshPacSettings(currentCacheBuster);
+                                    ReportComputerHeartbeatToFirestore(true);
                                 }
                                 else
                                 {

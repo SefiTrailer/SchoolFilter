@@ -578,27 +578,24 @@ namespace SchoolFilter.Setup
                 string pcName = Environment.MachineName;
                 string userName = GetEffectiveUserName();
                 string docId = SanitizeDocIdPart(roomId) + "__" + SanitizeDocIdPart(pcName);
-                string url = "https://firestore.googleapis.com/v1/projects/" + FirebaseProjectId +
-                             "/databases/(default)/documents/computers/" + Uri.EscapeDataString(docId);
+                string rtdbUrl = "https://" + FirebaseProjectId + "-default-rtdb.firebaseio.com/computers/" + Uri.EscapeDataString(docId) + ".json";
 
                 string nowIso = DateTime.UtcNow.ToString("o");
-                string json = "{" +
-                    "\"fields\":{" +
-                        "\"computerName\":{\"stringValue\":\"" + EscapeJsonStr(pcName) + "\"}," +
-                        "\"userName\":{\"stringValue\":\"" + EscapeJsonStr(userName) + "\"}," +
-                        "\"roomId\":{\"stringValue\":\"" + EscapeJsonStr(roomId) + "\"}," +
-                        "\"roomName\":{\"stringValue\":\"" + EscapeJsonStr(roomName) + "\"}," +
-                        "\"institutionName\":{\"stringValue\":\"" + EscapeJsonStr(institutionName) + "\"}," +
-                        "\"version\":{\"stringValue\":\"3.4\"}," +
-                        "\"filterActive\":{\"booleanValue\":true}," +
-                        "\"installedAt\":{\"stringValue\":\"" + nowIso + "\"}," +
-                        "\"lastSeen\":{\"stringValue\":\"" + nowIso + "\"}" +
-                    "}" +
+                string rtdbJson = "{" +
+                    "\"computerName\":\"" + EscapeJsonStr(pcName) + "\"," +
+                    "\"userName\":\"" + EscapeJsonStr(userName) + "\"," +
+                    "\"roomId\":\"" + EscapeJsonStr(roomId) + "\"," +
+                    "\"roomName\":\"" + EscapeJsonStr(roomName) + "\"," +
+                    "\"institutionName\":\"" + EscapeJsonStr(institutionName) + "\"," +
+                    "\"version\":\"3.4\"," +
+                    "\"filterActive\":true," +
+                    "\"installedAt\":\"" + nowIso + "\"," +
+                    "\"lastSeen\":\"" + nowIso + "\"" +
                 "}";
 
-                byte[] bodyBytes = Encoding.UTF8.GetBytes(json);
-                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-                req.Method = "PATCH";
+                byte[] bodyBytes = Encoding.UTF8.GetBytes(rtdbJson);
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(rtdbUrl);
+                req.Method = "PUT";
                 req.Proxy = null;
                 req.Timeout = 3500;
                 req.ContentType = "application/json; charset=utf-8";
@@ -634,10 +631,9 @@ namespace SchoolFilter.Setup
                 ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
                 string pcName = Environment.MachineName;
                 string docId = SanitizeDocIdPart(roomId) + "__" + SanitizeDocIdPart(pcName);
-                string url = "https://firestore.googleapis.com/v1/projects/" + FirebaseProjectId +
-                             "/databases/(default)/documents/computers/" + Uri.EscapeDataString(docId);
+                string rtdbUrl = "https://" + FirebaseProjectId + "-default-rtdb.firebaseio.com/computers/" + Uri.EscapeDataString(docId) + ".json";
 
-                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(rtdbUrl);
                 req.Method = "DELETE";
                 req.Proxy = null;
                 req.Timeout = 3000;

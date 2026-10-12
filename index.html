@@ -2034,6 +2034,7 @@
         const auth = firebase.auth();
 
         const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents`;
+        const RTDB_BASE = `https://${FIREBASE_CONFIG.projectId}-default-rtdb.firebaseio.com`;
         const OWNER_EMAIL = "shalomyosefzeev@gmail.com";
 
         let currentUser = null;
@@ -2193,7 +2194,7 @@
                         const room = getCurrentRoom();
                         if (room) renderRoomComputersList(room);
                     }
-                }, 15000);
+                }, 5000);
             } catch (e) {
                 console.error(e);
                 alert('שגיאה בטעינת נתוני המערכת מהענן: ' + e.message);
@@ -2244,28 +2245,45 @@
             return headers;
         }
 
+        async function getRtdbAuthQuery() {
+            if (auth.currentUser) {
+                try {
+                    const idToken = await auth.currentUser.getIdToken();
+                    return `?auth=${encodeURIComponent(idToken)}`;
+                } catch (e) {}
+            }
+            return '';
+        }
+
         async function fetchComputersFromCloud() {
             try {
-                const compRes = await fetch(`${FIRESTORE_BASE}/computers?pageSize=500`, {
-                    cache: 'no-store',
-                    headers: await getReadHeaders()
+                const authQuery = await getRtdbAuthQuery();
+                const compRes = await fetch(`${RTDB_BASE}/computers.json${authQuery}`, {
+                    cache: 'no-store'
                 });
-                if (!compRes.ok) return;
-                const compJson = await compRes.json();
-                allComputers = (compJson.documents || []).map(doc => ({
-                    docId: doc.name.split('/').pop(),
-                    computerName: getStr(doc, 'computerName') || doc.name.split('/').pop(),
-                    userName: getStr(doc, 'userName') || '',
-                    roomId: getStr(doc, 'roomId') || 'yeshiva-lab',
-                    roomName: getStr(doc, 'roomName') || '',
-                    institutionName: getStr(doc, 'institutionName') || '',
-                    filterActive: getBool(doc, 'filterActive', true),
-                    version: getStr(doc, 'version') || '',
-                    installedAt: getStr(doc, 'installedAt') || '',
-                    lastSeen: getStr(doc, 'lastSeen') || ''
-                }));
+                if (compRes.ok) {
+                    const compMap = await compRes.json();
+                    if (compMap && typeof compMap === 'object') {
+                        allComputers = Object.entries(compMap).map(([docId, c]) => ({
+                            docId,
+                            computerName: (c && c.computerName) || docId,
+                            userName: (c && c.userName) || '',
+                            roomId: (c && c.roomId) || 'yeshiva-lab',
+                            roomName: (c && c.roomName) || '',
+                            institutionName: (c && c.institutionName) || '',
+                            filterActive: c && typeof c.filterActive === 'boolean' ? c.filterActive : true,
+                            version: (c && c.version) || '',
+                            installedAt: (c && c.installedAt) || '',
+                            lastSeen: (c && c.lastSeen) || ''
+                        }));
+                        return;
+                    } else if (compMap === null) {
+                        allComputers = [];
+                        return;
+                    }
+                }
             } catch (e) {
-                console.warn('Could not load computers:', e);
+                console.warn('Could not load computers from RTDB:', e);
             }
         }
 
@@ -2280,10 +2298,14 @@
         async function removeComputerFromRoom(docId, computerName) {
             if (!confirm(`האם להסיר את המחשב '${computerName}' מרשימת המחשבים הרשומים בחדר זה?`)) return;
             try {
-                await fetch(`${FIRESTORE_BASE}/computers/${encodeURIComponent(docId)}`, {
-                    method: 'DELETE',
-                    headers: await getWriteHeaders()
+                const authQuery = await getRtdbAuthQuery();
+                const res = await fetch(`${RTDB_BASE}/computers/${encodeURIComponent(docId)}.json${authQuery}`, {
+                    method: 'DELETE'
                 });
+                if (!res.ok) throw new Error('מחיקה מהענן נכשלה (' + res.status + ')');
+                getWriteHeaders().then(headers => {
+                    fetch(`${FIRESTORE_BASE}/computers/${encodeURIComponent(docId)}`, { method: 'DELETE', headers }).catch(() => {});
+                }).catch(() => {});
                 allComputers = allComputers.filter(c => c.docId !== docId);
                 renderRoomsGrid();
                 const room = getCurrentRoom();
@@ -2295,43 +2317,50 @@
         }
 
         async function loadAllCloudData() {
-            const readHeaders = await getReadHeaders();
-            const instRes = await fetch(`${FIRESTORE_BASE}/institutions?pageSize=100`, { cache: 'no-store', headers: readHeaders });
-            const instJson = await instRes.json();
-            institutions = (instJson.documents || []).map(doc => ({
-                code: getStr(doc, 'code') || doc.name.split('/').pop(),
-                name: getStr(doc, 'name'),
-                ownerEmail: getStr(doc, 'ownerEmail')
-            }));
+            const authQuery = await getRtdbAuthQuery();
 
-            const roomsRes = await fetch(`${FIRESTORE_BASE}/rooms?pageSize=200`, { cache: 'no-store', headers: readHeaders });
-            const roomsJson = await roomsRes.json();
-            allRooms = (roomsJson.documents || []).map(doc => {
-                const roomObj = {
-                    roomId: getStr(doc, 'roomId') || doc.name.split('/').pop(),
-                    name: getStr(doc, 'name'),
-                    icon: getStr(doc, 'icon') || '🖥️',
-                    institutionId: getStr(doc, 'institutionId') || 'yeshiva',
-                    institutionName: getStr(doc, 'institutionName') || 'הישיבה שלנו',
-                    filterEnabled: getBool(doc, 'filterEnabled', true),
-                    whitelist: getStrArray(doc, 'whitelist', coreSites),
-                    remoteCommand: getStr(doc, 'remoteCommand') || 'none',
-                    remoteCommandId: getStr(doc, 'remoteCommandId') || '0',
-                    updatedBy: getStr(doc, 'updatedBy')
-                };
-                roomObj.shortName = formatShortRoomName(roomObj);
-                return roomObj;
-            });
+            const instRes = await fetch(`${RTDB_BASE}/institutions.json${authQuery}`, { cache: 'no-store' });
+            const instMap = instRes.ok ? await instRes.json() : null;
+            if (instMap && typeof instMap === 'object') {
+                institutions = Object.entries(instMap).map(([key, doc]) => ({
+                    code: (doc && doc.code) || key,
+                    name: (doc && doc.name) || key,
+                    ownerEmail: (doc && doc.ownerEmail) || ''
+                }));
+            }
 
-            const usersRes = await fetch(`${FIRESTORE_BASE}/users?pageSize=200`, { cache: 'no-store', headers: readHeaders });
-            const usersJson = await usersRes.json();
-            allUsers = (usersJson.documents || []).map(doc => ({
-                email: getStr(doc, 'email') || doc.name.split('/').pop(),
-                name: getStr(doc, 'name'),
-                role: getStr(doc, 'role') || 'teacher',
-                institutionId: getStr(doc, 'institutionId') || 'yeshiva',
-                institutionName: getStr(doc, 'institutionName') || 'הישיבה שלנו'
-            }));
+            const roomsRes = await fetch(`${RTDB_BASE}/rooms.json${authQuery}`, { cache: 'no-store' });
+            const roomsMap = roomsRes.ok ? await roomsRes.json() : null;
+            if (roomsMap && typeof roomsMap === 'object') {
+                allRooms = Object.entries(roomsMap).map(([key, doc]) => {
+                    const roomObj = {
+                        roomId: (doc && doc.roomId) || key,
+                        name: (doc && doc.name) || key,
+                        icon: (doc && doc.icon) || '🖥️',
+                        institutionId: (doc && doc.institutionId) || 'yeshiva',
+                        institutionName: (doc && doc.institutionName) || 'הישיבה שלנו',
+                        filterEnabled: doc && typeof doc.filterEnabled === 'boolean' ? doc.filterEnabled : true,
+                        whitelist: (doc && Array.isArray(doc.whitelist) && doc.whitelist.length > 0) ? doc.whitelist : [...coreSites],
+                        remoteCommand: (doc && doc.remoteCommand) || 'none',
+                        remoteCommandId: (doc && doc.remoteCommandId) || '0',
+                        updatedBy: (doc && doc.updatedBy) || ''
+                    };
+                    roomObj.shortName = formatShortRoomName(roomObj);
+                    return roomObj;
+                });
+            }
+
+            const usersRes = await fetch(`${RTDB_BASE}/users.json${authQuery}`, { cache: 'no-store' });
+            const usersMap = usersRes.ok ? await usersRes.json() : null;
+            if (usersMap && typeof usersMap === 'object') {
+                allUsers = Object.entries(usersMap).map(([key, doc]) => ({
+                    email: (doc && doc.email) || key.replace(/,/g, '.'),
+                    name: (doc && doc.name) || '',
+                    role: (doc && doc.role) || 'teacher',
+                    institutionId: (doc && doc.institutionId) || 'yeshiva',
+                    institutionName: (doc && doc.institutionName) || 'הישיבה שלנו'
+                }));
+            }
 
             await fetchComputersFromCloud();
         }
@@ -2710,8 +2739,12 @@
             input.value = '';
             renderSitesList(room);
             renderRoomsGrid();
-            await saveRoomDocument(room);
-            showToast(`✅ האתר ${domain} נוסף וסונכרן ל-${room.name}!`);
+            try {
+                await saveRoomDocument(room);
+                showToast(`✅ האתר ${domain} נוסף וסונכרן ל-${room.name}!`);
+            } catch (e) {
+                alert('שגיאה בשמירת האתר בענן: ' + e.message);
+            }
         }
 
         async function quickAddPresetSite(domain) {
@@ -2721,8 +2754,12 @@
             if (!room.whitelist.includes('*.' + domain)) room.whitelist.push('*.' + domain);
             renderSitesList(room);
             renderRoomsGrid();
-            await saveRoomDocument(room);
-            showToast(`⚡ ${domain} נוסף וסונכרן ל-${room.name}!`);
+            try {
+                await saveRoomDocument(room);
+                showToast(`⚡ ${domain} נוסף וסונכרן ל-${room.name}!`);
+            } catch (e) {
+                alert('שגיאה בשמירת האתר בענן: ' + e.message);
+            }
         }
 
         async function removeSiteFromRoom(domain) {
@@ -2731,8 +2768,12 @@
             room.whitelist = room.whitelist.filter(s => s !== domain && s !== '*.' + domain);
             renderSitesList(room);
             renderRoomsGrid();
-            await saveRoomDocument(room);
-            showToast(`🗑️ האתר ${domain} הוסר מ-${room.name}.`);
+            try {
+                await saveRoomDocument(room);
+                showToast(`🗑️ האתר ${domain} הוסר מ-${room.name}.`);
+            } catch (e) {
+                alert('שגיאה בשמירת השינוי בענן: ' + e.message);
+            }
         }
 
         async function setRoomFilterMode(enableBlock) {
@@ -2742,10 +2783,14 @@
             room.remoteCommand = 'none';
             renderActiveRoomPanel();
             renderRoomsGrid();
-            await saveRoomDocument(room);
-            showToast(enableBlock
-                ? `🔒 ${room.name} ננעל למצב שיעור! מתעדכן במחשבי החדר תוך 5 שניות.`
-                : `🔓 האינטרנט ב-${room.name} נפתח לגלישה חופשית!`);
+            try {
+                await saveRoomDocument(room);
+                showToast(enableBlock
+                    ? `🔒 ${room.name} ננעל למצב שיעור! מתעדכן במחשבי החדר תוך 5 שניות.`
+                    : `🔓 האינטרנט ב-${room.name} נפתח לגלישה חופשית!`);
+            } catch (e) {
+                alert('שגיאה בעדכון מצב החדר בענן: ' + e.message);
+            }
         }
 
         async function triggerRemoteRoomCommand(cmd) {
@@ -2765,11 +2810,14 @@
             room.remoteCommandId = Date.now().toString();
             renderActiveRoomPanel();
             renderRoomsGrid();
-            await saveRoomDocument(room);
-
-            showToast(cmd === 'uninstall'
-                ? `🗑️ פקודת הסרה מרחוק נשלחה ל-${room.name}!`
-                : `🔄 פקודת עדכון מרחוק נשלחה ל-${room.name}!`);
+            try {
+                await saveRoomDocument(room);
+                showToast(cmd === 'uninstall'
+                    ? `🗑️ פקודת הסרה מרחוק נשלחה ל-${room.name}!`
+                    : `🔄 פקודת עדכון מרחוק נשלחה ל-${room.name}!`);
+            } catch (e) {
+                alert('שגיאה בשליחת הפקודה לענן: ' + e.message);
+            }
         }
 
         async function clearRemoteRoomCommand() {
@@ -2777,15 +2825,23 @@
             if (!room) return;
             room.remoteCommand = 'none';
             renderActiveRoomPanel();
-            await saveRoomDocument(room);
-            showToast(`✅ הפקודה מרחוק עבור '${room.name}' בוטלה.`);
+            try {
+                await saveRoomDocument(room);
+                showToast(`✅ הפקודה מרחוק עבור '${room.name}' בוטלה.`);
+            } catch (e) {
+                alert('שגיאה בביטול הפקודה בענן: ' + e.message);
+            }
         }
 
         async function saveCurrentRoomToCloud() {
             const room = getCurrentRoom();
             if (!room) return;
-            await saveRoomDocument(room);
-            showToast(`✅ ההגדרות של '${room.name}' נשמרו!`);
+            try {
+                await saveRoomDocument(room);
+                showToast(`✅ ההגדרות של '${room.name}' נשמרו!`);
+            } catch (e) {
+                alert('שגיאה בשמירת הגדרות החדר: ' + e.message);
+            }
         }
 
         async function copyWhitelistToAllInstitutionRooms() {
@@ -2824,7 +2880,38 @@
             }
             room.whitelist = expanded;
 
-            const body = {
+            const authQuery = await getRtdbAuthQuery();
+            if (!authQuery) {
+                throw new Error('נדרשת התחברות מאומתת עם חשבון Google לביצוע שינויים בענן.');
+            }
+
+            const nowIso = new Date().toISOString();
+            const rtdbRoom = {
+                roomId: room.roomId,
+                name: room.name,
+                icon: room.icon || '🖥️',
+                institutionId: room.institutionId,
+                institutionName: room.institutionName,
+                filterEnabled: Boolean(room.filterEnabled),
+                whitelist: room.whitelist,
+                remoteCommand: room.remoteCommand || 'none',
+                remoteCommandId: room.remoteCommandId || '0',
+                updatedAt: nowIso,
+                updatedBy: currentUser ? currentUser.email : ''
+            };
+
+            const res = await fetch(`${RTDB_BASE}/rooms/${encodeURIComponent(room.roomId)}.json${authQuery}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rtdbRoom)
+            });
+
+            if (!res.ok) {
+                throw new Error('שגיאה בשמירת הגדרות החדר בענן (' + res.status + ')');
+            }
+
+            // Best-effort non-blocking mirror to Firestore for legacy clients
+            const fsBody = {
                 fields: {
                     roomId: { stringValue: room.roomId },
                     name: { stringValue: room.name },
@@ -2839,20 +2926,17 @@
                     },
                     remoteCommand: { stringValue: room.remoteCommand || 'none' },
                     remoteCommandId: { stringValue: room.remoteCommandId || '0' },
-                    updatedAt: { stringValue: new Date().toISOString() },
+                    updatedAt: { stringValue: nowIso },
                     updatedBy: { stringValue: currentUser ? currentUser.email : '' }
                 }
             };
-
-            const res = await fetch(`${FIRESTORE_BASE}/rooms/${encodeURIComponent(room.roomId)}`, {
-                method: 'PATCH',
-                headers: await getWriteHeaders(),
-                body: JSON.stringify(body)
-            });
-
-            if (!res.ok) {
-                throw new Error('שגיאה בשמירת הגדרות החדר בענן');
-            }
+            getWriteHeaders().then(headers => {
+                fetch(`${FIRESTORE_BASE}/rooms/${encodeURIComponent(room.roomId)}`, {
+                    method: 'PATCH',
+                    headers,
+                    body: JSON.stringify(fsBody)
+                }).catch(() => {});
+            }).catch(() => {});
         }
 
         function openAddRoomModal() {
@@ -3002,20 +3086,23 @@
                 return;
             }
 
-            const body = {
-                fields: {
-                    name: { stringValue: name },
-                    code: { stringValue: rawCode },
-                    ownerEmail: { stringValue: currentUser.email },
-                    createdAt: { stringValue: new Date().toISOString() }
-                }
+            const authQuery = await getRtdbAuthQuery();
+            const rtdbInst = {
+                name,
+                code: rawCode,
+                ownerEmail: currentUser.email,
+                createdAt: new Date().toISOString()
             };
 
-            await fetch(`${FIRESTORE_BASE}/institutions/${encodeURIComponent(rawCode)}`, {
-                method: 'PATCH',
-                headers: await getWriteHeaders(),
-                body: JSON.stringify(body)
+            const res = await fetch(`${RTDB_BASE}/institutions/${encodeURIComponent(rawCode)}.json${authQuery}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rtdbInst)
             });
+            if (!res.ok) {
+                alert('שגיאה ביצירת מוסד בענן (' + res.status + ')');
+                return;
+            }
 
             const defaultRoom = {
                 roomId: `${rawCode}-lab1`,
@@ -3049,21 +3136,25 @@
             }
 
             const instObj = institutions.find(i => i.code === instCode) || { code: 'yeshiva', name: 'הישיבה שלנו' };
-            const body = {
-                fields: {
-                    email: { stringValue: email },
-                    name: { stringValue: name || email },
-                    role: { stringValue: role },
-                    institutionId: { stringValue: role === 'superadmin' ? 'all' : instObj.code },
-                    institutionName: { stringValue: role === 'superadmin' ? 'כל המוסדות' : instObj.name }
-                }
+            const authQuery = await getRtdbAuthQuery();
+            const emailKey = email.replace(/\./g, ',');
+            const rtdbUser = {
+                email,
+                name: name || email,
+                role,
+                institutionId: role === 'superadmin' ? 'all' : instObj.code,
+                institutionName: role === 'superadmin' ? 'כל המוסדות' : instObj.name
             };
 
-            await fetch(`${FIRESTORE_BASE}/users/${encodeURIComponent(email)}`, {
-                method: 'PATCH',
-                headers: await getWriteHeaders(),
-                body: JSON.stringify(body)
+            const res = await fetch(`${RTDB_BASE}/users/${encodeURIComponent(emailKey)}.json${authQuery}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rtdbUser)
             });
+            if (!res.ok) {
+                alert('שגיאה בהוספת המשתמש בענן (' + res.status + ')');
+                return;
+            }
 
             document.getElementById('newUserEmail').value = '';
             document.getElementById('newUserName').value = '';
@@ -3074,9 +3165,10 @@
 
         async function removeAuthorizedUser(email) {
             if (!confirm(`האם להסיר את הרשאת הגישה של ${email}?`)) return;
-            await fetch(`${FIRESTORE_BASE}/users/${encodeURIComponent(email)}`, {
-                method: 'DELETE',
-                headers: await getWriteHeaders()
+            const authQuery = await getRtdbAuthQuery();
+            const emailKey = email.toLowerCase().replace(/\./g, ',');
+            await fetch(`${RTDB_BASE}/users/${encodeURIComponent(emailKey)}.json${authQuery}`, {
+                method: 'DELETE'
             });
             await loadAllCloudData();
             renderAdminTables();

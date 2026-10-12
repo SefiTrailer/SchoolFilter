@@ -10,20 +10,28 @@ $ErrorActionPreference = "SilentlyContinue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 [System.Net.WebRequest]::DefaultWebProxy = $null
 
-# 1. Temporarily clear local proxy on legacy v3.1, stop legacy sinkhole on port 9999, and reset state.txt to auto
-$legacyCtl = "C:\Program Files\SchoolFilter\SchoolFilterCtl.exe"
-if (Test-Path $legacyCtl) {
-    & $legacyCtl allow | Out-Null
-    & $legacyCtl stop-sinkhole | Out-Null
-}
+$scriptStartUtc = [DateTime]::UtcNow.AddSeconds(-10)
+
+# 1. Temporarily clear current user's WinINet AutoConfigURL so download cannot be blocked by a stopped sinkhole
 try {
-    $tc = New-Object System.Net.Sockets.TcpClient("127.0.0.1", 9999)
-    $st = $tc.GetStream()
-    $bytes = [System.Text.Encoding]::ASCII.GetBytes("STOP_SINKHOLE`r`n`r`n")
-    $st.Write($bytes, 0, $bytes.Length)
-    $st.Flush()
-    $tc.Close()
+    $inetKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+    Remove-ItemProperty -Path $inetKey -Name "AutoConfigURL" -ErrorAction SilentlyContinue
 } catch {}
+
+# Stop any running SchoolFilterCtl (watchdog + sinkhole) so binaries are unlocked for upgrade
+for ($k = 0; $k -lt 4; $k++) {
+    try {
+        $tc = New-Object System.Net.Sockets.TcpClient("127.0.0.1", 9999)
+        $st = $tc.GetStream()
+        $bytes = [System.Text.Encoding]::ASCII.GetBytes("STOP_SINKHOLE`r`n`r`n")
+        $st.Write($bytes, 0, $bytes.Length)
+        $st.Flush()
+        $tc.Close()
+    } catch {}
+    Get-Process -Name "SchoolFilterCtl" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    taskkill.exe /F /IM SchoolFilterCtl.exe 2>&1 | Out-Null
+    Start-Sleep -Milliseconds 250
+}
 
 $dataDir = "C:\ProgramData\SchoolFilter"
 if (!(Test-Path $dataDir)) {
@@ -34,7 +42,7 @@ try {
     [IO.File]::WriteAllText("$dataDir\trigger_update.txt", "1")
 } catch {}
 
-# 2. Download v3.4 Setup directly bypassing any system proxy
+# 2. Download latest v3.4 Setup directly bypassing any system proxy
 $wc = New-Object System.Net.WebClient
 $wc.Proxy = $null
 $urls = @(
@@ -42,32 +50,36 @@ $urls = @(
     "https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe"
 )
 
-$sharedSetup = "$dataDir\remote_update_setup.exe"
+$publicSetup = "C:\Users\Public\SchoolFilter_Setup_v34.exe"
 $tempSetup = "$env:TEMP\SchoolFilter_Setup_v34.exe"
-$downloaded = $false
+$sharedSetup = "$dataDir\remote_update_setup.exe"
+$activeSetup = $null
 
 foreach ($u in $urls) {
-    try {
-        $bustUrl = $u + "?t=" + [DateTime]::UtcNow.Ticks
-        $wc.DownloadFile($bustUrl, $tempSetup)
-        if ((Test-Path $tempSetup) -and ((Get-Item $tempSetup).Length -gt 50000)) {
-            $downloaded = $true
-            break
-        }
-    } catch {}
+    foreach ($dest in @($publicSetup, $tempSetup)) {
+        try {
+            if (Test-Path $dest) { Remove-Item $dest -Force -ErrorAction SilentlyContinue }
+            $bustUrl = $u + "?t=" + [DateTime]::UtcNow.Ticks
+            $wc.DownloadFile($bustUrl, $dest)
+            if ((Test-Path $dest) -and ((Get-Item $dest).Length -gt 50000)) {
+                $activeSetup = $dest
+                break
+            }
+        } catch {}
+    }
+    if ($activeSetup) { break }
 }
 
-if (!$downloaded) { exit 1 }
+if (!$activeSetup) { exit 1 }
 
 try {
-    Copy-Item -Path $tempSetup -Destination $sharedSetup -Force
+    Copy-Item -Path $activeSetup -Destination $sharedSetup -Force -ErrorAction SilentlyContinue
 } catch {}
 
-$activeSetup = if (Test-Path $sharedSetup) { $sharedSetup } else { $tempSetup }
-
 # 3. Try Elevated SYSTEM / Admin Upgrade into C:\Program Files\SchoolFilter
+$legacyCtl = "C:\Program Files\SchoolFilter\SchoolFilterCtl.exe"
 try {
-    schtasks.exe /Run /TN "SchoolFilterRemoteUpdate" | Out-Null
+    schtasks.exe /Run /TN "SchoolFilterRemoteUpdate" 2>&1 | Out-Null
 } catch {}
 
 if (![string]::IsNullOrWhiteSpace($AdminUser) -and ![string]::IsNullOrWhiteSpace($AdminPass)) {
@@ -77,67 +89,125 @@ if (![string]::IsNullOrWhiteSpace($AdminUser) -and ![string]::IsNullOrWhiteSpace
     }
     $localFullUser = "$env:COMPUTERNAME\$cleanUser"
 
-    # Method A: schtasks via 127.0.0.1 loopback RPC
     try {
-        schtasks.exe /Run /S 127.0.0.1 /U $localFullUser /P $AdminPass /TN "SchoolFilterRemoteUpdate" | Out-Null
-        schtasks.exe /Run /S 127.0.0.1 /U $cleanUser /P $AdminPass /TN "SchoolFilterRemoteUpdate" | Out-Null
+        schtasks.exe /Run /S 127.0.0.1 /U $localFullUser /P $AdminPass /TN "SchoolFilterRemoteUpdate" 2>&1 | Out-Null
+        schtasks.exe /Run /S 127.0.0.1 /U $cleanUser /P $AdminPass /TN "SchoolFilterRemoteUpdate" 2>&1 | Out-Null
     } catch {}
 
-    # Method B: Schedule.Service COM API
-    foreach ($srv in @("127.0.0.1", $null)) {
-        try {
-            $sched = New-Object -ComObject Schedule.Service
-            $sched.Connect($srv, $cleanUser, $env:COMPUTERNAME, $AdminPass)
-            $folder = $sched.GetFolder("\")
-            $task = $folder.GetTask("SchoolFilterRemoteUpdate")
-            $task.Run($null) | Out-Null
-        } catch {}
-    }
-
-    # Method C: Start-Process with PSCredential (Interactive logon as AdminUser)
     try {
         $secPass = ConvertTo-SecureString $AdminPass -AsPlainText -Force
         $cred = New-Object System.Management.Automation.PSCredential($localFullUser, $secPass)
-        $innerCmd = "schtasks.exe /Run /TN 'SchoolFilterRemoteUpdate'; Start-Process -FilePath '$activeSetup' -ArgumentList '/STUDENT /VERYSILENT /SUPPRESSMSGBOXES' -WindowStyle Hidden"
+        $innerCmd = "Start-Process -FilePath '$activeSetup' -ArgumentList '/STUDENT /VERYSILENT /SUPPRESSMSGBOXES' -WindowStyle Hidden"
         Start-Process -FilePath "powershell.exe" -Credential $cred -ArgumentList "-NoProfile -WindowStyle Hidden -Command `"$innerCmd`"" -WindowStyle Hidden
     } catch {}
 }
 
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 3
 
-# 4. Verify if C:\Program Files\SchoolFilter\SchoolFilterCtl.exe was updated to v3.4 (>= 80 KB)
+# 4. Check if C:\Program Files\SchoolFilter\SchoolFilterCtl.exe was freshly updated during this run
 $pfUpdated = $false
 if (Test-Path $legacyCtl) {
-    if ((Get-Item $legacyCtl).Length -ge 80000) {
+    $item = Get-Item $legacyCtl
+    if ($item.Length -ge 80000 -and $item.LastWriteTimeUtc -ge $scriptStartUtc) {
         $pfUpdated = $true
     }
 }
 
-if ($pfUpdated) {
-    # Ensure user-session watchdog is running the updated v3.4 binary
+# Kill any old SchoolFilterCtl processes before starting the newly installed one
+for ($k = 0; $k -lt 3; $k++) {
     Get-Process -Name "SchoolFilterCtl" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Milliseconds 400
+    taskkill.exe /F /IM SchoolFilterCtl.exe 2>&1 | Out-Null
+    Start-Sleep -Milliseconds 200
+}
+
+$launchedCtl = $null
+
+if ($pfUpdated) {
+    $launchedCtl = $legacyCtl
     Start-Process -FilePath $legacyCtl -ArgumentList "watchdog" -WindowStyle Hidden
 } else {
-    # 5. Guaranteed Fallback: Install v3.4 directly into user-accessible directory and take over user session immediately
+    # 5. Guaranteed Fallback: Install latest v3.4 directly into user-writable directory and take over user session immediately
     $fallbackDir = "$dataDir\App"
     try {
         if (!(Test-Path $fallbackDir)) { New-Item -ItemType Directory -Path $fallbackDir -Force -ErrorAction Stop | Out-Null }
         $testFile = "$fallbackDir\_test.tmp"
         [IO.File]::WriteAllText($testFile, "1")
-        Remove-Item $testFile -Force
+        Remove-Item $testFile -Force -ErrorAction Stop
+        if (Test-Path "$fallbackDir\SchoolFilterCtl.exe") {
+            Remove-Item "$fallbackDir\SchoolFilterCtl.exe" -Force -ErrorAction Stop
+        }
     } catch {
         $fallbackDir = "$env:LOCALAPPDATA\SchoolFilter"
+        if (!(Test-Path $fallbackDir)) { New-Item -ItemType Directory -Path $fallbackDir -Force | Out-Null }
+        if (Test-Path "$fallbackDir\SchoolFilterCtl.exe") {
+            Remove-Item "$fallbackDir\SchoolFilterCtl.exe" -Force -ErrorAction SilentlyContinue
+        }
     }
-
-    Get-Process -Name "SchoolFilterCtl" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Milliseconds 400
 
     $dirArg = "`"/DIR=$fallbackDir`" /STUDENT /VERYSILENT /SUPPRESSMSGBOXES"
     Start-Process -FilePath $activeSetup -ArgumentList $dirArg -Wait -WindowStyle Hidden
 
     $newCtl = "$fallbackDir\SchoolFilterCtl.exe"
     if (Test-Path $newCtl) {
+        $launchedCtl = $newCtl
+        try {
+            $runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+            Set-ItemProperty -Path $runKey -Name "SchoolFilter" -Value "`"$newCtl`" watchdog" -Force
+        } catch {}
         Start-Process -FilePath $newCtl -ArgumentList "watchdog" -WindowStyle Hidden
     }
 }
+
+# 6. Send immediate heartbeat to Firebase Realtime Database so the web dashboard updates within 1 second
+try {
+    $roomId = "yeshiva-lab"
+    $roomName = "ישיבת נשמת התורה - חדר מחשבים"
+    $instName = "ישיבת נשמת התורה"
+    $cfgPaths = @("$dataDir\App\config.ini", "$env:LOCALAPPDATA\SchoolFilter\config.ini", "C:\Program Files\SchoolFilter\config.ini")
+    foreach ($cp in $cfgPaths) {
+        if (Test-Path $cp) {
+            foreach ($line in [IO.File]::ReadAllLines($cp, [Text.Encoding]::UTF8)) {
+                if ($line -match "^RoomId=(.+)$") { $roomId = $Matches[1].Trim() }
+                if ($line -match "^RoomName=(.+)$") { $roomName = $Matches[1].Trim() }
+                if ($line -match "^InstitutionName=(.+)$") { $instName = $Matches[1].Trim() }
+            }
+            break
+        }
+    }
+
+    $roomEnable = $true
+    try {
+        $roomJsonRaw = $wc.DownloadString("https://school-filter-2026-default-rtdb.firebaseio.com/rooms/$roomId.json")
+        if ($roomJsonRaw -match '"filterEnabled"\s*:\s*false') { $roomEnable = $false }
+    } catch {}
+
+    $pcName = $env:COMPUTERNAME
+    $uName = $env:USERNAME
+    $docId = ($roomId -replace '[^a-zA-Z0-9_-]', '_') + "__" + ($pcName -replace '[^a-zA-Z0-9_-]', '_')
+    $nowIso = [DateTime]::UtcNow.ToString("o")
+    $hbObj = @{
+        computerName = $pcName
+        userName = $uName
+        roomId = $roomId
+        roomName = $roomName
+        institutionName = $instName
+        version = "3.4"
+        filterActive = $roomEnable
+        installedAt = $nowIso
+        lastSeen = $nowIso
+    } | ConvertTo-Json -Compress
+
+    $hbUrl = "https://school-filter-2026-default-rtdb.firebaseio.com/computers/$docId.json"
+    $hbBytes = [Text.Encoding]::UTF8.GetBytes($hbObj)
+    $req = [Net.HttpWebRequest]::Create($hbUrl)
+    $req.Method = "PUT"
+    $req.Proxy = $null
+    $req.Timeout = 4000
+    $req.ContentType = "application/json; charset=utf-8"
+    $req.ContentLength = $hbBytes.Length
+    $reqStream = $req.GetRequestStream()
+    $reqStream.Write($hbBytes, 0, $hbBytes.Length)
+    $reqStream.Close()
+    $resp = $req.GetResponse()
+    $resp.Close()
+} catch {}
