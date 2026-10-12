@@ -99,8 +99,11 @@ if ($LASTEXITCODE -ne 0) {
 if (Test-Path $OutputExe) {
     $FileItem = Get-Item $OutputExe
     $Hash = (Get-FileHash $OutputExe -Algorithm SHA256).Hash
+    $ShaFile = "$OutputExe.sha256"
+    [System.IO.File]::WriteAllText($ShaFile, "$Hash  SchoolFilter_Setup.exe`n", [System.Text.Encoding]::ASCII)
     Write-Host "`n[SUCCESS] SchoolFilter Installer built successfully!" -ForegroundColor Green
     Write-Host " Output Binary: $($FileItem.FullName)" -ForegroundColor White
+    Write-Host " Companion Hash: $ShaFile" -ForegroundColor White
     Write-Host " Size: $([math]::Round($FileItem.Length / 1KB, 2)) KB" -ForegroundColor White
     Write-Host " SHA256: $Hash" -ForegroundColor Gray
     Write-Host "`nSilent Installation Syntax:" -ForegroundColor Cyan

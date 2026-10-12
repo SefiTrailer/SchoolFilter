@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null
+             && request.auth.token.email != null;
+    }
+
+    function callerEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function isOwner() {
+      return isSignedIn() && callerEmail() == 'shalomyosefzeev@gmail.com';
+    }
+
+    function callerDoc() {
+      return get(/databases/$(database)/documents/users/$(callerEmail())).data;
+    }
+
+    function isRegisteredStaff() {
+      return isOwner() || (
+        isSignedIn() && (
+          exists(/databases/$(database)/documents/users/$(callerEmail())) ||
+          exists(/databases/$(database)/documents/users/$(request.auth.token.email))
+        )
+      );
+    }
+
+    function isSuperAdmin() {
+      return isOwner() || (
+        isRegisteredStaff() && callerDoc().role == 'superadmin'
+      );
+    }
+
+    function canManageInstitution(instId) {
+      return isSuperAdmin() || (
+        isRegisteredStaff() && (
+          callerDoc().institutionId == 'all' ||
+          callerDoc().institutionId == instId
+        )
+      );
+    }
+
+    function isValidRoomPayload(data) {
+      return data.keys().hasOnly([
+               'roomId', 'name', 'icon', 'institutionId', 'institutionName',
+               'filterEnabled', 'whitelist', 'remoteCommand', 'remoteCommandId',
+               'remoteAdminUser', 'remoteAdminPass',
+               'updatedAt', 'updatedBy'
+             ])
+             && data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 64
+             && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+             && data.filterEnabled is bool
+             && data.whitelist is list && data.whitelist.size() <= 500
+             && data.remoteCommand in ['none', 'update', 'uninstall']
+             && data.remoteCommandId is string && data.remoteCommandId.size() <= 40
+             && (!('remoteAdminUser' in data) || data.remoteAdminUser == '')
+             && (!('remoteAdminPass' in data) || data.remoteAdminPass == '');
+    }
+
+    function isValidComputerHeartbeat(data) {
+      return data.keys().hasOnly([
+               'computerName', 'userName', 'roomId', 'roomName',
+               'institutionName', 'filterActive', 'version',
+               'installedAt', 'lastSeen'
+             ])
+             && data.computerName is string && data.computerName.size() >= 1 && data.computerName.size() <= 64
+             && data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 64
+             && data.filterActive is bool
+             && (!('userName' in data) || (data.userName is string && data.userName.size() <= 64))
+             && (!('version' in data) || (data.version is string && data.version.size() <= 16))
+             && (!('lastSeen' in data) || (data.lastSeen is string && data.lastSeen.size() <= 40));
+    }
+
+    // Rooms: readable by endpoints for policy sync; writable only by authorized teachers/admins of that institution
+    match /rooms/{roomId} {
+      allow read: if true;
+      allow create, update: if canManageInstitution(request.resource.data.institutionId)
+                            && isValidRoomPayload(request.resource.data);
+      allow delete: if isSuperAdmin();
+    }
+
+    // Institutions: readable by portal/endpoints; writable only by superadmin
+    match /institutions/{instId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // Authorized Users (Teachers & Admins): readable only by signed-in users; writable only by superadmin or institution admin
+    match /users/{userEmail} {
+      allow read: if isSignedIn();
+      allow create, update: if isSuperAdmin() || (
+        isRegisteredStaff()
+        && callerDoc().role == 'inst_admin'
+        && request.resource.data.institutionId == callerDoc().institutionId
+        && request.resource.data.role in ['teacher', 'inst_admin']
+      );
+      allow delete: if isSuperAdmin() || (
+        isRegisteredStaff()
+        && callerDoc().role == 'inst_admin'
+        && resource.data.institutionId == callerDoc().institutionId
+        && resource.data.role != 'superadmin'
+      );
+    }
+
+    // Computers: endpoints can send bounded heartbeat updates; only authorized staff can delete
+    match /computers/{compId} {
+      allow read: if true;
+      allow create, update: if isValidComputerHeartbeat(request.resource.data);
+      allow delete: if isRegisteredStaff();
+    }
+  }
+}
