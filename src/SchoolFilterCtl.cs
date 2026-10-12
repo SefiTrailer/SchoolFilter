@@ -26,8 +26,8 @@ namespace SchoolFilter.Controller
         private const string DefaultRoomId = "yeshiva-lab";
         private const int SinkholePort = 9999;
         private static volatile int ActiveSinkholePort = 9999;
-        private const string SystemAgentMutexName = "Global\\SchoolFilterSystemAgentMutex_v343";
-        private const string SinkholeMutexName = "Local\\SchoolFilterSinkholeMutex_v343";
+        private const string SystemAgentMutexName = "Global\\SchoolFilterSystemAgentMutex_v344";
+        private const string SinkholeMutexName = "Local\\SchoolFilterSinkholeMutex_v344";
 
         private static readonly string InstallDir = ResolveInstallDir();
 
@@ -619,7 +619,7 @@ namespace SchoolFilter.Controller
 
         private static bool IsSinkholeRunning()
         {
-            foreach (string mutexName in new string[] { "Global\\SchoolFilterSinkholeMutex_v343", SinkholeMutexName })
+            foreach (string mutexName in new string[] { "Global\\SchoolFilterSinkholeMutex_v344", SinkholeMutexName })
             {
                 try
                 {
@@ -1310,6 +1310,34 @@ namespace SchoolFilter.Controller
                     filterEnabled = string.Equals(boolMatch.Groups[1].Value, "true", StringComparison.OrdinalIgnoreCase);
                 }
 
+                // Support per-computer lock/unlock override ("computerOverrides": { "NISHMAS05": "open" | "locked" })
+                string myPc = (Environment.MachineName ?? "").Trim();
+                if (!string.IsNullOrEmpty(myPc))
+                {
+                    int ovIdx = json.IndexOf("\"computerOverrides\"", StringComparison.OrdinalIgnoreCase);
+                    if (ovIdx >= 0)
+                    {
+                        string afterOv = json.Substring(ovIdx);
+                        Match pcOvMatch = Regex.Match(
+                            afterOv,
+                            "\"" + Regex.Escape(myPc) + "\"\\s*:\\s*(?:\\{\\s*\"stringValue\"\\s*:\\s*)?\"(open|locked|allow|block)\"",
+                            RegexOptions.IgnoreCase
+                        );
+                        if (pcOvMatch.Success)
+                        {
+                            string ovMode = pcOvMatch.Groups[1].Value.ToLowerInvariant();
+                            if (ovMode == "open" || ovMode == "allow")
+                            {
+                                filterEnabled = false;
+                            }
+                            else if (ovMode == "locked" || ovMode == "block")
+                            {
+                                filterEnabled = true;
+                            }
+                        }
+                    }
+                }
+
                 Match rMatch = Regex.Match(json, "\"name\"\\s*:\\s*(?:\\{\\s*\"stringValue\"\\s*:\\s*)?\"([^\"]+)\"");
                 if (rMatch.Success && !string.IsNullOrEmpty(rMatch.Groups[1].Value) && !rMatch.Groups[1].Value.StartsWith("projects/"))
                 {
@@ -1757,7 +1785,7 @@ namespace SchoolFilter.Controller
                     return;
                 }
 
-                // If no _v343 sinkhole is running yet, any other SchoolFilterCtl process is a legacy pre-v343 process holding port 9999; terminate it
+                // If no _v344 sinkhole is running yet, any other SchoolFilterCtl process is a legacy pre-v343 process holding port 9999; terminate it
                 if (!IsSinkholeRunning())
                 {
                     try
@@ -1952,7 +1980,7 @@ namespace SchoolFilter.Controller
             Mutex globalMutex = null;
             if (IsAdministrator())
             {
-                globalMutex = CreateScopedMutex("Global\\SchoolFilterSinkholeMutex_v343", out createdGlobalNew, true);
+                globalMutex = CreateScopedMutex("Global\\SchoolFilterSinkholeMutex_v344", out createdGlobalNew, true);
                 if (globalMutex != null && !createdGlobalNew)
                 {
                     try { globalMutex.Close(); } catch {}
@@ -1968,7 +1996,7 @@ namespace SchoolFilter.Controller
                     return;
                 }
 
-                // If running elevated and no _v343 SystemAgent is active yet, clean up any legacy pre-v343 SchoolFilterCtl process holding port 9999
+                // If running elevated and no _v344 SystemAgent is active yet, clean up any legacy pre-v343 SchoolFilterCtl process holding port 9999
                 if (IsAdministrator() && !IsSystemAgentRunning())
                 {
                     try

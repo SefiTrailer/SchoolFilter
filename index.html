@@ -933,6 +933,57 @@
             border-color: var(--danger-border);
         }
 
+        .btn-pc-toggle {
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 10.5px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .btn-pc-toggle.to-open {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #6ee7b7;
+        }
+
+        .btn-pc-toggle.to-open:hover {
+            background: #10b981;
+            color: #ffffff;
+            border-color: #059669;
+        }
+
+        .btn-pc-toggle.to-lock {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fca5a5;
+        }
+
+        .btn-pc-toggle.to-lock:hover {
+            background: #ef4444;
+            color: #ffffff;
+            border-color: #dc2626;
+        }
+
+        .pc-override-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            background: #ede9fe;
+            color: #5b21b6;
+            border: 1px solid #c4b5fd;
+            border-radius: 4px;
+            padding: 0px 5px;
+            font-size: 9.5px;
+            font-weight: 800;
+        }
+
         /* Compact Remote Footer inside Computers Card */
         .remote-footer-bar {
             margin-top: 8px;
@@ -946,13 +997,64 @@
             flex-shrink: 0;
         }
 
-        /* Whitelist Panel (Compact Pills — Zero Scroll) */
+        /* Whitelist Profiles Bar & Panel (Compact Pills — Zero Scroll) */
+        .profiles-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            padding: 6px 9px;
+            margin-bottom: 7px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .profiles-bar select {
+            flex: 1;
+            min-width: 150px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 800;
+            border-radius: 7px;
+            border-color: #93c5fd;
+            color: #1e3a8a;
+            background: #ffffff;
+        }
+
+        .profile-modal-list {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            max-height: 270px;
+            overflow-y: auto;
+            margin-top: 10px;
+            padding-left: 2px;
+        }
+
+        .profile-modal-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 9px 11px;
+            border-radius: 11px;
+            border: 1.5px solid var(--border);
+            background: var(--surface-muted);
+        }
+
+        .profile-modal-item.is-active {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
         .preset-chips-bar {
             display: flex;
             align-items: center;
             gap: 5px;
             flex-wrap: wrap;
-            margin-bottom: 8px;
+            margin-bottom: 7px;
             flex-shrink: 0;
         }
 
@@ -977,7 +1079,7 @@
         .sites-list {
             flex: 1;
             min-height: 0;
-            overflow: hidden;
+            overflow-y: auto;
             display: flex;
             flex-wrap: wrap;
             align-content: flex-start;
@@ -1829,6 +1931,9 @@
                                     <span>🌐 אתרים מותרים (<span id="whitelistRoomLabel" style="color: var(--primary);">חדר מחשבים</span>)</span>
                                 </div>
                                 <div style="display: flex; gap: 6px;">
+                                    <button class="btn btn-outline btn-sm" onclick="openWhitelistProfilesModal()" title="ניהול ושמירת פרופילים לרשימה לבנה">
+                                        📁 פרופילים
+                                    </button>
                                     <button class="btn btn-outline btn-sm" onclick="copyWhitelistToAllInstitutionRooms()" title="העתק רשימה לכל חדרי המוסד">
                                         📋 העתק למוסד
                                     </button>
@@ -1838,7 +1943,16 @@
                                 </div>
                             </div>
 
-                            <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-shrink: 0;">
+                            <!-- סרגל פרופילים שמורים לרשימה לבנה (מעבר מהיר בין כיתות/שיעורים) -->
+                            <div class="profiles-bar">
+                                <span style="font-size: 11.5px; font-weight: 800; color: #1e3a8a; white-space: nowrap;">📁 פרופיל כיתה:</span>
+                                <select id="whitelistProfileSelect" onchange="onWhitelistProfileSelectChange(this.value)" title="בחר פרופיל שמור להחלה מיידית על החדר"></select>
+                                <button type="button" class="btn btn-primary btn-sm" onclick="saveCurrentWhitelistAsNewProfilePrompt()" title="שמור את רשימת האתרים הנוכחית כפרופיל קבוע">
+                                    ➕ שמור כפרופיל
+                                </button>
+                            </div>
+
+                            <div style="display: flex; gap: 8px; margin-bottom: 7px; flex-shrink: 0;">
                                 <input type="url" inputmode="url" id="newSiteInput" placeholder="הקלד כתובת אתר (למשל: kahoot.it או cet.ac.il)..." style="flex: 1; direction: ltr; text-align: right;" onkeypress="if(event.key === 'Enter') addSiteToRoom()">
                                 <button class="btn btn-primary btn-sm" onclick="addSiteToRoom()">+ הוסף אתר</button>
                             </div>
@@ -2016,6 +2130,32 @@
         </div>
     </div>
 
+    <!-- חלונית ניהול ושמירת פרופילים לרשימה לבנה -->
+    <div id="whitelistProfilesModal" class="modal-backdrop" onclick="if(event.target===this) closeWhitelistProfilesModal()">
+        <div class="modal-box" style="max-width: 560px;">
+            <button onclick="closeWhitelistProfilesModal()" style="position:absolute; top:16px; left:16px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:50%; width:32px; height:32px; font-size:14px; cursor:pointer; font-weight:bold; color:#334155;">✕</button>
+            <h3 style="font-size: 19px; font-weight: 900; color: var(--text-main); margin-bottom: 5px;">📁 פרופילים שמורים לרשימה לבנה</h3>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px;">
+                שמור רשימות אתרים מוכנות לכיתות או שיעורים שונים (למשל: מבחן סגור, שיעור רגיל, מגמת תכנות) והחלף ביניהן בלחיצה אחת.
+            </p>
+
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 10px 12px; margin-bottom: 10px;">
+                <div style="font-size: 12px; font-weight: 800; color: #1e3a8a; margin-bottom: 6px;">➕ שמירת הרשימה הנוכחית של החדר כפרופיל חדש:</div>
+                <div style="display: flex; gap: 7px;">
+                    <input type="text" id="newProfileNameInput" placeholder="שם הפרופיל (למשל: כיתה ט׳ - היסטוריה / מבחן בגרות)..." style="flex: 1;" onkeypress="if(event.key === 'Enter') createOrUpdateProfileFromModal()">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="createOrUpdateProfileFromModal()">💾 שמור פרופיל</button>
+                </div>
+            </div>
+
+            <div style="font-size: 12px; font-weight: 800; color: var(--text-secondary);">בחר פרופיל להחלה על החדר הנוכחי:</div>
+            <div id="whitelistProfilesModalList" class="profile-modal-list"></div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+                <button type="button" class="btn btn-outline" onclick="closeWhitelistProfilesModal()">סגור</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -2054,6 +2194,88 @@
             "education.gov.il", "*.education.gov.il",
             "classroom.google.com", "docs.google.com", "drive.google.com"
         ];
+
+        const builtinWhitelistProfiles = [
+            {
+                id: "preset-exam",
+                name: "🔒 מצב בחינה / מטלה סגורה (ללא AI)",
+                builtin: true,
+                domains: [
+                    "one-class.co.il",
+                    "classroom.google.com",
+                    "docs.google.com",
+                    "drive.google.com",
+                    "edu.gov.il",
+                    "education.gov.il"
+                ]
+            },
+            {
+                id: "preset-standard",
+                name: "📚 שיעור רגיל (ברירת מחדל + AI)",
+                builtin: true,
+                domains: [
+                    "one-class.co.il",
+                    "gemini.google.com",
+                    "copilot.microsoft.com",
+                    "classroom.google.com",
+                    "docs.google.com",
+                    "drive.google.com",
+                    "edu.gov.il",
+                    "education.gov.il"
+                ]
+            },
+            {
+                id: "preset-research",
+                name: "🔬 שיעור מורחב — מחקר, ויקיפדיה ויצירה",
+                builtin: true,
+                domains: [
+                    "one-class.co.il",
+                    "gemini.google.com",
+                    "copilot.microsoft.com",
+                    "classroom.google.com",
+                    "docs.google.com",
+                    "drive.google.com",
+                    "edu.gov.il",
+                    "education.gov.il",
+                    "wikipedia.org",
+                    "hamichlol.org.il",
+                    "cet.ac.il",
+                    "kahoot.it",
+                    "canva.com",
+                    "gov.il"
+                ]
+            },
+            {
+                id: "preset-coding",
+                name: "💻 מגמת תכנות ומדעים (Scratch / GitHub / Python)",
+                builtin: true,
+                domains: [
+                    "one-class.co.il",
+                    "gemini.google.com",
+                    "copilot.microsoft.com",
+                    "classroom.google.com",
+                    "docs.google.com",
+                    "drive.google.com",
+                    "edu.gov.il",
+                    "education.gov.il",
+                    "scratch.mit.edu",
+                    "wikipedia.org",
+                    "w3schools.com",
+                    "github.com",
+                    "stackoverflow.com",
+                    "python.org"
+                ]
+            }
+        ];
+
+        let customWhitelistProfiles = [];
+        try {
+            const rawSaved = localStorage.getItem('sf_whitelist_profiles_v1');
+            if (rawSaved) {
+                const parsed = JSON.parse(rawSaved);
+                if (Array.isArray(parsed)) customWhitelistProfiles = parsed;
+            }
+        } catch (e) {}
 
         function escapeHtml(str) {
             return String(str == null ? '' : str)
@@ -2345,7 +2567,27 @@
             const roomsRes = await fetch(`${RTDB_BASE}/rooms.json${authQuery}`, { cache: 'no-store' });
             const roomsMap = roomsRes.ok ? await roomsRes.json() : null;
             if (roomsMap && typeof roomsMap === 'object') {
+                const cloudProfilesById = {};
                 allRooms = Object.entries(roomsMap).map(([key, doc]) => {
+                    if (doc && Array.isArray(doc.savedProfiles)) {
+                        doc.savedProfiles.forEach(p => {
+                            if (p && p.id && p.name && Array.isArray(p.domains)) {
+                                cloudProfilesById[p.id] = {
+                                    id: String(p.id),
+                                    name: String(p.name),
+                                    domains: p.domains.map(d => cleanDomain(String(d).replace(/^\*\./, ''))).filter(Boolean)
+                                };
+                            }
+                        });
+                    }
+                    const rawOverrides = (doc && doc.computerOverrides && typeof doc.computerOverrides === 'object') ? doc.computerOverrides : {};
+                    const normalizedOverrides = {};
+                    Object.entries(rawOverrides).forEach(([pcKey, val]) => {
+                        if (val === 'open' || val === 'locked') {
+                            normalizedOverrides[String(pcKey).toUpperCase()] = val;
+                        }
+                    });
+
                     const roomObj = {
                         roomId: (doc && doc.roomId) || key,
                         name: (doc && doc.name) || key,
@@ -2353,6 +2595,7 @@
                         institutionId: (doc && doc.institutionId) || 'yeshiva',
                         institutionName: (doc && doc.institutionName) || 'הישיבה שלנו',
                         filterEnabled: doc && typeof doc.filterEnabled === 'boolean' ? doc.filterEnabled : true,
+                        computerOverrides: normalizedOverrides,
                         whitelist: (doc && Array.isArray(doc.whitelist) && doc.whitelist.length > 0) ? doc.whitelist : [...coreSites],
                         remoteCommand: (doc && doc.remoteCommand) || 'none',
                         remoteCommandId: (doc && doc.remoteCommandId) || '0',
@@ -2361,6 +2604,17 @@
                     roomObj.shortName = formatShortRoomName(roomObj);
                     return roomObj;
                 });
+
+                const cloudProfileList = Object.values(cloudProfilesById);
+                if (cloudProfileList.length > 0) {
+                    const mergedMap = {};
+                    customWhitelistProfiles.forEach(p => { if (p && p.id) mergedMap[p.id] = p; });
+                    cloudProfileList.forEach(p => { mergedMap[p.id] = p; });
+                    customWhitelistProfiles = Object.values(mergedMap);
+                    try {
+                        localStorage.setItem('sf_whitelist_profiles_v1', JSON.stringify(customWhitelistProfiles));
+                    } catch (e) {}
+                }
             }
 
             const usersRes = await fetch(`${RTDB_BASE}/users.json${authQuery}`, { cache: 'no-store' });
@@ -2594,6 +2848,10 @@
             const countBadge = document.getElementById('roomComputersCountBadge');
             if (!container || !room) return;
 
+            if (!room.computerOverrides || typeof room.computerOverrides !== 'object') {
+                room.computerOverrides = {};
+            }
+
             const roomComputers = allComputers
                 .filter(c => c.roomId.toLowerCase() === room.roomId.toLowerCase())
                 .sort((a, b) => a.computerName.localeCompare(b.computerName, undefined, { numeric: true }));
@@ -2622,6 +2880,7 @@
             let openCount = 0;
             let unsyncedCount = 0;
             let updatedVerCount = 0;
+            let overriddenCount = 0;
 
             const cardsHtml = roomComputers.map(c => {
                 const seenMs = c.lastSeen ? Date.parse(c.lastSeen) : 0;
@@ -2631,7 +2890,18 @@
                 const isOnlineByLiveChange = Boolean(hbEntry && hbEntry.lastChangedAtMs > 0 && (nowMs - hbEntry.lastChangedAtMs) < 90000);
                 const isOnlineNow = isOnlineByServerTs || isOnlineByClientTs || isOnlineByLiveChange;
                 const isLocked = Boolean(c.filterActive);
-                const isUnsynced = isOnlineNow && (isLocked !== Boolean(room.filterEnabled));
+
+                const pcUpper = (c.computerName || '').toUpperCase();
+                const overrideMode = room.computerOverrides[pcUpper] || room.computerOverrides[c.computerName] || null;
+                if (overrideMode === 'open' || overrideMode === 'locked') {
+                    overriddenCount++;
+                }
+
+                const expectedLocked = overrideMode === 'open'
+                    ? false
+                    : (overrideMode === 'locked' ? true : Boolean(room.filterEnabled));
+
+                const isUnsynced = isOnlineNow && (isLocked !== expectedLocked);
                 const verRaw = (c.version || '3.4').trim();
                 const isLatestVer = verRaw === '3.4' || verRaw.startsWith('3.4');
 
@@ -2660,12 +2930,22 @@
                         ? `<span class="pc-state-pill locked">🔒 נעול</span>`
                         : `<span class="pc-state-pill open">🔓 פתוח</span>`);
 
+                const toggleBtnHtml = expectedLocked
+                    ? `<button type="button" class="btn-pc-toggle to-open" onclick="toggleSingleComputerMode('${escapeJsStr(c.computerName)}', false)" title="פתח אינטרנט חופשי רק למחשב ${escapeHtml(c.computerName)}">🔓 פתח</button>`
+                    : `<button type="button" class="btn-pc-toggle to-lock" onclick="toggleSingleComputerMode('${escapeJsStr(c.computerName)}', true)" title="נעל למצגת/שיעור רק את מחשב ${escapeHtml(c.computerName)}">🔒 נעל</button>`;
+
+                const overrideTagHtml = overrideMode === 'open'
+                    ? `<span class="pc-override-tag" title="מחשב זה הוגדר ידנית כפתוח (שונה משאר החדר)">🎯 פתוח אישית</span>`
+                    : (overrideMode === 'locked'
+                        ? `<span class="pc-override-tag" title="מחשב זה הוגדר ידנית כנעול (שונה משאר החדר)">🎯 נעול אישית</span>`
+                        : '');
+
                 const verBadgeHtml = isLatestVer
                     ? `<span class="pc-ver-badge ver-ok" title="מותקנת גרסה 3.4 המוקשחת">v${escapeHtml(verRaw)} ✓</span>`
                     : `<span class="pc-ver-badge ver-old" title="מותקנת גרסה ישנה (לפני 3.4) — מומלץ לעדכן">${verRaw ? 'v' + escapeHtml(verRaw) : 'v3.1 (ישנה)'}</span>`;
 
                 const unsyncBadgeHtml = isUnsynced
-                    ? `<span class="pc-unsync-tag" title="המחשב מתנהג בניגוד להוראת השרת לחדר זה!">⚠️ לא מסונכרן לשרת</span>`
+                    ? `<span class="pc-unsync-tag" title="המחשב מתנהג בניגוד להוראת השרת!">⚠️ מסתנכרן...</span>`
                     : '';
 
                 return `
@@ -2676,10 +2956,14 @@
                                     <span style="width: 8px; height: 8px; border-radius: 50%; background: ${dotColor}; display: inline-block; flex-shrink: 0;"></span>
                                     <span class="computer-name">${escapeHtml(c.computerName)}</span>
                                 </div>
-                                ${statePillHtml}
+                                <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                                    ${statePillHtml}
+                                    ${toggleBtnHtml}
+                                </div>
                             </div>
                             <div class="computer-meta">
                                 ${verBadgeHtml}
+                                ${overrideTagHtml}
                                 ${unsyncBadgeHtml}
                                 ${c.userName ? `<span style="direction:ltr;display:inline-block;color:#475569;font-weight:600;">👤 ${escapeHtml(c.userName)}</span>` : ''}
                             </div>
@@ -2692,18 +2976,294 @@
             if (summaryBar) {
                 summaryBar.style.display = 'flex';
                 const syncPill = unsyncedCount > 0
-                    ? `<span style="background:#fef3c7;color:#b45309;border:1px solid #f59e0b;padding:2px 7px;border-radius:6px;">⚠️ ${unsyncedCount} חורגים מהוראת השרת!</span>`
+                    ? `<span style="background:#fef3c7;color:#b45309;border:1px solid #f59e0b;padding:2px 7px;border-radius:6px;">⚠️ ${unsyncedCount} מסתנכרנים לשרת...</span>`
                     : `<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;padding:2px 7px;border-radius:6px;">✅ כל המחוברים מסונכרנים לשרת</span>`;
+
+                const overrideSummaryPill = overriddenCount > 0
+                    ? `<button type="button" onclick="clearAllComputerOverrides()" style="background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd;padding:2px 8px;border-radius:6px;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;" title="לחץ לאיפוס כל ההחרגות האישיות והחזרת כל המחשבים למצב הכללי של החדר">🎯 ${overriddenCount} במצב אישי (איפוס ↺)</button>`
+                    : '';
 
                 summaryBar.innerHTML = `
                     <span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:6px;">🔒 נעולים: ${lockedCount}</span>
                     <span style="background:#d1fae5;color:#065f46;padding:2px 7px;border-radius:6px;">🔓 פתוחים: ${openCount}</span>
+                    ${overrideSummaryPill}
                     ${syncPill}
                     <span style="background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:6px;margin-right:auto;">📦 גרסה 3.4: ${updatedVerCount}/${roomComputers.length}</span>
                 `;
             }
 
             container.innerHTML = cardsHtml;
+        }
+
+        async function toggleSingleComputerMode(computerName, makeLocked) {
+            const room = getCurrentRoom();
+            if (!room || !computerName) return;
+            if (!room.computerOverrides || typeof room.computerOverrides !== 'object') {
+                room.computerOverrides = {};
+            }
+
+            const pcKey = String(computerName).toUpperCase();
+            // Clean any case variants
+            Object.keys(room.computerOverrides).forEach(k => {
+                if (k.toUpperCase() === pcKey) delete room.computerOverrides[k];
+            });
+
+            // If target state differs from room's master filterEnabled, store explicit override; otherwise remove override so it follows room default
+            if (Boolean(makeLocked) !== Boolean(room.filterEnabled)) {
+                room.computerOverrides[pcKey] = makeLocked ? 'locked' : 'open';
+            }
+
+            renderActiveRoomPanel();
+            try {
+                await saveRoomDocument(room);
+                showToast(makeLocked
+                    ? `🔒 המחשב ${computerName} ננעל אישית (תוך 5 שניות)!`
+                    : `🔓 האינטרנט נפתח אישית למחשב ${computerName} (תוך 5 שניות)!`);
+            } catch (e) {
+                alert('שגיאה בעדכון מצב המחשב בענן: ' + e.message);
+            }
+        }
+
+        async function clearAllComputerOverrides() {
+            const room = getCurrentRoom();
+            if (!room) return;
+            room.computerOverrides = {};
+            renderActiveRoomPanel();
+            try {
+                await saveRoomDocument(room);
+                showToast(`✅ כל ההחרגות האישיות אופסו — כל מחשבי החדר חזרו למצב החדר הכללי.`);
+            } catch (e) {
+                alert('שגיאה באיפוס החרגות בענן: ' + e.message);
+            }
+        }
+
+        function getAllWhitelistProfiles() {
+            return [...builtinWhitelistProfiles, ...customWhitelistProfiles];
+        }
+
+        function normalizeBaseDomainsSet(list) {
+            const set = new Set();
+            (list || []).forEach(item => {
+                const base = cleanDomain(String(item || '').replace(/^\*\./, ''));
+                if (base) set.add(base);
+            });
+            return set;
+        }
+
+        function getMatchingProfileId(whitelist) {
+            const currentSet = normalizeBaseDomainsSet(whitelist);
+            const allProfiles = getAllWhitelistProfiles();
+            for (const p of allProfiles) {
+                const pSet = normalizeBaseDomainsSet(p.domains);
+                if (pSet.size === currentSet.size && [...pSet].every(d => currentSet.has(d))) {
+                    return p.id;
+                }
+            }
+            return '';
+        }
+
+        function renderWhitelistProfilesDropdown(room) {
+            const sel = document.getElementById('whitelistProfileSelect');
+            if (!sel || !room) return;
+
+            const matchedId = getMatchingProfileId(room.whitelist);
+            const builtinOptions = builtinWhitelistProfiles.map(p => {
+                const count = normalizeBaseDomainsSet(p.domains).size;
+                return `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)} (${count} אתרים)</option>`;
+            }).join('');
+
+            const customOptions = customWhitelistProfiles.map(p => {
+                const count = normalizeBaseDomainsSet(p.domains).size;
+                return `<option value="${escapeHtml(p.id)}">⭐ ${escapeHtml(p.name)} (${count} אתרים)</option>`;
+            }).join('');
+
+            let html = `<option value="">-- התאמה אישית (${CountBaseDomains(room.whitelist)} אתרים פעילים כעת) --</option>`;
+            html += `<optgroup label="תבניות מובנות להחלפה מהירה">${builtinOptions}</optgroup>`;
+            if (customWhitelistProfiles.length > 0) {
+                html += `<optgroup label="הפרופילים השמורים שלי">${customOptions}</optgroup>`;
+            }
+            sel.innerHTML = html;
+            sel.value = matchedId;
+        }
+
+        async function onWhitelistProfileSelectChange(profileId) {
+            if (!profileId) return;
+            await applyWhitelistProfile(profileId);
+        }
+
+        async function applyWhitelistProfile(profileId) {
+            const room = getCurrentRoom();
+            if (!room) return;
+            const profile = getAllWhitelistProfiles().find(p => p.id === profileId);
+            if (!profile) return;
+
+            const expanded = [];
+            profile.domains.forEach(d => {
+                const base = cleanDomain(String(d).replace(/^\*\./, ''));
+                if (!base) return;
+                if (!expanded.includes(base)) expanded.push(base);
+                if (!expanded.includes('*.' + base)) expanded.push('*.' + base);
+            });
+
+            room.whitelist = expanded;
+            renderSitesList(room);
+            renderRoomsGrid();
+            renderWhitelistProfilesModalList();
+            try {
+                await saveRoomDocument(room);
+                showToast(`📁 הפרופיל "${profile.name}" הוחל על ${room.name}!`);
+            } catch (e) {
+                alert('שגיאה בהחלת הפרופיל בענן: ' + e.message);
+            }
+        }
+
+        function persistCustomProfilesLocally() {
+            try {
+                localStorage.setItem('sf_whitelist_profiles_v1', JSON.stringify(customWhitelistProfiles));
+            } catch (e) {}
+        }
+
+        async function saveCurrentWhitelistAsNewProfilePrompt() {
+            const room = getCurrentRoom();
+            if (!room) return;
+            const defaultName = `פרופיל ${formatShortRoomName(room)}`;
+            const nameInput = prompt('הזן שם לפרופיל הרשימה הלבנה החדש (למשל: כיתה ח׳ - מדעים, או מבחן בגרות):', defaultName);
+            if (!nameInput || !nameInput.trim()) return;
+            await saveDomainsAsCustomProfile(nameInput.trim(), room.whitelist);
+        }
+
+        async function saveDomainsAsCustomProfile(profileName, domainsList) {
+            const room = getCurrentRoom();
+            const baseDomains = [...normalizeBaseDomainsSet(domainsList)];
+            if (baseDomains.length === 0) {
+                alert('הרשימה הלבנה הנוכחית ריקה — הוסף לפחות אתר אחד לפני שמירת פרופיל.');
+                return;
+            }
+
+            const existing = customWhitelistProfiles.find(p => p.name.trim() === profileName.trim());
+            if (existing) {
+                existing.domains = baseDomains;
+            } else {
+                customWhitelistProfiles.push({
+                    id: 'custom-' + Date.now(),
+                    name: profileName.trim(),
+                    domains: baseDomains
+                });
+            }
+
+            persistCustomProfilesLocally();
+            if (room) {
+                renderSitesList(room);
+                renderWhitelistProfilesModalList();
+                try {
+                    await saveRoomDocument(room);
+                } catch (e) {}
+            }
+            showToast(`💾 הפרופיל "${profileName}" נשמר (${baseDomains.length} אתרים)!`);
+        }
+
+        function openWhitelistProfilesModal() {
+            const input = document.getElementById('newProfileNameInput');
+            if (input) input.value = '';
+            renderWhitelistProfilesModalList();
+            document.getElementById('whitelistProfilesModal').style.display = 'flex';
+        }
+
+        function closeWhitelistProfilesModal() {
+            document.getElementById('whitelistProfilesModal').style.display = 'none';
+        }
+
+        async function createOrUpdateProfileFromModal() {
+            const room = getCurrentRoom();
+            if (!room) return;
+            const input = document.getElementById('newProfileNameInput');
+            const name = (input ? input.value : '').trim();
+            if (!name) {
+                alert('אנא הזן שם לפרופיל החדש.');
+                if (input) input.focus();
+                return;
+            }
+            if (input) input.value = '';
+            await saveDomainsAsCustomProfile(name, room.whitelist);
+        }
+
+        async function overwriteExistingProfileWithCurrent(profileId) {
+            const room = getCurrentRoom();
+            if (!room) return;
+            const profile = customWhitelistProfiles.find(p => p.id === profileId);
+            if (!profile) return;
+            const baseDomains = [...normalizeBaseDomainsSet(room.whitelist)];
+            profile.domains = baseDomains;
+            persistCustomProfilesLocally();
+            renderSitesList(room);
+            renderWhitelistProfilesModalList();
+            try {
+                await saveRoomDocument(room);
+            } catch (e) {}
+            showToast(`✅ הפרופיל "${profile.name}" עודכן עם ${baseDomains.length} האתרים הנוכחיים של החדר!`);
+        }
+
+        async function deleteCustomWhitelistProfile(profileId) {
+            const profile = customWhitelistProfiles.find(p => p.id === profileId);
+            if (!profile) return;
+            if (!confirm(`האם למחוק את הפרופיל השמור "${profile.name}"?`)) return;
+            customWhitelistProfiles = customWhitelistProfiles.filter(p => p.id !== profileId);
+            persistCustomProfilesLocally();
+            const room = getCurrentRoom();
+            if (room) {
+                renderSitesList(room);
+                try {
+                    await saveRoomDocument(room);
+                } catch (e) {}
+            }
+            renderWhitelistProfilesModalList();
+            showToast(`🗑️ הפרופיל "${profile.name}" נמחק.`);
+        }
+
+        function renderWhitelistProfilesModalList() {
+            const listEl = document.getElementById('whitelistProfilesModalList');
+            if (!listEl) return;
+            const room = getCurrentRoom();
+            const activeProfileId = room ? getMatchingProfileId(room.whitelist) : '';
+            const allProfiles = getAllWhitelistProfiles();
+
+            listEl.innerHTML = allProfiles.map(p => {
+                const domains = [...normalizeBaseDomainsSet(p.domains)];
+                const isCurrent = (p.id === activeProfileId);
+                const badgeHtml = p.builtin
+                    ? `<span style="font-size:10px;background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:999px;font-weight:700;">תבנית מובנית</span>`
+                    : `<span style="font-size:10px;background:#fef3c7;color:#b45309;padding:2px 6px;border-radius:999px;font-weight:700;">⭐ פרופיל אישי</span>`;
+
+                const activeTagHtml = isCurrent
+                    ? `<span style="font-size:10px;background:#dcfce7;color:#166534;padding:2px 7px;border-radius:999px;font-weight:800;">✓ פעיל כעת בחדר</span>`
+                    : '';
+
+                const customActionsHtml = !p.builtin
+                    ? `
+                        <button type="button" class="btn btn-outline btn-sm" onclick="overwriteExistingProfileWithCurrent('${escapeJsStr(p.id)}')" title="עדכן פרופיל זה כך שיכיל את רשימת האתרים שנמצאת כרגע בחדר">🔄 עדכן מהחדר</button>
+                        <button type="button" class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#fecaca;" onclick="deleteCustomWhitelistProfile('${escapeJsStr(p.id)}')" title="מחק פרופיל">🗑️</button>
+                    `
+                    : '';
+
+                return `
+                    <div class="profile-modal-item" style="${isCurrent ? 'border-color:#10b981;background:#f0fdf4;' : ''}">
+                        <div style="min-width: 0; flex: 1;">
+                            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                <span style="font-size:13px;font-weight:800;color:var(--text-main);">${escapeHtml(p.name)}</span>
+                                ${badgeHtml}
+                                ${activeTagHtml}
+                            </div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:3px;direction:ltr;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(domains.join(', '))}">
+                                🌐 ${domains.length} אתרים: ${escapeHtml(domains.slice(0, 6).join(', '))}${domains.length > 6 ? ' ...' : ''}
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="applyWhitelistProfile('${escapeJsStr(p.id)}')">החל על החדר</button>
+                            ${customActionsHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderSitesList(room) {
@@ -2716,6 +3276,8 @@
 
             const mStatSites = document.getElementById('mobileStatSites');
             if (mStatSites) mStatSites.textContent = `🌐 ${uniqueDomains.length}`;
+
+            renderWhitelistProfilesDropdown(room);
 
             container.innerHTML = uniqueDomains.map(domain => {
                 const isCore = coreSites.includes(domain);
@@ -2797,14 +3359,15 @@
             const room = getCurrentRoom();
             if (!room) return;
             room.filterEnabled = enableBlock;
+            room.computerOverrides = {};
             room.remoteCommand = 'none';
             renderActiveRoomPanel();
             renderRoomsGrid();
             try {
                 await saveRoomDocument(room);
                 showToast(enableBlock
-                    ? `🔒 ${room.name} ננעל למצב שיעור! מתעדכן במחשבי החדר תוך 5 שניות.`
-                    : `🔓 האינטרנט ב-${room.name} נפתח לגלישה חופשית!`);
+                    ? `🔒 ${room.name} ננעל למצב שיעור (כל המחשבים)! מתעדכן תוך 5 שניות.`
+                    : `🔓 האינטרנט ב-${room.name} נפתח לגלישה חופשית (כל המחשבים)!`);
             } catch (e) {
                 alert('שגיאה בעדכון מצב החדר בענן: ' + e.message);
             }
@@ -2910,6 +3473,8 @@
                 institutionId: room.institutionId,
                 institutionName: room.institutionName,
                 filterEnabled: Boolean(room.filterEnabled),
+                computerOverrides: (room.computerOverrides && typeof room.computerOverrides === 'object') ? room.computerOverrides : {},
+                savedProfiles: Array.isArray(customWhitelistProfiles) ? customWhitelistProfiles : [],
                 whitelist: room.whitelist,
                 remoteCommand: room.remoteCommand || 'none',
                 remoteCommandId: room.remoteCommandId || '0',
