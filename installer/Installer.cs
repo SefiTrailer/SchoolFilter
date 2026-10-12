@@ -590,7 +590,8 @@ namespace SchoolFilter.Setup
                     "\"version\":\"3.4\"," +
                     "\"filterActive\":true," +
                     "\"installedAt\":\"" + nowIso + "\"," +
-                    "\"lastSeen\":\"" + nowIso + "\"" +
+                    "\"lastSeen\":\"" + nowIso + "\"," +
+                    "\"lastSeenMs\":{\".sv\":\"timestamp\"}" +
                 "}";
 
                 byte[] bodyBytes = Encoding.UTF8.GetBytes(rtdbJson);

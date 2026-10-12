@@ -926,7 +926,8 @@ namespace SchoolFilter.Controller
                     "\"institutionName\":\"" + EscapeJsonStr(instName) + "\"," +
                     "\"version\":\"3.4\"," +
                     "\"filterActive\":" + (filterActive ? "true" : "false") + "," +
-                    "\"lastSeen\":\"" + nowIso + "\"" +
+                    "\"lastSeen\":\"" + nowIso + "\"," +
+                    "\"lastSeenMs\":{\".sv\":\"timestamp\"}" +
                 "}";
 
                 byte[] bodyBytes = Encoding.UTF8.GetBytes(rtdbJson);

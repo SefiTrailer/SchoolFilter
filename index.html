@@ -1639,7 +1639,7 @@
             </div>
 
             <div class="header-toolbar">
-                <a href="dist/SchoolFilter_Setup.exe" download="SchoolFilter_Setup.exe" class="btn-download-header">
+                <a href="dist/SchoolFilter_Setup.exe?v=3.4.2" download="SchoolFilter_Setup.exe" class="btn-download-header">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     <span>הורד תוכנת התקנה</span>
                 </a>
@@ -1692,7 +1692,7 @@
                         <div style="font-size: 12.5px; font-weight: 800; color: #1e3a8a;">📥 התקנה על מחשב תלמיד</div>
                         <div style="font-size: 11px; color: var(--text-secondary);">קוד חדר ברירת מחדל: <code>yeshiva-lab</code></div>
                     </div>
-                    <a href="dist/SchoolFilter_Setup.exe" download="SchoolFilter_Setup.exe" class="btn btn-outline btn-sm" style="border-color: #93c5fd; color: #1d4ed8; text-decoration: none; font-weight: 800;">
+                    <a href="dist/SchoolFilter_Setup.exe?v=3.4.2" download="SchoolFilter_Setup.exe" class="btn btn-outline btn-sm" style="border-color: #93c5fd; color: #1d4ed8; text-decoration: none; font-weight: 800;">
                         הורד תוכנה
                     </a>
                 </div>
@@ -2255,6 +2255,8 @@
             return '';
         }
 
+        const computerHeartbeatCache = {};
+
         async function fetchComputersFromCloud() {
             try {
                 const authQuery = await getRtdbAuthQuery();
@@ -2264,18 +2266,29 @@
                 if (compRes.ok) {
                     const compMap = await compRes.json();
                     if (compMap && typeof compMap === 'object') {
-                        allComputers = Object.entries(compMap).map(([docId, c]) => ({
-                            docId,
-                            computerName: (c && c.computerName) || docId,
-                            userName: (c && c.userName) || '',
-                            roomId: (c && c.roomId) || 'yeshiva-lab',
-                            roomName: (c && c.roomName) || '',
-                            institutionName: (c && c.institutionName) || '',
-                            filterActive: c && typeof c.filterActive === 'boolean' ? c.filterActive : true,
-                            version: (c && c.version) || '',
-                            installedAt: (c && c.installedAt) || '',
-                            lastSeen: (c && c.lastSeen) || ''
-                        }));
+                        const nowLocal = Date.now();
+                        allComputers = Object.entries(compMap).map(([docId, c]) => {
+                            const lastSeenStr = (c && c.lastSeen) || '';
+                            const prev = computerHeartbeatCache[docId];
+                            if (!prev) {
+                                computerHeartbeatCache[docId] = { lastSeenStr, lastChangedAtMs: 0 };
+                            } else if (lastSeenStr && prev.lastSeenStr !== lastSeenStr) {
+                                computerHeartbeatCache[docId] = { lastSeenStr, lastChangedAtMs: nowLocal };
+                            }
+                            return {
+                                docId,
+                                computerName: (c && c.computerName) || docId,
+                                userName: (c && c.userName) || '',
+                                roomId: (c && c.roomId) || 'yeshiva-lab',
+                                roomName: (c && c.roomName) || '',
+                                institutionName: (c && c.institutionName) || '',
+                                filterActive: c && typeof c.filterActive === 'boolean' ? c.filterActive : true,
+                                version: (c && c.version) || '3.4',
+                                installedAt: (c && c.installedAt) || '',
+                                lastSeen: lastSeenStr,
+                                lastSeenMs: (c && typeof c.lastSeenMs === 'number') ? c.lastSeenMs : 0
+                            };
+                        });
                         return;
                     } else if (compMap === null) {
                         allComputers = [];
@@ -2612,10 +2625,14 @@
 
             const cardsHtml = roomComputers.map(c => {
                 const seenMs = c.lastSeen ? Date.parse(c.lastSeen) : 0;
-                const isOnlineNow = seenMs > 0 && (nowMs - seenMs) < 90000;
+                const hbEntry = computerHeartbeatCache[c.docId];
+                const isOnlineByServerTs = c.lastSeenMs > 0 && (nowMs - c.lastSeenMs) < 90000;
+                const isOnlineByClientTs = seenMs > 0 && Math.abs(nowMs - seenMs) < 90000;
+                const isOnlineByLiveChange = Boolean(hbEntry && hbEntry.lastChangedAtMs > 0 && (nowMs - hbEntry.lastChangedAtMs) < 90000);
+                const isOnlineNow = isOnlineByServerTs || isOnlineByClientTs || isOnlineByLiveChange;
                 const isLocked = Boolean(c.filterActive);
                 const isUnsynced = isOnlineNow && (isLocked !== Boolean(room.filterEnabled));
-                const verRaw = (c.version || '').trim();
+                const verRaw = (c.version || '3.4').trim();
                 const isLatestVer = verRaw === '3.4' || verRaw.startsWith('3.4');
 
                 if (isLatestVer) updatedVerCount++;
