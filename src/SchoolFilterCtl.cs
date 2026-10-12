@@ -1058,7 +1058,8 @@ namespace SchoolFilter.Controller
                 string exePath = Assembly.GetExecutingAssembly().Location;
                 ProcessStartInfo psi = new ProcessStartInfo(exePath, "sinkhole")
                 {
-                    UseShellExecute = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
                     WindowStyle = ProcessWindowStyle.Hidden
                 };
                 Process.Start(psi);
@@ -1829,10 +1830,11 @@ namespace SchoolFilter.Controller
                                 if (!IsSinkholeRunning())
                                 {
                                     EnsureSinkholeRunning();
-                                    if (tickCounter % 3 == 0)
-                                    {
-                                        ReportComputerHeartbeatToFirestore(shouldEnforce);
-                                    }
+                                }
+
+                                if (tickCounter % 6 == 0)
+                                {
+                                    ReportComputerHeartbeatToFirestore(shouldEnforce);
                                 }
                             }
                         }
@@ -2095,98 +2097,121 @@ namespace SchoolFilter.Controller
                 cloudSyncThread.IsBackground = true;
                 cloudSyncThread.Start();
 
-                try
+                while (running)
                 {
-                    listener = new TcpListener(IPAddress.Loopback, SinkholePort);
-                    listener.Start();
-
-                    while (running)
+                    try
                     {
-                        TcpClient client = listener.AcceptTcpClient();
-                        ThreadPool.QueueUserWorkItem(state =>
+                        listener = new TcpListener(IPAddress.Loopback, SinkholePort);
+                        listener.Start();
+
+                        while (running)
                         {
-                            TcpClient c = (TcpClient)state;
-                            try
+                            TcpClient client = listener.AcceptTcpClient();
+                            ThreadPool.QueueUserWorkItem(state =>
                             {
-                                c.ReceiveTimeout = 1000;
-                                c.SendTimeout = 1000;
-                                NetworkStream stream = c.GetStream();
-                                byte[] buf = new byte[4096];
-                                int read = 0;
+                                TcpClient c = (TcpClient)state;
                                 try
                                 {
-                                    read = stream.Read(buf, 0, buf.Length);
-                                }
-                                catch {}
-
-                                string req = (read > 0) ? Encoding.ASCII.GetString(buf, 0, read) : "";
-
-                                // Security hardening: STOP_SINKHOLE over unauthenticated TCP is removed so local processes cannot kill the filter
-
-                                if (req.StartsWith("GET /filter.pac", StringComparison.OrdinalIgnoreCase) ||
-                                    req.StartsWith("HEAD /filter.pac", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    string pacContent = CurrentPacScript ?? LoadInitialPacScript();
-                                    byte[] pacBytes = Encoding.ASCII.GetBytes(pacContent);
-                                    string pacHeader = "HTTP/1.1 200 OK\r\n" +
-                                                       "Content-Type: application/x-ns-proxy-autoconfig\r\n" +
-                                                       "Content-Length: " + pacBytes.Length + "\r\n" +
-                                                       "Cache-Control: no-store, no-cache, must-revalidate, max-age=0\r\n" +
-                                                       "Connection: close\r\n\r\n";
-                                    byte[] pacHeaderBytes = Encoding.ASCII.GetBytes(pacHeader);
-                                    stream.Write(pacHeaderBytes, 0, pacHeaderBytes.Length);
-                                    stream.Write(pacBytes, 0, pacBytes.Length);
-                                    stream.Flush();
-                                    return;
-                                }
-
-                                bool isDirectInfoPage = false;
-                                string blockedDomain = ExtractDomainFromHttpRequest(req, out isDirectInfoPage);
-
-                                // If filter is currently unlocked (IsFilterCurrentlyEnforced == false) and a browser
-                                // still sent a cached proxy request to 127.0.0.1:9999, tunnel it directly to public HTTP/HTTPS (ports 80/443 only)
-                                if (!isDirectInfoPage && !IsFilterCurrentlyEnforced)
-                                {
-                                    if (TryTunnelUnlockedProxyRequest(c, stream, buf, read, req, blockedDomain))
+                                    c.ReceiveTimeout = 1000;
+                                    c.SendTimeout = 1000;
+                                    NetworkStream stream = c.GetStream();
+                                    byte[] buf = new byte[4096];
+                                    int read = 0;
+                                    try
                                     {
+                                        read = stream.Read(buf, 0, buf.Length);
+                                    }
+                                    catch {}
+
+                                    string req = (read > 0) ? Encoding.ASCII.GetString(buf, 0, read) : "";
+
+                                    // Security hardening: STOP_SINKHOLE over unauthenticated TCP is removed so local processes cannot kill the filter
+
+                                    if (req.StartsWith("GET /filter.pac", StringComparison.OrdinalIgnoreCase) ||
+                                        req.StartsWith("HEAD /filter.pac", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        string pacContent = CurrentPacScript ?? LoadInitialPacScript();
+                                        byte[] pacBytes = Encoding.ASCII.GetBytes(pacContent);
+                                        string pacHeader = "HTTP/1.1 200 OK\r\n" +
+                                                           "Content-Type: application/x-ns-proxy-autoconfig\r\n" +
+                                                           "Content-Length: " + pacBytes.Length + "\r\n" +
+                                                           "Cache-Control: no-store, no-cache, must-revalidate, max-age=0\r\n" +
+                                                           "Connection: close\r\n\r\n";
+                                        byte[] pacHeaderBytes = Encoding.ASCII.GetBytes(pacHeader);
+                                        stream.Write(pacHeaderBytes, 0, pacHeaderBytes.Length);
+                                        stream.Write(pacBytes, 0, pacBytes.Length);
+                                        stream.Flush();
                                         return;
                                     }
-                                }
 
-                                if (!isDirectInfoPage && IsFilterCurrentlyEnforced && !string.IsNullOrEmpty(blockedDomain))
+                                    bool isDirectInfoPage = false;
+                                    string blockedDomain = ExtractDomainFromHttpRequest(req, out isDirectInfoPage);
+
+                                    // If filter is currently unlocked (IsFilterCurrentlyEnforced == false) and a browser
+                                    // still sent a cached proxy request to 127.0.0.1:9999, tunnel it directly to public HTTP/HTTPS (ports 80/443 only)
+                                    if (!isDirectInfoPage && !IsFilterCurrentlyEnforced)
+                                    {
+                                        if (TryTunnelUnlockedProxyRequest(c, stream, buf, read, req, blockedDomain))
+                                        {
+                                            return;
+                                        }
+                                    }
+
+                                    if (!isDirectInfoPage && IsFilterCurrentlyEnforced && !string.IsNullOrEmpty(blockedDomain))
+                                    {
+                                        MaybeShowBrowserBlockNotification(blockedDomain);
+                                    }
+
+                                    string htmlBody = BuildHebrewBlockPageHtml(blockedDomain, CurrentRoomDisplayLabel, CurrentRoomWhitelist);
+                                    byte[] bodyBytes = Encoding.UTF8.GetBytes(htmlBody);
+                                    string statusCode = isDirectInfoPage ? "200 OK" : "403 Forbidden";
+                                    string header = "HTTP/1.1 " + statusCode + "\r\n" +
+                                                    "Content-Type: text/html; charset=utf-8\r\n" +
+                                                    "Content-Length: " + bodyBytes.Length + "\r\n" +
+                                                    "Cache-Control: no-store, no-cache, must-revalidate\r\n" +
+                                                    "Connection: close\r\n\r\n";
+                                    byte[] headerBytes = Encoding.ASCII.GetBytes(header);
+
+                                    stream.Write(headerBytes, 0, headerBytes.Length);
+                                    stream.Write(bodyBytes, 0, bodyBytes.Length);
+                                    stream.Flush();
+                                }
+                                catch {}
+                                finally
                                 {
-                                    MaybeShowBrowserBlockNotification(blockedDomain);
+                                    try { c.Close(); } catch {}
                                 }
-
-                                string htmlBody = BuildHebrewBlockPageHtml(blockedDomain, CurrentRoomDisplayLabel, CurrentRoomWhitelist);
-                                byte[] bodyBytes = Encoding.UTF8.GetBytes(htmlBody);
-                                string statusCode = isDirectInfoPage ? "200 OK" : "403 Forbidden";
-                                string header = "HTTP/1.1 " + statusCode + "\r\n" +
-                                                "Content-Type: text/html; charset=utf-8\r\n" +
-                                                "Content-Length: " + bodyBytes.Length + "\r\n" +
-                                                "Cache-Control: no-store, no-cache, must-revalidate\r\n" +
-                                                "Connection: close\r\n\r\n";
-                                byte[] headerBytes = Encoding.ASCII.GetBytes(header);
-
-                                stream.Write(headerBytes, 0, headerBytes.Length);
-                                stream.Write(bodyBytes, 0, bodyBytes.Length);
-                                stream.Flush();
+                            }, client);
+                        }
+                    }
+                    catch
+                    {
+                        if (listener != null)
+                        {
+                            try { listener.Stop(); } catch {}
+                            listener = null;
+                        }
+                        if (running)
+                        {
+                            // Tell any legacy v3.1 sinkhole holding port 9999 to release it, then retry while keeping cloudSyncThread alive
+                            try
+                            {
+                                using (TcpClient legacyClient = new TcpClient())
+                                {
+                                    IAsyncResult ar = legacyClient.BeginConnect(IPAddress.Loopback, SinkholePort, null, null);
+                                    if (ar.AsyncWaitHandle.WaitOne(150))
+                                    {
+                                        legacyClient.EndConnect(ar);
+                                        NetworkStream ns = legacyClient.GetStream();
+                                        byte[] stopBytes = Encoding.ASCII.GetBytes("STOP_SINKHOLE\r\n\r\n");
+                                        ns.Write(stopBytes, 0, stopBytes.Length);
+                                        ns.Flush();
+                                    }
+                                }
                             }
                             catch {}
-                            finally
-                            {
-                                try { c.Close(); } catch {}
-                            }
-                        }, client);
-                    }
-                }
-                catch {}
-                finally
-                {
-                    running = false;
-                    if (listener != null)
-                    {
-                        try { listener.Stop(); } catch {}
+                            Thread.Sleep(2000);
+                        }
                     }
                 }
             }

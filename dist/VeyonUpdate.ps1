@@ -10,11 +10,20 @@ $ErrorActionPreference = "SilentlyContinue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 [System.Net.WebRequest]::DefaultWebProxy = $null
 
-# 1. Temporarily clear local proxy on legacy v3.1 and reset state.txt to auto
+# 1. Temporarily clear local proxy on legacy v3.1, stop legacy sinkhole on port 9999, and reset state.txt to auto
 $legacyCtl = "C:\Program Files\SchoolFilter\SchoolFilterCtl.exe"
 if (Test-Path $legacyCtl) {
     & $legacyCtl allow | Out-Null
+    & $legacyCtl stop-sinkhole | Out-Null
 }
+try {
+    $tc = New-Object System.Net.Sockets.TcpClient("127.0.0.1", 9999)
+    $st = $tc.GetStream()
+    $bytes = [System.Text.Encoding]::ASCII.GetBytes("STOP_SINKHOLE`r`n`r`n")
+    $st.Write($bytes, 0, $bytes.Length)
+    $st.Flush()
+    $tc.Close()
+} catch {}
 
 $dataDir = "C:\ProgramData\SchoolFilter"
 if (!(Test-Path $dataDir)) {
