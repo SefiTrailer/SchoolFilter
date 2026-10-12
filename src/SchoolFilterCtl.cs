@@ -25,6 +25,9 @@ namespace SchoolFilter.Controller
         private const string DefaultFirebaseProjectId = "school-filter-2026";
         private const string DefaultRoomId = "yeshiva-lab";
         private const int SinkholePort = 9999;
+        private static volatile int ActiveSinkholePort = 9999;
+        private const string SystemAgentMutexName = "Global\\SchoolFilterSystemAgentMutex_v343";
+        private const string SinkholeMutexName = "Local\\SchoolFilterSinkholeMutex_v343";
 
         private static readonly string InstallDir = ResolveInstallDir();
 
@@ -599,7 +602,7 @@ namespace SchoolFilter.Controller
         {
             try
             {
-                using (Mutex m = Mutex.OpenExisting("Global\\SchoolFilterSystemAgentMutex", MutexRights.Synchronize))
+                using (Mutex m = Mutex.OpenExisting(SystemAgentMutexName, MutexRights.Synchronize))
                 {
                     return true;
                 }
@@ -616,19 +619,21 @@ namespace SchoolFilter.Controller
 
         private static bool IsSinkholeRunning()
         {
-            try
+            foreach (string mutexName in new string[] { "Global\\SchoolFilterSinkholeMutex_v343", SinkholeMutexName })
             {
-                using (TcpClient client = new TcpClient())
+                try
                 {
-                    IAsyncResult ar = client.BeginConnect(IPAddress.Loopback, SinkholePort, null, null);
-                    if (ar.AsyncWaitHandle.WaitOne(80))
+                    using (Mutex m = Mutex.OpenExisting(mutexName, MutexRights.Synchronize))
                     {
-                        client.EndConnect(ar);
                         return true;
                     }
                 }
+                catch (UnauthorizedAccessException)
+                {
+                    return true;
+                }
+                catch {}
             }
-            catch {}
             return false;
         }
 
@@ -801,7 +806,7 @@ namespace SchoolFilter.Controller
 
         private static string GetLocalPacEndpointUrl(long cacheBuster)
         {
-            return "http://127.0.0.1:" + SinkholePort + "/filter.pac?v=" + cacheBuster.ToString();
+            return "http://127.0.0.1:" + ActiveSinkholePort + "/filter.pac?v=" + cacheBuster.ToString();
         }
 
         private static void EnableFilter()
@@ -1043,7 +1048,7 @@ namespace SchoolFilter.Controller
                     try
                     {
                         if (p.Id == myPid) continue;
-                        string otherPath = p.MainModule.FileName;
+                        string otherPath = GetProcessExecutablePath(p);
                         if (!string.IsNullOrEmpty(otherPath) &&
                             !string.Equals(otherPath, myExePath, StringComparison.OrdinalIgnoreCase))
                         {
@@ -1056,19 +1061,10 @@ namespace SchoolFilter.Controller
             }
             catch {}
 
-            try
+            if (IsSinkholeRunning())
             {
-                using (TcpClient client = new TcpClient())
-                {
-                    IAsyncResult ar = client.BeginConnect(IPAddress.Loopback, SinkholePort, null, null);
-                    if (ar.AsyncWaitHandle.WaitOne(80))
-                    {
-                        client.EndConnect(ar);
-                        return;
-                    }
-                }
+                return;
             }
-            catch {}
 
             try
             {
@@ -1081,22 +1077,13 @@ namespace SchoolFilter.Controller
                 };
                 Process.Start(psi);
 
-                for (int i = 0; i < 8; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     Thread.Sleep(50);
-                    try
+                    if (IsSinkholeRunning())
                     {
-                        using (TcpClient client = new TcpClient())
-                        {
-                            IAsyncResult ar = client.BeginConnect(IPAddress.Loopback, SinkholePort, null, null);
-                            if (ar.AsyncWaitHandle.WaitOne(50))
-                            {
-                                client.EndConnect(ar);
-                                break;
-                            }
-                        }
+                        break;
                     }
-                    catch {}
                 }
             }
             catch {}
@@ -1232,7 +1219,7 @@ namespace SchoolFilter.Controller
             sb.AppendLine("            if (host === baseDomain) { return \"DIRECT\"; }");
             sb.AppendLine("        }");
             sb.AppendLine("    }");
-            sb.AppendLine("    return \"PROXY 127.0.0.1:9999\";");
+            sb.AppendLine("    return \"PROXY 127.0.0.1:" + ActiveSinkholePort + "\";");
             sb.AppendLine("}");
             return sb.ToString();
         }
@@ -1763,11 +1750,33 @@ namespace SchoolFilter.Controller
             if (!IsAdministrator()) return;
 
             bool createdNew;
-            using (Mutex mutex = CreateScopedMutex("Global\\SchoolFilterSystemAgentMutex", out createdNew, true))
+            using (Mutex mutex = CreateScopedMutex(SystemAgentMutexName, out createdNew, true))
             {
                 if (mutex == null || !createdNew)
                 {
                     return;
+                }
+
+                // If no _v343 sinkhole is running yet, any other SchoolFilterCtl process is a legacy pre-v343 process holding port 9999; terminate it
+                if (!IsSinkholeRunning())
+                {
+                    try
+                    {
+                        int myPid = Process.GetCurrentProcess().Id;
+                        foreach (Process p in Process.GetProcessesByName("SchoolFilterCtl"))
+                        {
+                            try
+                            {
+                                if (p.Id != myPid)
+                                {
+                                    p.Kill();
+                                    p.WaitForExit(1000);
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                    catch {}
                 }
 
                 // Ensure ProgramData\SchoolFilter is strictly locked to SYSTEM & Administrators only
@@ -1800,6 +1809,9 @@ namespace SchoolFilter.Controller
                 string lastSeenUpdatedAt = null;
                 int tickCounter = 0;
                 bool running = true;
+
+                // Report initial heartbeat immediately at SYSTEM agent startup
+                ReportComputerHeartbeatToFirestore(ReadLocalOverride() != "allow");
 
                 while (running)
                 {
@@ -1930,18 +1942,59 @@ namespace SchoolFilter.Controller
 
         private static void RunSinkholeAndCloudSyncDaemon()
         {
-            bool createdNew;
-            using (Mutex mutex = CreateScopedMutex("Local\\SchoolFilterSinkholeMutex", out createdNew, false))
+            if (IsSinkholeRunning())
             {
-                if (mutex == null || !createdNew)
+                return;
+            }
+
+            bool createdLocalNew;
+            bool createdGlobalNew = false;
+            Mutex globalMutex = null;
+            if (IsAdministrator())
+            {
+                globalMutex = CreateScopedMutex("Global\\SchoolFilterSinkholeMutex_v343", out createdGlobalNew, true);
+                if (globalMutex != null && !createdGlobalNew)
+                {
+                    try { globalMutex.Close(); } catch {}
+                    return;
+                }
+            }
+
+            using (globalMutex)
+            using (Mutex mutex = CreateScopedMutex(SinkholeMutexName, out createdLocalNew, false))
+            {
+                if (mutex == null || !createdLocalNew)
                 {
                     return;
+                }
+
+                // If running elevated and no _v343 SystemAgent is active yet, clean up any legacy pre-v343 SchoolFilterCtl process holding port 9999
+                if (IsAdministrator() && !IsSystemAgentRunning())
+                {
+                    try
+                    {
+                        int myPid = Process.GetCurrentProcess().Id;
+                        foreach (Process p in Process.GetProcessesByName("SchoolFilterCtl"))
+                        {
+                            try
+                            {
+                                if (p.Id != myPid)
+                                {
+                                    p.Kill();
+                                    p.WaitForExit(1000);
+                                }
+                            }
+                            catch {}
+                        }
+                    }
+                    catch {}
                 }
 
                 CurrentPacScript = LoadInitialPacScript();
                 CurrentRoomDisplayLabel = GetConfiguredRoomDisplayLabel();
 
                 long initialCacheBuster = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                ReportComputerHeartbeatToFirestore(ReadLocalOverride() != "allow");
                 if (ReadLocalOverride() != "allow")
                 {
                     RefreshPacSettings(initialCacheBuster);
@@ -2155,8 +2208,64 @@ namespace SchoolFilter.Controller
                 {
                     try
                     {
-                        listener = new TcpListener(IPAddress.Loopback, SinkholePort);
-                        listener.Start();
+                        try
+                        {
+                            ActiveSinkholePort = SinkholePort;
+                            listener = new TcpListener(IPAddress.Loopback, ActiveSinkholePort);
+                            listener.Start();
+                        }
+                        catch
+                        {
+                            if (listener != null)
+                            {
+                                try { listener.Stop(); } catch {}
+                                listener = null;
+                            }
+                            try
+                            {
+                                using (TcpClient legacyClient = new TcpClient())
+                                {
+                                    IAsyncResult ar = legacyClient.BeginConnect(IPAddress.Loopback, SinkholePort, null, null);
+                                    if (ar.AsyncWaitHandle.WaitOne(150))
+                                    {
+                                        legacyClient.EndConnect(ar);
+                                        NetworkStream ns = legacyClient.GetStream();
+                                        byte[] stopBytes = Encoding.ASCII.GetBytes("STOP_SINKHOLE\r\n\r\n");
+                                        ns.Write(stopBytes, 0, stopBytes.Length);
+                                        ns.Flush();
+                                    }
+                                }
+                                Thread.Sleep(250);
+                            }
+                            catch {}
+
+                            try
+                            {
+                                ActiveSinkholePort = SinkholePort;
+                                listener = new TcpListener(IPAddress.Loopback, ActiveSinkholePort);
+                                listener.Start();
+                            }
+                            catch
+                            {
+                                if (listener != null)
+                                {
+                                    try { listener.Stop(); } catch {}
+                                    listener = null;
+                                }
+                                ActiveSinkholePort = 9998;
+                                listener = new TcpListener(IPAddress.Loopback, ActiveSinkholePort);
+                                listener.Start();
+                                if (!string.IsNullOrEmpty(CurrentPacScript))
+                                {
+                                    CurrentPacScript = CurrentPacScript.Replace("127.0.0.1:9999", "127.0.0.1:9998");
+                                }
+                                if (IsFilterCurrentlyEnforced)
+                                {
+                                    long cb = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                                    RefreshPacSettings(cb);
+                                }
+                            }
+                        }
 
                         while (running)
                         {
@@ -2247,23 +2356,6 @@ namespace SchoolFilter.Controller
                         }
                         if (running)
                         {
-                            // Tell any legacy v3.1 sinkhole holding port 9999 to release it, then retry while keeping cloudSyncThread alive
-                            try
-                            {
-                                using (TcpClient legacyClient = new TcpClient())
-                                {
-                                    IAsyncResult ar = legacyClient.BeginConnect(IPAddress.Loopback, SinkholePort, null, null);
-                                    if (ar.AsyncWaitHandle.WaitOne(150))
-                                    {
-                                        legacyClient.EndConnect(ar);
-                                        NetworkStream ns = legacyClient.GetStream();
-                                        byte[] stopBytes = Encoding.ASCII.GetBytes("STOP_SINKHOLE\r\n\r\n");
-                                        ns.Write(stopBytes, 0, stopBytes.Length);
-                                        ns.Flush();
-                                    }
-                                }
-                            }
-                            catch {}
                             Thread.Sleep(2000);
                         }
                     }
@@ -3213,7 +3305,7 @@ namespace SchoolFilter.Controller
                 if (regKey == null) return false;
                 string autoConfigUrl = regKey.GetValue("AutoConfigURL") as string;
                 if (string.IsNullOrEmpty(autoConfigUrl) ||
-                    autoConfigUrl.IndexOf("127.0.0.1:9999", StringComparison.OrdinalIgnoreCase) < 0)
+                    autoConfigUrl.IndexOf("127.0.0.1:" + ActiveSinkholePort, StringComparison.OrdinalIgnoreCase) < 0)
                 {
                     return false;
                 }

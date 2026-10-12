@@ -190,10 +190,7 @@ if (Test-Path $legacyCtl) {
 }
 
 if ($pfUpdated) {
-    for ($k = 0; $k -lt 3; $k++) {
-        Get-Process -Name "SchoolFilterCtl" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Milliseconds 150
-    }
+    Start-Process -FilePath $legacyCtl -ArgumentList "sinkhole" -WindowStyle Hidden
     Start-Process -FilePath $legacyCtl -ArgumentList "watchdog" -WindowStyle Hidden
 } else {
     # 5. Guaranteed Fallback: Install latest v3.4 directly into user-writable directory
@@ -204,13 +201,21 @@ if ($pfUpdated) {
         [IO.File]::WriteAllText($testFile, "1")
         Remove-Item $testFile -Force -ErrorAction Stop
         if (Test-Path "$fallbackDir\SchoolFilterCtl.exe") {
-            Remove-Item "$fallbackDir\SchoolFilterCtl.exe" -Force -ErrorAction Stop
+            try {
+                Remove-Item "$fallbackDir\SchoolFilterCtl.exe" -Force -ErrorAction Stop
+            } catch {
+                Rename-Item -Path "$fallbackDir\SchoolFilterCtl.exe" -NewName ("SchoolFilterCtl.exe.old." + [Environment]::TickCount) -Force -ErrorAction Stop
+            }
         }
     } catch {
         $fallbackDir = "$env:LOCALAPPDATA\SchoolFilter"
         if (!(Test-Path $fallbackDir)) { New-Item -ItemType Directory -Path $fallbackDir -Force | Out-Null }
         if (Test-Path "$fallbackDir\SchoolFilterCtl.exe") {
-            Remove-Item "$fallbackDir\SchoolFilterCtl.exe" -Force -ErrorAction SilentlyContinue
+            try {
+                Remove-Item "$fallbackDir\SchoolFilterCtl.exe" -Force -ErrorAction Stop
+            } catch {
+                Rename-Item -Path "$fallbackDir\SchoolFilterCtl.exe" -NewName ("SchoolFilterCtl.exe.old." + [Environment]::TickCount) -Force -ErrorAction SilentlyContinue
+            }
         }
     }
 
@@ -224,6 +229,7 @@ if ($pfUpdated) {
             $runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
             Set-ItemProperty -Path $runKey -Name "SchoolFilter" -Value "`"$newCtl`" watchdog" -Force
         } catch {}
+        Start-Process -FilePath $newCtl -ArgumentList "sinkhole" -WindowStyle Hidden
         Start-Process -FilePath $newCtl -ArgumentList "watchdog" -WindowStyle Hidden
     }
 }

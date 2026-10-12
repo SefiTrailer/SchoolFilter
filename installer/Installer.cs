@@ -306,6 +306,11 @@ namespace SchoolFilter.Setup
             }
             catch {}
 
+            if (role == InstallRole.Student)
+            {
+                RegisterComputerInFirestore(roomId, roomName, institutionName);
+            }
+
             // Stop any existing controller processes before overwriting SchoolFilterCtl.exe
             string ctlPath = Path.Combine(TargetDir, "SchoolFilterCtl.exe");
             KillExistingControllerProcesses();
@@ -356,7 +361,11 @@ namespace SchoolFilter.Setup
             string uninstallerPath = Path.Combine(TargetDir, "Uninstall.exe");
             if (!string.Equals(currentExePath, uninstallerPath, StringComparison.OrdinalIgnoreCase))
             {
-                File.Copy(currentExePath, uninstallerPath, true);
+                try
+                {
+                    File.Copy(currentExePath, uninstallerPath, true);
+                }
+                catch {}
             }
 
             // 5. Role-specific setup (Student vs Teacher)
@@ -934,15 +943,43 @@ namespace SchoolFilter.Setup
         {
             try
             {
-                Process[] procs = Process.GetProcessesByName("SchoolFilterCtl");
-                foreach (Process p in procs)
+                if (IsAdministrator())
                 {
-                    try
+                    RunHiddenProcess("schtasks.exe", "/End /TN \"SchoolFilterSystemAgent\"", true);
+                    RunHiddenProcess("schtasks.exe", "/End /TN \"SchoolFilterGuard\"", true);
+                }
+
+                for (int attempt = 0; attempt < 4; attempt++)
+                {
+                    RunHiddenProcess("taskkill.exe", "/F /T /IM SchoolFilterCtl.exe", true);
+                    Process[] procs = Process.GetProcessesByName("SchoolFilterCtl");
+                    if (procs == null || procs.Length == 0)
                     {
-                        p.Kill();
-                        p.WaitForExit(1000);
+                        break;
                     }
-                    catch {}
+                    foreach (Process p in procs)
+                    {
+                        try
+                        {
+                            p.Kill();
+                            p.WaitForExit(1000);
+                        }
+                        catch {}
+                    }
+                    Thread.Sleep(150);
+                }
+
+                if (Directory.Exists(TargetDir))
+                {
+                    foreach (string oldFile in Directory.GetFiles(TargetDir, "*.old.*"))
+                    {
+                        try
+                        {
+                            File.SetAttributes(oldFile, FileAttributes.Normal);
+                            File.Delete(oldFile);
+                        }
+                        catch {}
+                    }
                 }
             }
             catch {}
@@ -991,6 +1028,30 @@ namespace SchoolFilter.Setup
                 if (stream == null)
                 {
                     throw new FileNotFoundException("Embedded resource not found: " + resourceName);
+                }
+
+                if (File.Exists(outputPath))
+                {
+                    try
+                    {
+                        File.SetAttributes(outputPath, FileAttributes.Normal);
+                        File.Delete(outputPath);
+                    }
+                    catch
+                    {
+                        // In Windows NTFS, an executable mapped by a still-exiting process cannot be overwritten or deleted,
+                        // but it CAN always be renamed within the same directory!
+                        try
+                        {
+                            string renamedOldPath = outputPath + ".old." + Environment.TickCount.ToString();
+                            if (File.Exists(renamedOldPath))
+                            {
+                                try { File.Delete(renamedOldPath); } catch {}
+                            }
+                            File.Move(outputPath, renamedOldPath);
+                        }
+                        catch {}
+                    }
                 }
 
                 using (FileStream fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None))
