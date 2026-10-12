@@ -3,6 +3,9 @@ param(
     [string]$AdminPass = ""
 )
 
+if ([string]::IsNullOrWhiteSpace($AdminUser) -and $u) { $AdminUser = $u }
+if ([string]::IsNullOrWhiteSpace($AdminPass) -and $p) { $AdminPass = $p }
+
 $ErrorActionPreference = "SilentlyContinue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 [System.Net.WebRequest]::DefaultWebProxy = $null
