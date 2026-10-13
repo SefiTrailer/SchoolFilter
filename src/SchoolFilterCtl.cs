@@ -97,6 +97,7 @@ namespace SchoolFilter.Controller
             "facebook.net", "licdn.com", "twimg.com", "pinimg.com", "yahoo.com", "yimg.com",
             "mozilla.org", "mozilla.com", "mozilla.net", "firefox.com",
             "supabase.co", "supabase.in", "r2.dev", "lovable.dev",
+            "googleusercontent.com", "withgoogle.com", "recaptcha.net",
             "opera.com", "brave.com", "localhost", "127.0.0.1"
         };
 
@@ -1154,17 +1155,37 @@ namespace SchoolFilter.Controller
                 if (!effectiveList.Contains(infra)) effectiveList.Add(infra);
             }
 
-            // If Google Gemini or Google Classroom is in the whitelist, include only essential Google static/auth sub-resources
-            bool hasGoogle = effectiveList.Contains("gemini.google.com") || effectiveList.Contains("classroom.google.com");
+            // 1. Google Suite & Authentication Helper Expansion (Gemini, Classroom, Docs, Drive, Accounts, etc.)
+            bool hasGoogle = effectiveList.Exists(d => {
+                string s = (d ?? "").ToLowerInvariant();
+                return s.Contains("google.com") || s.Contains("gemini") || s.Contains("classroom");
+            });
             if (hasGoogle)
             {
                 string[] googleHelpers = new string[]
                 {
-                    "accounts.google.com", "apis.google.com", "ogs.google.com",
-                    "fonts.googleapis.com", "content.googleapis.com", "www.googleapis.com",
-                    "securetoken.googleapis.com", "identitytoolkit.googleapis.com",
-                    "*.clients6.google.com", "www.gstatic.com", "ssl.gstatic.com",
-                    "fonts.gstatic.com", "lh3.googleusercontent.com"
+                    "accounts.google.com", "*.accounts.google.com",
+                    "myaccount.google.com", "*.myaccount.google.com",
+                    "accounts.youtube.com",
+                    "gemini.google.com", "*.gemini.google.com",
+                    "bard.google.com", "*.bard.google.com",
+                    "classroom.google.com", "*.classroom.google.com",
+                    "docs.google.com", "*.docs.google.com",
+                    "drive.google.com", "*.drive.google.com",
+                    "sheets.google.com", "*.sheets.google.com",
+                    "slides.google.com", "*.slides.google.com",
+                    "forms.google.com", "*.forms.google.com",
+                    "apis.google.com",
+                    "*.googleapis.com", "googleapis.com",
+                    "*.gstatic.com", "gstatic.com",
+                    "*.googleusercontent.com", "googleusercontent.com",
+                    "*.clients6.google.com", "clients6.google.com",
+                    "clients1.google.com", "clients2.google.com", "clients3.google.com", "clients4.google.com", "clients5.google.com",
+                    "play.google.com", "play.googleapis.com",
+                    "passkeys.google.com", "fido.google.com",
+                    "csp.withgoogle.com",
+                    "recaptcha.net", "*.recaptcha.net", "www.recaptcha.net",
+                    "lh3.google.com", "ogs.google.com"
                 };
                 foreach (string h in googleHelpers)
                 {
@@ -1172,13 +1193,20 @@ namespace SchoolFilter.Controller
                 }
             }
 
-            // If Microsoft Copilot is in the whitelist, include required Copilot/Bing/Microsoft auth sub-resources
-            if (effectiveList.Contains("copilot.microsoft.com"))
+            // 2. Microsoft Copilot & Education Authentication Helper Expansion
+            bool hasCopilot = effectiveList.Exists(d => (d ?? "").IndexOf("copilot", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (hasCopilot)
             {
                 string[] copilotHelpers = new string[]
                 {
+                    "copilot.microsoft.com", "*.copilot.microsoft.com",
+                    "copilot.cloud.microsoft", "*.cloud.microsoft",
                     "sydney.bing.com", "edgeservices.bing.com", "*.bing.net",
-                    "login.live.com", "login.microsoftonline.com", "*.msauth.net", "*.msftauth.net"
+                    "login.live.com", "login.microsoftonline.com", "account.microsoft.com",
+                    "*.msauth.net", "*.msftauth.net", "auth.gfx.ms", "aadcdn.msauth.net",
+                    "msedge.api.cdp.microsoft.com", "config.edge.skype.com",
+                    "challenges.cloudflare.com",
+                    "assets.msn.com", "ai.microsoftol.com", "fpt.dfp.microsoft.com"
                 };
                 foreach (string h in copilotHelpers)
                 {
@@ -1186,7 +1214,27 @@ namespace SchoolFilter.Controller
                 }
             }
 
-            // If One-Class is in the whitelist, include required Supabase backend, fonts, auth and CDN sub-resources
+            // 3. Ministry of Education (EduLogin & Government SSO) Helper Expansion
+            bool hasEdu = effectiveList.Exists(d => {
+                string s = (d ?? "").ToLowerInvariant();
+                return s.Contains("edu.gov.il") || s.Contains("education.gov.il");
+            });
+            if (hasEdu)
+            {
+                string[] eduHelpers = new string[]
+                {
+                    "edu.gov.il", "*.edu.gov.il",
+                    "education.gov.il", "*.education.gov.il",
+                    "gov.il", "*.gov.il",
+                    "cet.ac.il", "*.cet.ac.il"
+                };
+                foreach (string h in eduHelpers)
+                {
+                    if (!effectiveList.Contains(h)) effectiveList.Add(h);
+                }
+            }
+
+            // 4. One-Class School System Helper Expansion
             bool hasOneClass = effectiveList.Exists(d => (d ?? "").IndexOf("one-class.co.il", StringComparison.OrdinalIgnoreCase) >= 0);
             if (hasOneClass)
             {
@@ -1197,9 +1245,52 @@ namespace SchoolFilter.Controller
                     "*.r2.dev",
                     "fonts.googleapis.com", "fonts.gstatic.com",
                     "accounts.google.com", "apis.google.com", "ssl.gstatic.com", "www.gstatic.com",
-                    "connector-gateway.lovable.dev", "api.elevenlabs.io"
+                    "connector-gateway.lovable.dev", "api.elevenlabs.io",
+                    "challenges.cloudflare.com"
                 };
                 foreach (string h in oneClassHelpers)
+                {
+                    if (!effectiveList.Contains(h)) effectiveList.Add(h);
+                }
+            }
+
+            // 5. Wikipedia Helper Expansion
+            bool hasWikipedia = effectiveList.Exists(d => (d ?? "").IndexOf("wikipedia.org", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (hasWikipedia)
+            {
+                string[] wikiHelpers = new string[]
+                {
+                    "wikimedia.org", "*.wikimedia.org", "upload.wikimedia.org"
+                };
+                foreach (string h in wikiHelpers)
+                {
+                    if (!effectiveList.Contains(h)) effectiveList.Add(h);
+                }
+            }
+
+            // 6. Canva Helper Expansion
+            bool hasCanva = effectiveList.Exists(d => (d ?? "").IndexOf("canva.com", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (hasCanva)
+            {
+                string[] canvaHelpers = new string[]
+                {
+                    "canva-assets.com", "*.canva-assets.com"
+                };
+                foreach (string h in canvaHelpers)
+                {
+                    if (!effectiveList.Contains(h)) effectiveList.Add(h);
+                }
+            }
+
+            // 7. Kahoot Helper Expansion
+            bool hasKahoot = effectiveList.Exists(d => (d ?? "").IndexOf("kahoot", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (hasKahoot)
+            {
+                string[] kahootHelpers = new string[]
+                {
+                    "kahoot.it", "*.kahoot.it", "kahoot.com", "*.kahoot.com"
+                };
+                foreach (string h in kahootHelpers)
                 {
                     if (!effectiveList.Contains(h)) effectiveList.Add(h);
                 }
@@ -1244,6 +1335,38 @@ namespace SchoolFilter.Controller
             return sb.ToString();
         }
 
+        private static bool IsTechnicalHelperDomain(string clean)
+        {
+            if (string.IsNullOrEmpty(clean)) return true;
+            if (clean.StartsWith("accounts.") || clean.StartsWith("myaccount.") || clean.StartsWith("oauth.")) return true;
+            if (clean.EndsWith(".googleapis.com") || clean == "googleapis.com") return true;
+            if (clean.EndsWith(".gstatic.com") || clean == "gstatic.com") return true;
+            if (clean.EndsWith(".googleusercontent.com") || clean == "googleusercontent.com") return true;
+            if (clean.EndsWith(".supabase.co") || clean == "supabase.co") return true;
+            if (clean.EndsWith(".supabase.in") || clean == "supabase.in") return true;
+            if (clean.EndsWith(".r2.dev") || clean == "r2.dev") return true;
+            if (clean.EndsWith(".msauth.net") || clean == "msauth.net") return true;
+            if (clean.EndsWith(".msftauth.net") || clean == "msftauth.net") return true;
+            if (clean.EndsWith(".bing.net") || clean == "bing.net") return true;
+            if (clean.EndsWith(".wikimedia.org") || clean == "wikimedia.org") return true;
+            if (clean.EndsWith(".canva-assets.com") || clean == "canva-assets.com") return true;
+            if (clean == "apis.google.com" || clean == "play.google.com" || clean == "play.googleapis.com" ||
+                clean == "passkeys.google.com" || clean == "fido.google.com" || clean == "csp.withgoogle.com" ||
+                clean == "lh3.google.com" || clean == "ogs.google.com" || clean == "recaptcha.net" ||
+                clean == "challenges.cloudflare.com" || clean == "connector-gateway.lovable.dev" ||
+                clean == "api.elevenlabs.io" || clean == "auth.gfx.ms" || clean == "aadcdn.msauth.net" ||
+                clean == "assets.msn.com" || clean == "ai.microsoftol.com" || clean == "fpt.dfp.microsoft.com" ||
+                clean == "config.edge.skype.com" || clean == "sydney.bing.com" || clean == "edgeservices.bing.com" ||
+                clean == "accounts.youtube.com" || clean == "clients6.google.com" || clean == "clients1.google.com" ||
+                clean == "clients2.google.com" || clean == "clients3.google.com" || clean == "clients4.google.com" ||
+                clean == "clients5.google.com" || clean == "copilot.cloud.microsoft" || clean == "cloud.microsoft" ||
+                clean == "bard.google.com")
+            {
+                return true;
+            }
+            return false;
+        }
+
         private static List<string> ExtractCleanBaseDomains(List<string> rawWhitelist)
         {
             List<string> baseDomains = new List<string>();
@@ -1252,19 +1375,7 @@ namespace SchoolFilter.Controller
             {
                 string clean = item.Trim().ToLowerInvariant();
                 if (clean.StartsWith("*.")) clean = clean.Substring(2);
-                if (string.IsNullOrEmpty(clean) ||
-                    clean == "accounts.google.com" ||
-                    clean == "apis.google.com" ||
-                    clean == "fonts.googleapis.com" ||
-                    clean == "fonts.gstatic.com" ||
-                    clean == "ssl.gstatic.com" ||
-                    clean == "www.gstatic.com" ||
-                    clean == "supabase.co" ||
-                    clean == "supabase.in" ||
-                    clean == "r2.dev" ||
-                    clean == "connector-gateway.lovable.dev" ||
-                    clean == "api.elevenlabs.io" ||
-                    !IsSafePacDomainPattern(clean)) continue;
+                if (string.IsNullOrEmpty(clean) || IsTechnicalHelperDomain(clean) || !IsSafePacDomainPattern(clean)) continue;
                 if (!baseDomains.Contains(clean))
                 {
                     baseDomains.Add(clean);
