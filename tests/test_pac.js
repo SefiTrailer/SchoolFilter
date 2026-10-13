@@ -32,9 +32,15 @@ vm.runInContext(pacContent, context);
 
 // Test cases
 const testCases = [
-    // Approved Educational Sites
+    // Approved Educational Sites & One-Class System
     { url: 'https://one-class.co.il', host: 'one-class.co.il', expected: 'DIRECT', desc: 'One-Class Main' },
     { url: 'https://app.one-class.co.il/login', host: 'app.one-class.co.il', expected: 'DIRECT', desc: 'One-Class Subdomain' },
+    { url: 'https://ddbesbyojxuhsubpibvc.supabase.co/auth/v1/token', host: 'ddbesbyojxuhsubpibvc.supabase.co', expected: 'DIRECT', desc: 'One-Class Supabase Auth & API' },
+    { url: 'wss://ddbesbyojxuhsubpibvc.supabase.co/realtime/v1/websocket', host: 'ddbesbyojxuhsubpibvc.supabase.co', expected: 'DIRECT', desc: 'One-Class Supabase WebSockets' },
+    { url: 'https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/logo.png', host: 'pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev', expected: 'DIRECT', desc: 'One-Class R2 CDN Assets' },
+    { url: 'https://fonts.googleapis.com/css2', host: 'fonts.googleapis.com', expected: 'DIRECT', desc: 'Google Fonts CSS' },
+    { url: 'https://fonts.gstatic.com/s/heebo/v26/test.woff2', host: 'fonts.gstatic.com', expected: 'DIRECT', desc: 'Google Fonts Static' },
+    { url: 'https://connector-gateway.lovable.dev/api', host: 'connector-gateway.lovable.dev', expected: 'DIRECT', desc: 'One-Class Lovable Gateway' },
     { url: 'https://edu.gov.il', host: 'edu.gov.il', expected: 'DIRECT', desc: 'Ministry of Education' },
     { url: 'https://students.edu.gov.il', host: 'students.edu.gov.il', expected: 'DIRECT', desc: 'Student Portal (Subdomain)' },
     { url: 'https://education.gov.il', host: 'education.gov.il', expected: 'DIRECT', desc: 'Education Gov' },

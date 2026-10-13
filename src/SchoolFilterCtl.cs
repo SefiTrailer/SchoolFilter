@@ -96,6 +96,7 @@ namespace SchoolFilter.Controller
             "typekit.net", "wp.com", "gravatar.com", "ytimg.com", "ggpht.com", "fbcdn.net",
             "facebook.net", "licdn.com", "twimg.com", "pinimg.com", "yahoo.com", "yimg.com",
             "mozilla.org", "mozilla.com", "mozilla.net", "firefox.com",
+            "supabase.co", "supabase.in", "r2.dev", "lovable.dev",
             "opera.com", "brave.com", "localhost", "127.0.0.1"
         };
 
@@ -1185,6 +1186,25 @@ namespace SchoolFilter.Controller
                 }
             }
 
+            // If One-Class is in the whitelist, include required Supabase backend, fonts, auth and CDN sub-resources
+            bool hasOneClass = effectiveList.Exists(d => (d ?? "").IndexOf("one-class.co.il", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (hasOneClass)
+            {
+                string[] oneClassHelpers = new string[]
+                {
+                    "*.supabase.co", "supabase.co",
+                    "*.supabase.in", "supabase.in",
+                    "*.r2.dev",
+                    "fonts.googleapis.com", "fonts.gstatic.com",
+                    "accounts.google.com", "apis.google.com", "ssl.gstatic.com", "www.gstatic.com",
+                    "connector-gateway.lovable.dev", "api.elevenlabs.io"
+                };
+                foreach (string h in oneClassHelpers)
+                {
+                    if (!effectiveList.Contains(h)) effectiveList.Add(h);
+                }
+            }
+
             List<string> sanitizedList = new List<string>();
             foreach (string rawItem in effectiveList)
             {
@@ -1232,7 +1252,19 @@ namespace SchoolFilter.Controller
             {
                 string clean = item.Trim().ToLowerInvariant();
                 if (clean.StartsWith("*.")) clean = clean.Substring(2);
-                if (string.IsNullOrEmpty(clean) || clean == "accounts.google.com" || !IsSafePacDomainPattern(clean)) continue;
+                if (string.IsNullOrEmpty(clean) ||
+                    clean == "accounts.google.com" ||
+                    clean == "apis.google.com" ||
+                    clean == "fonts.googleapis.com" ||
+                    clean == "fonts.gstatic.com" ||
+                    clean == "ssl.gstatic.com" ||
+                    clean == "www.gstatic.com" ||
+                    clean == "supabase.co" ||
+                    clean == "supabase.in" ||
+                    clean == "r2.dev" ||
+                    clean == "connector-gateway.lovable.dev" ||
+                    clean == "api.elevenlabs.io" ||
+                    !IsSafePacDomainPattern(clean)) continue;
                 if (!baseDomains.Contains(clean))
                 {
                     baseDomains.Add(clean);

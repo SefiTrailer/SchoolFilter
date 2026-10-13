@@ -3,130 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#1e3a8a">
+    <meta name="theme-color" content="#f5f5f7">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="SchoolFilter">
     <title>SchoolFilter — מערכת בקרה וסינון לחדרי מחשבים</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='100%25' stop-color='%231e3a8a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M32 4L8 14v18c0 16.5 10.2 31.6 24 36 13.8-4.4 24-19.5 24-36V14L32 4z' fill='url(%23g)' stroke='%2360a5fa' stroke-width='2'/%3E%3Cpath d='M26 33l-6-6-3.5 3.5L26 40l18-18-3.5-3.5L26 33z' fill='%23ffffff'/%3E%3C/svg%3E">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231e3a8a'/%3E%3Cpath d='M32 8L12 16.5v15c0 13.8 8.5 26.3 20 30 11.5-3.7 20-16.2 20-30v-15L32 8z' fill='%232563eb' stroke='%2393c5fd' stroke-width='2'/%3E%3Cpath d='M27 34l-5-5-3 3 8 8 15-15-3-3-12 12z' fill='%23ffffff'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23007AFF'/%3E%3Cstop offset='100%25' stop-color='%230051D5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M32 4L8 14v18c0 16.5 10.2 31.6 24 36 13.8-4.4 24-19.5 24-36V14L32 4z' fill='url(%23g)' stroke='%2360a5fa' stroke-width='1.5'/%3E%3Cpath d='M26 33l-6-6-3.5 3.5L26 40l18-18-3.5-3.5L26 33z' fill='%23ffffff'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%230071e3'/%3E%3Cpath d='M32 8L12 16.5v15c0 13.8 8.5 26.3 20 30 11.5-3.7 20-16.2 20-30v-15L32 8z' fill='%23007AFF' stroke='%2393c5fd' stroke-width='2'/%3E%3Cpath d='M27 34l-5-5-3 3 8 8 15-15-3-3-12 12z' fill='%23ffffff'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Rubik:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=Rubik:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        /* =====================================================================
+           🍎 APPLE DESIGN SYSTEM (macOS Sequoia & iOS 18 HIG)
+           Strict 100dvh Zero-Scroll App Shell on Both Desktop & Mobile
+           ===================================================================== */
         :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --primary-deep: #1e3a8a;
-            --primary-soft: #eff6ff;
-            --primary-border: #bfdbfe;
-            --indigo: #4f46e5;
-            --indigo-soft: #eef2ff;
-            --violet: #7c3aed;
-            --violet-soft: #f5f3ff;
-            --violet-border: #ddd6fe;
-            --success: #10b981;
-            --success-dark: #059669;
-            --success-soft: #ecfdf5;
-            --success-border: #6ee7b7;
-            --danger: #ef4444;
-            --danger-dark: #dc2626;
-            --danger-soft: #fef2f2;
-            --danger-border: #fca5a5;
-            --warning: #f59e0b;
-            --warning-soft: #fffbeb;
-            --warning-border: #fcd34d;
-            --bg: #f1f5f9;
-            --card-bg: rgba(255, 255, 255, 0.94);
-            --surface-muted: #f8fafc;
-            --surface-hover: #f1f5f9;
-            --text-main: #0f172a;
-            --text-secondary: #334155;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --border-strong: #cbd5e1;
+            --primary: #0071e3;
+            --primary-light: #007aff;
+            --primary-hover: #0077ed;
+            --primary-deep: #0051d5;
+            --primary-soft: rgba(0, 113, 227, 0.1);
+            --primary-border: rgba(0, 113, 227, 0.24);
+            --indigo: #5856d6;
+            --indigo-soft: rgba(88, 86, 214, 0.1);
+            --violet: #af52de;
+            --violet-soft: rgba(175, 82, 222, 0.1);
+            --violet-border: rgba(175, 82, 222, 0.25);
+            --success: #34c759;
+            --success-dark: #248a3d;
+            --success-soft: rgba(52, 199, 89, 0.12);
+            --success-border: rgba(52, 199, 89, 0.28);
+            --danger: #ff3b30;
+            --danger-dark: #d70015;
+            --danger-soft: rgba(255, 59, 48, 0.1);
+            --danger-border: rgba(255, 59, 48, 0.25);
+            --warning: #ff9500;
+            --warning-soft: rgba(255, 149, 0, 0.12);
+            --warning-border: rgba(255, 149, 0, 0.3);
+            --bg: #f5f5f7;
+            --card-bg: rgba(255, 255, 255, 0.78);
+            --card-solid: #ffffff;
+            --surface-muted: rgba(118, 118, 128, 0.08);
+            --surface-segment: rgba(118, 118, 128, 0.12);
+            --surface-hover: rgba(118, 118, 128, 0.14);
+            --text-main: #1d1d1f;
+            --text-secondary: #424245;
+            --text-muted: #86868b;
+            --border: rgba(0, 0, 0, 0.07);
+            --border-strong: rgba(0, 0, 0, 0.12);
             --radius-sm: 10px;
-            --radius: 16px;
-            --radius-lg: 22px;
-            --radius-xl: 26px;
-            --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-            --shadow-sm: 0 4px 14px -3px rgba(15, 23, 42, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
-            --shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.08), 0 4px 12px -3px rgba(15, 23, 42, 0.04);
-            --shadow-lg: 0 24px 48px -12px rgba(15, 23, 42, 0.16);
-            --transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+            --radius: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 24px;
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+            --shadow-sm: 0 2px 14px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.14), 0 4px 14px rgba(0, 0, 0, 0.04);
+            --glass-blur: saturate(180%) blur(24px);
+            --transition: all 0.22s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Heebo', 'Rubik', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
         h1, h2, h3, .room-tab-title, .panel-title, .btn, .badge, .mini-kpi-val {
-            font-family: 'Rubik', 'Heebo', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Rubik', 'Heebo', sans-serif;
+            letter-spacing: -0.015em;
         }
 
-        /* Custom sleek scrollbars */
+        /* Subtle macOS overlay scrollbars for inner containers if ever needed */
         ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 4px;
+            height: 4px;
         }
         ::-webkit-scrollbar-track {
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: rgba(0, 0, 0, 0.14);
             border-radius: 999px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+            background: rgba(0, 0, 0, 0.26);
         }
 
-        /* ====== DESKTOP VIEWPORT & AMBIENT MESH BACKDROP ====== */
+        /* ====== GLOBAL ZERO-SCROLL VIEWPORT SHELL (DESKTOP & MOBILE) ====== */
         html, body {
+            position: fixed;
+            inset: 0;
             height: 100vh;
             height: 100dvh;
-            width: 100%;
-            overflow: hidden;
+            max-height: 100dvh;
+            width: 100vw;
+            overflow: hidden !important;
             overscroll-behavior: none;
-            background-color: #eef2f6;
+            background-color: var(--bg);
             background-image:
-                radial-gradient(at 92% 4%, rgba(37, 99, 235, 0.11) 0px, transparent 42%),
-                radial-gradient(at 8% 12%, rgba(124, 58, 237, 0.08) 0px, transparent 38%),
-                radial-gradient(at 50% 96%, rgba(16, 185, 129, 0.07) 0px, transparent 48%);
+                radial-gradient(at 88% 0%, rgba(0, 113, 227, 0.07) 0px, transparent 48%),
+                radial-gradient(at 12% 10%, rgba(88, 86, 214, 0.05) 0px, transparent 42%),
+                radial-gradient(at 50% 100%, rgba(52, 199, 89, 0.05) 0px, transparent 50%);
             color: var(--text-main);
-            line-height: 1.4;
+            line-height: 1.38;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .container {
-            max-width: 1420px;
+            max-width: 1460px;
             width: 100%;
             height: 100vh;
             height: 100dvh;
+            max-height: 100dvh;
             margin: 0 auto;
-            padding: 12px 20px 8px;
+            padding: 10px 18px 10px;
             display: flex;
             flex-direction: column;
             gap: 10px;
-            overflow: hidden;
+            overflow: hidden !important;
         }
 
-        /* ====== TOP GLASS HEADER BAR ====== */
+        /* ====== TOP APPLE TRANSLUCENT TOOLBAR ====== */
         header {
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.85);
-            box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(226, 232, 240, 0.8);
-            border-radius: 18px;
-            padding: 9px 18px;
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            border-radius: 16px;
+            padding: 7px 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
             flex-shrink: 0;
             z-index: 100;
         }
@@ -134,47 +148,45 @@
         .header-right {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
             min-width: 0;
         }
 
         .header-brand {
             display: flex;
             align-items: center;
-            gap: 11px;
+            gap: 10px;
             min-width: 0;
         }
 
         .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(180deg, #007aff 0%, #0051d5 100%);
             color: white;
-            border-radius: 12px;
+            border-radius: 9px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 6px 16px -3px rgba(37, 99, 235, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+            box-shadow: 0 3px 10px rgba(0, 113, 227, 0.28), inset 0 1px 0.5px rgba(255, 255, 255, 0.35);
             flex-shrink: 0;
         }
 
         .logo-icon svg {
-            width: 22px;
-            height: 22px;
+            width: 19px;
+            height: 19px;
         }
 
         .brand-text h1 {
-            font-size: 19px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-main);
             letter-spacing: -0.4px;
             line-height: 1.1;
         }
 
         .brand-subtitle {
-            font-size: 11.5px;
+            font-size: 11px;
             color: var(--text-muted);
             font-weight: 500;
             white-space: nowrap;
@@ -182,26 +194,25 @@
             text-overflow: ellipsis;
         }
 
-        /* Integrated Header Navigation Tabs (Desktop) */
+        /* macOS Segmented Control Navigation Tabs */
         .nav-tabs {
             display: none;
             align-items: center;
-            gap: 4px;
-            background: rgba(241, 245, 249, 0.9);
-            padding: 4px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
+            gap: 2px;
+            background: var(--surface-segment);
+            padding: 3px;
+            border-radius: 10px;
         }
 
         .nav-tab-btn {
-            padding: 6px 14px;
-            border-radius: 9px;
-            font-weight: 700;
-            font-size: 13px;
+            padding: 5px 13px;
+            border-radius: 7px;
+            font-weight: 600;
+            font-size: 12.5px;
             border: none;
             cursor: pointer;
             background: transparent;
-            color: #475569;
+            color: var(--text-secondary);
             transition: var(--transition);
             white-space: nowrap;
         }
@@ -212,8 +223,8 @@
 
         .nav-tab-btn.active {
             background: #ffffff;
-            color: var(--primary);
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+            color: var(--text-main);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1), 0 0.5px 1px rgba(0, 0, 0, 0.06);
         }
 
         .header-toolbar {
@@ -224,92 +235,91 @@
         }
 
         .btn-download-header {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            background: var(--primary);
             color: #ffffff;
             text-decoration: none;
-            padding: 8px 15px;
-            border-radius: 11px;
-            font-size: 12.5px;
-            font-weight: 700;
+            padding: 6px 13px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0, 113, 227, 0.22);
             transition: var(--transition);
             white-space: nowrap;
         }
 
         .btn-download-header:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
-            background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+            background: var(--primary-hover);
+            transform: scale(1.01);
         }
 
-        /* ====== BADGES & PILLS ====== */
+        /* ====== APPLE CAPSULE BADGES & PILLS ====== */
         .badge {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            padding: 4px 11px;
+            padding: 3.5px 10px;
             border-radius: 9999px;
-            font-size: 11.5px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 600;
             white-space: nowrap;
             line-height: 1.2;
         }
 
         .badge-online {
             background: var(--success-soft);
-            color: #065f46;
+            color: var(--success-dark);
             border: 1px solid var(--success-border);
         }
 
         .badge-offline {
             background: var(--danger-soft);
-            color: #991b1b;
+            color: var(--danger-dark);
             border: 1px solid var(--danger-border);
         }
 
         .badge-neutral {
-            background: #f1f5f9;
-            color: #475569;
-            border: 1px solid #cbd5e1;
+            background: var(--surface-muted);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
         }
 
         .badge-role {
             background: var(--primary-soft);
-            color: #1e40af;
+            color: var(--primary);
             border: 1px solid var(--primary-border);
         }
 
         .status-dot {
-            width: 7px;
-            height: 7px;
+            width: 6.5px;
+            height: 6.5px;
             border-radius: 50%;
             background-color: currentColor;
             flex-shrink: 0;
         }
 
         .status-dot.pulse {
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+            box-shadow: 0 0 0 2.5px rgba(52, 199, 89, 0.25);
             animation: statusPulse 2s infinite;
         }
 
         @keyframes statusPulse {
-            0%, 100% { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3); }
-            50% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.1); }
+            0%, 100% { box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.28); }
+            50% { box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.08); }
         }
 
-        /* ====== BUTTON SYSTEM ====== */
+        /* ====== APPLE BUTTON SYSTEM ====== */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            padding: 8px 14px;
-            border-radius: 10px;
-            font-size: 12.5px;
-            font-weight: 700;
+            gap: 5px;
+            padding: 7px 13px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
             cursor: pointer;
             border: 1px solid transparent;
             transition: var(--transition);
@@ -322,24 +332,23 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            background: var(--primary);
             color: white;
-            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.22);
+            box-shadow: 0 2px 6px rgba(0, 113, 227, 0.2);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-            box-shadow: 0 5px 14px rgba(37, 99, 235, 0.3);
+            background: var(--primary-hover);
         }
 
         .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: var(--success);
             color: white;
-            box-shadow: 0 3px 10px rgba(16, 185, 129, 0.22);
+            box-shadow: 0 2px 6px rgba(52, 199, 89, 0.22);
         }
 
         .btn-success:hover {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            background: #2db84e;
         }
 
         .btn-danger {
@@ -349,175 +358,167 @@
         }
 
         .btn-danger:hover {
-            background: var(--danger-dark);
+            background: var(--danger);
             color: white;
-            border-color: var(--danger-dark);
+            border-color: var(--danger);
         }
 
         .btn-outline {
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.9);
             border: 1px solid var(--border-strong);
-            color: var(--text-secondary);
+            color: var(--text-main);
             box-shadow: var(--shadow-xs);
         }
 
         .btn-outline:hover {
-            background: var(--surface-muted);
-            border-color: #94a3b8;
-            color: var(--text-main);
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.22);
         }
 
         .btn-sm {
-            padding: 6px 11px;
-            font-size: 12px;
-            border-radius: 9px;
+            padding: 5px 11px;
+            font-size: 11.5px;
+            border-radius: 999px;
         }
 
-        /* ====== FORM INPUTS ====== */
+        /* ====== APPLE FORM INPUTS ====== */
         input[type="text"],
         input[type="password"],
         input[type="email"],
         input[type="url"],
         select {
-            padding: 8px 12px;
-            border: 1.5px solid var(--border-strong);
+            padding: 7px 11px;
+            border: 1px solid var(--border-strong);
             border-radius: 10px;
-            font-size: 13px;
+            font-size: 12.5px;
             color: var(--text-main);
             outline: none;
             transition: var(--transition);
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.92);
         }
 
         input::placeholder {
-            color: #94a3b8;
+            color: var(--text-muted);
         }
 
         input:focus, select:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.14);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18);
         }
 
-        /* ====== AUTH / HOME HERO SCREEN ====== */
+        /* ====== AUTH / APPLE iCLOUD STYLE SIGN-IN SCREEN ====== */
         .auth-wrapper {
             flex: 1;
             min-height: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 12px;
+            padding: 8px;
+            overflow: hidden;
         }
 
         .auth-card {
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(20px);
-            max-width: 560px;
+            background: rgba(255, 255, 255, 0.84);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            max-width: 480px;
             width: 100%;
             border-radius: 26px;
             border: 1px solid rgba(255, 255, 255, 0.9);
-            box-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.14), 0 0 0 1px rgba(226, 232, 240, 0.8);
-            padding: 30px 32px 24px;
+            box-shadow: var(--shadow-lg), 0 0 0 1px var(--border);
+            padding: 26px 28px 22px;
             text-align: center;
             position: relative;
             overflow: hidden;
         }
 
-        .auth-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            left: 0;
-            height: 6px;
-            background: linear-gradient(90deg, #2563eb, #7c3aed, #10b981);
-        }
-
         .auth-emblem {
-            width: 60px;
-            height: 60px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border: 1px solid #bfdbfe;
-            color: var(--primary);
+            width: 54px;
+            height: 54px;
+            border-radius: 15px;
+            background: linear-gradient(180deg, #007aff 0%, #0051d5 100%);
+            color: #ffffff;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 30px;
+            font-size: 26px;
             margin-bottom: 12px;
-            box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 8px 20px rgba(0, 113, 227, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.35);
         }
 
         .btn-google {
-            background: #0f172a;
+            background: var(--text-main);
             color: #ffffff;
-            border: 1px solid #1e293b;
-            font-size: 15px;
-            font-weight: 700;
-            padding: 13px 20px;
-            border-radius: 14px;
-            box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.25);
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 11px 18px;
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
             width: 100%;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
             transition: var(--transition);
         }
 
         .btn-google:hover {
-            background: #1e293b;
+            background: #000000;
             transform: translateY(-1px);
-            box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.32);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
         }
 
         .features-grid-mini {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 18px;
+            gap: 8px;
+            margin-top: 16px;
             text-align: right;
         }
 
         .feature-pill-box {
-            background: var(--surface-muted);
+            background: rgba(118, 118, 128, 0.06);
             border: 1px solid var(--border);
-            border-radius: 13px;
-            padding: 10px 12px;
+            border-radius: 12px;
+            padding: 9px 10px;
         }
 
         .feature-pill-box strong {
             display: block;
-            font-size: 12px;
+            font-size: 11.5px;
+            font-weight: 600;
             color: var(--text-main);
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
         .feature-pill-box span {
-            font-size: 11px;
+            font-size: 10.5px;
             color: var(--text-muted);
-            line-height: 1.3;
+            line-height: 1.28;
             display: block;
         }
 
         .quick-install-strip {
-            margin-top: 14px;
-            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
-            border: 1px solid #bfdbfe;
-            border-radius: 14px;
-            padding: 11px 15px;
+            margin-top: 12px;
+            background: var(--primary-soft);
+            border: 1px solid var(--primary-border);
+            border-radius: 12px;
+            padding: 9px 13px;
             text-align: right;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
+            gap: 8px;
         }
 
-        /* ====== DASHBOARD WORKSPACE ====== */
+        /* ====== DASHBOARD WORKSPACE (LOCKED TO VIEWPORT) ====== */
         #dashboard {
             flex: 1;
             min-height: 0;
             display: none;
             flex-direction: column;
             gap: 10px;
-            overflow: hidden;
+            overflow: hidden !important;
         }
 
         /* Mobile-only elements hidden on desktop */
@@ -545,23 +546,24 @@
             }
         }
 
-        /* Tab 1: 2-Column Cockpit Grid (Desktop) */
+        /* Tab 1: 2-Column macOS Split View (Desktop) */
         .cockpit-grid {
             flex: 1;
             min-height: 0;
             display: grid;
-            grid-template-columns: 290px 1fr;
+            grid-template-columns: 265px 1fr;
             gap: 12px;
-            overflow: hidden;
+            overflow: hidden !important;
         }
 
         .panel-card {
             background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            border-radius: 20px;
-            border: 1px solid rgba(226, 232, 240, 0.9);
-            box-shadow: var(--shadow-sm);
-            padding: 14px 16px;
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            padding: 12px 14px;
             display: flex;
             flex-direction: column;
             min-height: 0;
@@ -573,86 +575,83 @@
             justify-content: space-between;
             align-items: center;
             gap: 8px;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
             flex-wrap: wrap;
         }
 
         .panel-title {
-            font-size: 14.5px;
-            font-weight: 800;
+            font-size: 13.5px;
+            font-weight: 700;
             color: var(--text-main);
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 6px;
         }
 
         /* Sidebar KPI mini row */
         .sidebar-kpi-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 6px;
+            margin-bottom: 8px;
             flex-shrink: 0;
         }
 
         .mini-kpi {
-            background: var(--surface-muted);
+            background: rgba(255, 255, 255, 0.65);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 8px 11px;
+            border-radius: 10px;
+            padding: 6px 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
 
         .mini-kpi-label {
-            font-size: 11.5px;
+            font-size: 11px;
             color: var(--text-muted);
-            font-weight: 600;
+            font-weight: 500;
         }
 
         .mini-kpi-val {
-            font-size: 15px;
-            font-weight: 800;
+            font-size: 14px;
+            font-weight: 700;
             color: var(--text-main);
         }
 
-        /* Sidebar Rooms List */
+        /* macOS Sidebar Rooms List */
         .rooms-grid {
             flex: 1;
             min-height: 0;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            padding-left: 2px;
+            gap: 6px;
         }
 
         .room-tab {
-            border: 1.5px solid var(--border);
-            border-radius: 14px;
-            padding: 11px 13px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 9px 11px;
             cursor: pointer;
-            background: var(--surface-muted);
+            background: rgba(255, 255, 255, 0.6);
             transition: var(--transition);
             position: relative;
             flex-shrink: 0;
         }
 
         .room-tab:hover {
-            border-color: #93c5fd;
-            background: #ffffff;
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-xs);
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(0, 113, 227, 0.25);
         }
 
         .room-tab.active {
-            border-color: var(--primary);
-            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
-            box-shadow: 0 4px 14px -3px rgba(37, 99, 235, 0.15);
+            border-color: rgba(0, 113, 227, 0.4);
+            background: #ffffff;
+            box-shadow: 0 3px 12px rgba(0, 113, 227, 0.1), 0 1px 2px rgba(0, 0, 0, 0.04);
         }
 
         .room-tab.active::before {
@@ -661,7 +660,7 @@
             top: 8px;
             bottom: 8px;
             right: 0;
-            width: 4px;
+            width: 3.5px;
             border-radius: 4px 0 0 4px;
             background: var(--primary);
         }
@@ -671,12 +670,12 @@
             justify-content: space-between;
             align-items: center;
             gap: 6px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .room-tab-title {
-            font-size: 14px;
-            font-weight: 800;
+            font-size: 13px;
+            font-weight: 700;
             color: var(--text-main);
             white-space: nowrap;
             overflow: hidden;
@@ -687,18 +686,18 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 11.5px;
+            font-size: 11px;
             color: var(--text-muted);
         }
 
         .room-tab-code {
-            font-family: Consolas, Monaco, monospace;
-            font-size: 10.5px;
-            font-weight: 700;
-            color: #334155;
-            background: #e2e8f0;
-            padding: 2px 7px;
-            border-radius: 6px;
+            font-family: 'SF Mono', Consolas, Monaco, monospace;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: var(--surface-muted);
+            padding: 1.5px 6px;
+            border-radius: 5px;
             direction: ltr;
         }
 
@@ -706,166 +705,168 @@
         .workspace-col {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             min-height: 0;
-            overflow: hidden;
+            overflow: hidden !important;
         }
 
-        /* ====== EXECUTIVE HERO COMMAND DECK (Locked vs Open State) ====== */
+        /* ====== APPLE CONTROL CENTER HERO DECK (Locked vs Open State) ====== */
         .command-center-card {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 48%, #7f1d1d 100%);
-            border: 1px solid rgba(252, 165, 165, 0.25);
-            border-radius: 22px;
-            padding: 15px 20px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 244, 244, 0.88) 100%);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid rgba(255, 59, 48, 0.2);
+            border-radius: var(--radius-lg);
+            padding: 11px 16px;
             flex-shrink: 0;
-            box-shadow: 0 12px 30px -8px rgba(15, 23, 42, 0.25);
+            box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.95);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
             flex-wrap: wrap;
-            color: #ffffff;
+            color: var(--text-main);
             position: relative;
             overflow: hidden;
-            transition: background 0.35s ease, border-color 0.35s ease;
-        }
-
-        .command-center-card::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -10%;
-            width: 240px;
-            height: 240px;
-            background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%);
-            pointer-events: none;
+            transition: var(--transition);
         }
 
         .command-center-card.room-open-mode {
-            background: linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #047857 100%);
-            border-color: rgba(110, 231, 183, 0.3);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 253, 244, 0.88) 100%);
+            border-color: rgba(52, 199, 89, 0.26);
         }
 
         .room-hero-info {
             display: flex;
             flex-direction: column;
-            gap: 7px;
+            gap: 5px;
             z-index: 1;
         }
 
         #activeRoomTitle {
-            font-size: 20px;
-            font-weight: 800;
-            color: #ffffff !important;
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-main) !important;
             letter-spacing: -0.3px;
         }
 
         .command-center-card #filterStateBadge.badge-offline {
-            background: rgba(239, 68, 68, 0.22);
-            color: #fecaca;
-            border: 1px solid rgba(252, 165, 165, 0.45);
-            backdrop-filter: blur(8px);
+            background: rgba(255, 59, 48, 0.12);
+            color: var(--danger-dark);
+            border: 1px solid rgba(255, 59, 48, 0.25);
         }
 
         .command-center-card #filterStateBadge.badge-online {
-            background: rgba(16, 185, 129, 0.24);
-            color: #a7f3d0;
-            border: 1px solid rgba(110, 231, 183, 0.5);
-            backdrop-filter: blur(8px);
+            background: rgba(52, 199, 89, 0.14);
+            color: var(--success-dark);
+            border: 1px solid rgba(52, 199, 89, 0.3);
         }
 
         .room-code-pill {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            padding: 3px 10px;
-            border-radius: 9px;
-            font-size: 12px;
-            color: #cbd5e1;
+            gap: 6px;
+            background: rgba(118, 118, 128, 0.08);
+            border: 1px solid var(--border);
+            padding: 2.5px 9px;
+            border-radius: 999px;
+            font-size: 11px;
+            color: var(--text-secondary);
             width: fit-content;
-            backdrop-filter: blur(6px);
         }
 
         .room-code-pill code {
-            font-family: Consolas, Monaco, monospace;
-            font-weight: 800;
-            color: #ffffff;
-            font-size: 12.5px;
+            font-family: 'SF Mono', Consolas, Monaco, monospace;
+            font-weight: 700;
+            color: var(--text-main);
+            font-size: 11.5px;
             direction: ltr;
         }
 
         .btn-copy-code {
-            background: rgba(255, 255, 255, 0.16);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            color: #ffffff;
-            border-radius: 6px;
-            padding: 2px 8px;
-            font-size: 11px;
-            font-weight: 700;
+            background: #ffffff;
+            border: 1px solid var(--border-strong);
+            color: var(--text-main);
+            border-radius: 999px;
+            padding: 1.5px 7px;
+            font-size: 10.5px;
+            font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
         }
 
         .btn-copy-code:hover {
-            background: #ffffff;
-            color: #0f172a;
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
         }
 
         .master-control-buttons {
             display: flex;
-            gap: 9px;
+            gap: 8px;
             align-items: center;
             z-index: 1;
             flex-wrap: wrap;
         }
 
         .btn-lock-action {
-            padding: 10px 18px;
-            font-size: 13.5px;
-            border-radius: 13px;
-            font-weight: 800;
+            padding: 8px 15px;
+            font-size: 12.5px;
+            border-radius: 12px;
+            font-weight: 600;
             transition: var(--transition);
-            border: 1.5px solid transparent;
+            border: 1px solid var(--border-strong);
+            background: rgba(255, 255, 255, 0.85);
+            color: var(--text-secondary);
         }
 
         .btn-mode-lock {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+            background: rgba(255, 59, 48, 0.08);
+            color: var(--danger-dark);
+            border-color: rgba(255, 59, 48, 0.22);
         }
 
         .btn-mode-lock:hover {
-            background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
-            transform: translateY(-1px);
+            background: var(--danger);
+            color: #ffffff;
+            border-color: var(--danger);
         }
 
         .btn-mode-open {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+            background: rgba(52, 199, 89, 0.1);
+            color: var(--success-dark);
+            border-color: rgba(52, 199, 89, 0.25);
         }
 
         .btn-mode-open:hover {
-            background: linear-gradient(135deg, #34d399 0%, #059669 100%);
-            transform: translateY(-1px);
+            background: var(--success);
+            color: #ffffff;
+            border-color: var(--success);
         }
 
-        .btn-mode-active-ring {
-            border-color: #ffffff !important;
-            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.28), 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+        .btn-mode-lock.btn-mode-active-ring {
+            background: var(--danger) !important;
+            color: #ffffff !important;
+            border-color: var(--danger) !important;
+            box-shadow: 0 4px 14px rgba(255, 59, 48, 0.32) !important;
+        }
+
+        .btn-mode-open.btn-mode-active-ring {
+            background: var(--success) !important;
+            color: #ffffff !important;
+            border-color: var(--success) !important;
+            box-shadow: 0 4px 14px rgba(52, 199, 89, 0.32) !important;
         }
 
         .btn-preview-student {
-            background: rgba(255, 255, 255, 0.12) !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255, 255, 255, 0.25) !important;
-            backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.9) !important;
+            color: var(--text-secondary) !important;
+            border: 1px solid var(--border-strong) !important;
         }
 
         .btn-preview-student:hover {
-            background: rgba(255, 255, 255, 0.22) !important;
+            background: #ffffff !important;
+            color: var(--text-main) !important;
         }
 
         /* Workspace Lower Split (Computers + Whitelist side-by-side) */
@@ -873,51 +874,49 @@
             flex: 1;
             min-height: 0;
             display: grid;
-            grid-template-columns: 1.08fr 1fr;
+            grid-template-columns: 1.12fr 1fr;
             gap: 12px;
-            overflow: hidden;
+            overflow: hidden !important;
         }
 
-        /* ====== COMPUTERS PANEL & LUXURY STATION CARDS ====== */
+        /* ====== COMPUTERS PANEL & APPLE HOMEKIT ACCESSORY TILES ====== */
         .pc-filter-pills {
             display: inline-flex;
-            background: #f1f5f9;
-            padding: 3px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
+            background: var(--surface-segment);
+            padding: 2.5px;
+            border-radius: 9px;
             gap: 2px;
         }
 
         .pc-filter-btn {
             border: none;
             background: transparent;
-            padding: 4px 9px;
+            padding: 3.5px 9px;
             border-radius: 7px;
-            font-size: 11.5px;
-            font-weight: 700;
-            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
             cursor: pointer;
             transition: var(--transition);
         }
 
         .pc-filter-btn.active {
             background: #ffffff;
-            color: var(--primary);
-            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+            color: var(--text-main);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
         }
 
         .computers-summary-strip {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             flex-wrap: wrap;
-            margin-bottom: 9px;
-            padding: 6px 10px;
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            border-radius: 11px;
-            font-size: 11.5px;
-            font-weight: 700;
+            margin-bottom: 7px;
+            padding: 5px 8px;
+            background: rgba(118, 118, 128, 0.06);
+            border-radius: 9px;
+            font-size: 11px;
+            font-weight: 600;
             flex-shrink: 0;
         }
 
@@ -926,102 +925,101 @@
             min-height: 0;
             overflow-y: auto;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
             align-content: start;
-            gap: 8px;
-            padding-left: 3px;
+            gap: 7px;
         }
 
         .computer-card {
-            background: #ffffff;
-            border: 1.5px solid var(--border);
-            border-radius: 14px;
-            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            padding: 8px 10px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             transition: var(--transition);
             position: relative;
-            box-shadow: 0 2px 5px rgba(15, 23, 42, 0.02);
+            box-shadow: var(--shadow-xs);
         }
 
         .computer-card:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 14px -3px rgba(15, 23, 42, 0.07);
+            background: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
         .computer-card.is-locked {
-            border-color: #fecaca;
-            background: linear-gradient(145deg, #fff5f5 0%, #ffffff 55%);
+            border-color: rgba(255, 59, 48, 0.22);
+            background: linear-gradient(145deg, rgba(255, 245, 245, 0.85) 0%, #ffffff 65%);
         }
 
         .computer-card.is-open {
-            border-color: #a7f3d0;
-            background: linear-gradient(145deg, #f0fdf4 0%, #ffffff 55%);
+            border-color: rgba(52, 199, 89, 0.28);
+            background: linear-gradient(145deg, rgba(240, 253, 244, 0.85) 0%, #ffffff 65%);
         }
 
         .computer-card.is-overridden {
-            border-color: #c4b5fd;
-            box-shadow: 0 4px 12px -2px rgba(124, 58, 237, 0.12);
+            border-color: rgba(88, 86, 214, 0.35);
+            box-shadow: 0 2px 10px rgba(88, 86, 214, 0.1);
         }
 
         .computer-card.is-unsynced {
-            border: 1.5px solid #f59e0b;
-            background: linear-gradient(145deg, #fffbeb 0%, #ffffff 65%);
+            border: 1px solid rgba(255, 149, 0, 0.45);
+            background: linear-gradient(145deg, rgba(255, 251, 235, 0.9) 0%, #ffffff 70%);
         }
 
         .computer-card.is-offline {
-            border-color: #e2e8f0;
-            background: #f8fafc;
-            opacity: 0.82;
+            border-color: var(--border);
+            background: rgba(255, 255, 255, 0.55);
+            opacity: 0.78;
         }
 
         .pc-card-top {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 6px;
+            gap: 4px;
         }
 
         .pc-card-title-group {
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 6px;
             min-width: 0;
         }
 
         .pc-led {
-            width: 9px;
-            height: 9px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             flex-shrink: 0;
         }
 
         .pc-led.online-locked {
-            background: #ef4444;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+            background: var(--danger);
+            box-shadow: 0 0 0 2.5px rgba(255, 59, 48, 0.18);
         }
 
         .pc-led.online-open {
-            background: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22);
+            background: var(--success);
+            box-shadow: 0 0 0 2.5px rgba(52, 199, 89, 0.2);
         }
 
         .pc-led.online-sync {
-            background: #f59e0b;
-            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+            background: var(--warning);
+            box-shadow: 0 0 0 2.5px rgba(255, 149, 0, 0.22);
         }
 
         .pc-led.offline {
-            background: #94a3b8;
+            background: #aeaeb2;
         }
 
         .computer-name {
-            font-size: 13.5px;
-            font-weight: 800;
+            font-size: 12.5px;
+            font-weight: 700;
             color: var(--text-main);
             direction: ltr;
-            font-family: Consolas, Monaco, 'Rubik', monospace;
+            font-family: 'SF Mono', Consolas, Monaco, monospace;
             letter-spacing: -0.2px;
             white-space: nowrap;
             overflow: hidden;
@@ -1032,93 +1030,86 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 6px;
-            padding-top: 6px;
-            border-top: 1px dashed rgba(203, 213, 225, 0.7);
+            gap: 4px;
+            padding-top: 5px;
+            border-top: 1px solid rgba(0, 0, 0, 0.04);
         }
 
         .pc-state-pill {
             display: inline-flex;
             align-items: center;
             gap: 3px;
-            padding: 2px 8px;
+            padding: 1.5px 7px;
             border-radius: 999px;
-            font-size: 10.5px;
-            font-weight: 800;
+            font-size: 10px;
+            font-weight: 600;
             white-space: nowrap;
             flex-shrink: 0;
         }
 
         .pc-state-pill.locked {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fca5a5;
+            background: var(--danger-soft);
+            color: var(--danger-dark);
         }
 
         .pc-state-pill.open {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #6ee7b7;
+            background: var(--success-soft);
+            color: var(--success-dark);
         }
 
         .pc-state-pill.offline {
-            background: #e2e8f0;
-            color: #475569;
-            border: 1px solid #cbd5e1;
+            background: var(--surface-muted);
+            color: var(--text-muted);
         }
 
         .pc-ver-badge {
             display: inline-block;
-            padding: 1px 6px;
+            padding: 1px 5px;
             border-radius: 5px;
-            font-size: 10px;
-            font-weight: 800;
+            font-size: 9.5px;
+            font-weight: 600;
             direction: ltr;
         }
 
         .pc-ver-badge.ver-ok {
-            background: #eff6ff;
-            color: #1d4ed8;
-            border: 1px solid #bfdbfe;
+            background: var(--primary-soft);
+            color: var(--primary);
         }
 
         .pc-ver-badge.ver-old {
-            background: #ffedd5;
-            color: #9a3412;
-            border: 1px solid #fdba74;
+            background: var(--warning-soft);
+            color: #b25000;
         }
 
         .pc-unsync-tag {
             display: inline-block;
-            background: #fef3c7;
-            color: #b45309;
-            border: 1px solid #f59e0b;
+            background: var(--warning-soft);
+            color: #b25000;
             border-radius: 5px;
-            padding: 1px 6px;
-            font-size: 10px;
-            font-weight: 800;
+            padding: 1px 5px;
+            font-size: 9.5px;
+            font-weight: 600;
         }
 
         .computer-meta {
-            font-size: 10.5px;
+            font-size: 10px;
             color: var(--text-muted);
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             flex-wrap: wrap;
             min-width: 0;
         }
 
         .btn-remove-pc {
             background: transparent;
-            color: #94a3b8;
+            color: var(--text-muted);
             border: none;
-            border-radius: 6px;
-            width: 22px;
-            height: 22px;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
             cursor: pointer;
-            font-size: 11px;
-            font-weight: bold;
+            font-size: 10px;
             flex-shrink: 0;
             display: inline-flex;
             align-items: center;
@@ -1132,68 +1123,65 @@
         }
 
         .btn-pc-toggle {
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 11.5px;
-            font-weight: 800;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 10.5px;
+            font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 3px;
             white-space: nowrap;
             flex-shrink: 0;
         }
 
         .btn-pc-toggle.to-open {
-            background: #ecfdf5;
-            color: #047857;
-            border: 1px solid #6ee7b7;
+            background: var(--success-soft);
+            color: var(--success-dark);
+            border: 1px solid var(--success-border);
         }
 
         .btn-pc-toggle.to-open:hover {
-            background: #10b981;
+            background: var(--success);
             color: #ffffff;
-            border-color: #059669;
-            box-shadow: 0 3px 8px rgba(16, 185, 129, 0.25);
+            border-color: var(--success);
         }
 
         .btn-pc-toggle.to-lock {
-            background: #fef2f2;
-            color: #b91c1c;
-            border: 1px solid #fca5a5;
+            background: var(--danger-soft);
+            color: var(--danger-dark);
+            border: 1px solid var(--danger-border);
         }
 
         .btn-pc-toggle.to-lock:hover {
-            background: #ef4444;
+            background: var(--danger);
             color: #ffffff;
-            border-color: #dc2626;
-            box-shadow: 0 3px 8px rgba(239, 68, 68, 0.25);
+            border-color: var(--danger);
         }
 
         .pc-override-tag {
             display: inline-flex;
             align-items: center;
-            gap: 3px;
-            background: #ede9fe;
-            color: #5b21b6;
-            border: 1px solid #c4b5fd;
+            gap: 2px;
+            background: var(--indigo-soft);
+            color: var(--indigo);
             border-radius: 5px;
-            padding: 1px 6px;
-            font-size: 10px;
-            font-weight: 800;
+            padding: 1px 5px;
+            font-size: 9.5px;
+            font-weight: 600;
         }
 
         /* Compact Remote Footer inside Computers Card */
         .remote-footer-bar {
-            margin-top: 10px;
-            padding-top: 10px;
+            margin-top: 8px;
+            padding-top: 8px;
             border-top: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
             flex-shrink: 0;
         }
@@ -1202,12 +1190,12 @@
         .profiles-bar {
             display: flex;
             flex-direction: column;
-            gap: 7px;
-            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
-            border: 1px solid #bfdbfe;
-            border-radius: 14px;
-            padding: 9px 11px;
-            margin-bottom: 9px;
+            gap: 6px;
+            background: rgba(118, 118, 128, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
             flex-shrink: 0;
         }
 
@@ -1221,23 +1209,22 @@
 
         .profiles-bar select {
             flex: 1;
-            min-width: 140px;
-            padding: 5px 10px;
-            font-size: 12.5px;
-            font-weight: 700;
-            border-radius: 9px;
-            border-color: #93c5fd;
-            color: #1e3a8a;
+            min-width: 130px;
+            padding: 4px 9px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 8px;
+            border-color: var(--border-strong);
+            color: var(--text-main);
             background: #ffffff;
         }
 
         .quick-profile-pills {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             overflow-x: auto;
             scrollbar-width: none;
-            padding-bottom: 2px;
         }
 
         .quick-profile-pills::-webkit-scrollbar {
@@ -1247,14 +1234,14 @@
         .profile-chip-btn {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            padding: 5px 11px;
+            gap: 4px;
+            padding: 4px 10px;
             border-radius: 999px;
-            border: 1.5px solid #cbd5e1;
-            background: #ffffff;
+            border: 1px solid var(--border-strong);
+            background: rgba(255, 255, 255, 0.9);
             color: var(--text-secondary);
-            font-size: 11.5px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 600;
             white-space: nowrap;
             cursor: pointer;
             transition: var(--transition);
@@ -1264,24 +1251,23 @@
         .profile-chip-btn:hover {
             border-color: var(--primary);
             color: var(--primary);
-            background: #eff6ff;
+            background: #ffffff;
         }
 
         .profile-chip-btn.active {
             background: var(--primary);
             color: #ffffff;
             border-color: var(--primary);
-            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+            box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
         }
 
         .profile-modal-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            max-height: 290px;
+            gap: 7px;
+            max-height: 280px;
             overflow-y: auto;
             margin-top: 10px;
-            padding-left: 2px;
         }
 
         .profile-modal-item {
@@ -1289,43 +1275,43 @@
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            padding: 11px 13px;
-            border-radius: 13px;
-            border: 1.5px solid var(--border);
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
             background: var(--surface-muted);
             transition: var(--transition);
         }
 
         .Preset-input-group {
             display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
+            gap: 6px;
+            margin-bottom: 7px;
             flex-shrink: 0;
         }
 
         .preset-chips-bar {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             flex-wrap: wrap;
-            margin-bottom: 9px;
+            margin-bottom: 8px;
             flex-shrink: 0;
         }
 
         .preset-chip {
             background: var(--surface-muted);
-            border: 1px solid var(--border-strong);
+            border: 1px solid var(--border);
             color: var(--text-secondary);
-            padding: 4px 10px;
+            padding: 3px 9px;
             border-radius: 999px;
-            font-size: 11.5px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
         }
 
         .preset-chip:hover {
-            border-color: var(--primary);
+            border-color: var(--primary-border);
             color: var(--primary);
             background: var(--primary-soft);
         }
@@ -1337,49 +1323,47 @@
             display: flex;
             flex-wrap: wrap;
             align-content: flex-start;
-            gap: 7px;
-            padding-left: 2px;
+            gap: 6px;
         }
 
         .site-pill {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            padding: 6px 12px;
-            background: #ffffff;
-            border: 1.5px solid var(--border);
-            border-radius: 12px;
+            gap: 6px;
+            padding: 4.5px 10px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid var(--border);
+            border-radius: 999px;
             transition: var(--transition);
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+            box-shadow: var(--shadow-xs);
         }
 
         .site-pill.core {
-            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
-            border-color: #bfdbfe;
+            background: rgba(0, 113, 227, 0.06);
+            border-color: rgba(0, 113, 227, 0.2);
         }
 
         .site-pill:hover {
             border-color: var(--primary);
-            transform: translateY(-1px);
-            box-shadow: 0 3px 8px rgba(37, 99, 235, 0.1);
+            background: #ffffff;
         }
 
         .site-domain {
-            font-weight: 700;
-            font-size: 13px;
+            font-weight: 600;
+            font-size: 12px;
             direction: ltr;
             color: var(--text-main);
         }
 
         .btn-remove-site-pill {
-            background: #fee2e2;
-            color: #dc2626;
+            background: rgba(118, 118, 128, 0.14);
+            color: var(--text-secondary);
             border: none;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 10px;
-            font-weight: 900;
+            width: 17px;
+            height: 17px;
+            font-size: 9.5px;
+            font-weight: 700;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
@@ -1389,7 +1373,7 @@
         }
 
         .btn-remove-site-pill:hover {
-            background: #dc2626;
+            background: var(--danger);
             color: #ffffff;
         }
 
@@ -1400,7 +1384,7 @@
             display: grid;
             grid-template-columns: 1fr 1.45fr;
             gap: 12px;
-            overflow: hidden;
+            overflow: hidden !important;
         }
 
         .table-scroll-box {
@@ -1409,7 +1393,8 @@
             overflow-y: auto;
             border-radius: 12px;
             border: 1px solid var(--border);
-            margin-top: 10px;
+            margin-top: 8px;
+            background: rgba(255, 255, 255, 0.6);
         }
 
         .table-list {
@@ -1418,29 +1403,30 @@
         }
 
         .table-list th, .table-list td {
-            padding: 10px 12px;
+            padding: 8px 11px;
             border-bottom: 1px solid var(--border);
             text-align: right;
-            font-size: 13px;
+            font-size: 12.5px;
         }
 
         .table-list th {
-            background: var(--surface-muted);
+            background: rgba(245, 245, 247, 0.95);
+            backdrop-filter: blur(8px);
             color: var(--text-muted);
-            font-weight: 700;
-            font-size: 11.5px;
+            font-weight: 600;
+            font-size: 11px;
             position: sticky;
             top: 0;
         }
 
-        /* ====== MODALS & TOAST ====== */
+        /* ====== APPLE SHEET MODALS & CAPSULE TOAST ====== */
         .modal-backdrop {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.65);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.32);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             z-index: 9999;
             align-items: center;
             justify-content: center;
@@ -1448,31 +1434,34 @@
         }
 
         .modal-box {
-            background: #ffffff;
-            max-width: 520px;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            max-width: 500px;
             width: 100%;
-            border-radius: 24px;
-            padding: 24px;
-            box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+            border-radius: 22px;
+            padding: 22px;
+            box-shadow: var(--shadow-lg);
             position: relative;
-            border: 1px solid var(--border);
-            max-height: 90dvh;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            max-height: 88dvh;
             overflow-y: auto;
         }
 
         .toast {
             position: fixed;
-            bottom: 24px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(12px);
+            background: rgba(29, 29, 31, 0.88);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
             color: white;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 999px;
-            font-size: 13.5px;
-            font-weight: 700;
-            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12);
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
             display: none;
             z-index: 10000;
             text-align: center;
@@ -1483,99 +1472,89 @@
             background: var(--warning-soft);
             border: 1px solid var(--warning-border);
             color: #92400e;
-            padding: 12px;
+            padding: 10px 12px;
             border-radius: 12px;
-            font-size: 12.5px;
-            line-height: 1.5;
-            margin-top: 12px;
+            font-size: 12px;
+            line-height: 1.45;
+            margin-top: 10px;
             text-align: right;
         }
 
+        /* Hide footer so 100% of viewport height goes to the workspace */
         footer {
-            text-align: center;
-            font-size: 11.5px;
-            color: var(--text-muted);
-            flex-shrink: 0;
-            padding: 2px 0;
+            display: none !important;
         }
 
         /* =====================================================================
-           📱 ULTRA-SLEEK NATIVE SMARTPHONE APP EXPERIENCE (<= 960px)
-           Natural Smooth Scroll + Sticky Glass Header + Floating iOS Dock
+           📱 NATIVE iOS 18 APP EXPERIENCE ON MOBILE (<= 960px)
+           Strict 100dvh Zero-Scroll Viewport — Feels 100% Like a Native App
            ===================================================================== */
         @media (max-width: 960px) {
+            ::-webkit-scrollbar {
+                display: none;
+                width: 0;
+                height: 0;
+            }
+
             html, body {
-                height: auto !important;
-                min-height: 100dvh;
-                max-height: none !important;
-                overflow-x: hidden !important;
-                overflow-y: auto !important;
-                -webkit-overflow-scrolling: touch;
+                position: fixed !important;
+                inset: 0 !important;
+                width: 100vw !important;
+                height: 100dvh !important;
+                max-height: 100dvh !important;
+                overflow: hidden !important;
+                overscroll-behavior: none !important;
             }
 
             .container {
-                height: auto !important;
-                max-height: none !important;
-                min-height: 100dvh;
-                padding: 10px 12px calc(98px + env(safe-area-inset-bottom, 0px));
-                gap: 12px;
-                overflow: visible !important;
+                height: 100dvh !important;
+                max-height: 100dvh !important;
+                padding: 8px 10px calc(68px + env(safe-area-inset-bottom, 0px)) !important;
+                gap: 8px !important;
+                overflow: hidden !important;
             }
 
-            /* Sticky Glass Header on Mobile */
+            /* Compact iOS Top Navigation Bar */
             header {
-                position: sticky;
-                top: 8px;
-                z-index: 300;
-                padding: 10px 14px;
-                border-radius: 16px;
-                gap: 8px;
-                background: rgba(255, 255, 255, 0.92);
-                box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.1);
+                padding: 7px 11px;
+                border-radius: 14px;
+                gap: 6px;
+                flex-shrink: 0;
             }
 
             .logo-icon {
-                width: 36px;
-                height: 36px;
-                border-radius: 11px;
+                width: 30px;
+                height: 30px;
+                border-radius: 8px;
+            }
+
+            .logo-icon svg {
+                width: 17px;
+                height: 17px;
             }
 
             .brand-text h1 {
-                font-size: 17px;
+                font-size: 15.5px;
             }
 
             .brand-subtitle,
             #headerNavTabs,
             #userRoleBadge,
-            footer {
+            .btn-download-header {
                 display: none !important;
             }
 
-            .btn-download-header {
-                padding: 7px 11px;
-                font-size: 11.5px;
-                border-radius: 10px;
-            }
-
-            .btn-download-header span {
-                display: none;
-            }
-
-            .btn-download-header::after {
-                content: 'התקנה';
-            }
-
             #statusBadge {
-                max-width: 118px;
+                max-width: 135px;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                font-size: 11px;
-                padding: 4px 9px;
+                font-size: 10.5px;
+                padding: 3px 8px;
             }
 
             #btnLogout {
-                padding: 6px 10px;
-                font-size: 11.5px;
+                padding: 4px 9px;
+                font-size: 11px;
             }
 
             /* Prevent iOS Safari auto-zoom on input focus */
@@ -1585,64 +1564,101 @@
             input[type="url"],
             select {
                 font-size: 16px !important;
-                padding: 10px 13px;
-                border-radius: 12px;
+                padding: 7px 11px;
+                border-radius: 10px;
             }
 
-            /* Mobile Auth Card */
+            /* Mobile Auth Card — Fits 100% Without Scroll */
             .auth-wrapper {
-                padding: 16px 4px;
+                padding: 4px;
+                overflow: hidden !important;
             }
 
             .auth-card {
-                padding: 24px 18px 20px;
-                border-radius: 24px;
+                padding: 18px 16px 16px;
+                border-radius: 22px;
+            }
+
+            .auth-emblem {
+                width: 46px;
+                height: 46px;
+                font-size: 22px;
+                margin-bottom: 8px;
+            }
+
+            .auth-card h2 {
+                font-size: 19px !important;
+                margin-bottom: 4px !important;
+            }
+
+            .auth-card p {
+                font-size: 12.5px !important;
+                margin-bottom: 12px !important;
             }
 
             .features-grid-mini {
                 grid-template-columns: 1fr;
-                gap: 8px;
+                gap: 6px;
+                margin-top: 12px;
             }
 
             .feature-pill-box {
                 display: flex;
                 align-items: center;
-                gap: 10px;
-                padding: 10px 12px;
+                justify-content: space-between;
+                gap: 8px;
+                padding: 7px 10px;
             }
 
             .feature-pill-box strong {
                 margin-bottom: 0;
                 white-space: nowrap;
+                font-size: 11px;
             }
 
-            /* Dashboard on Mobile: Natural Flex Flow */
+            .feature-pill-box span {
+                font-size: 10px;
+                text-align: left;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .quick-install-strip {
+                margin-top: 10px;
+                padding: 7px 10px;
+            }
+
+            /* Dashboard on Mobile: Strict Locked Flex Container */
             #dashboard {
-                overflow: visible !important;
-                gap: 12px;
+                flex: 1 !important;
+                min-height: 0 !important;
+                overflow: hidden !important;
+                gap: 8px !important;
             }
 
-            /* Sticky Horizontal Room Switcher Strip */
+            /* Compact Horizontal iOS Room Switcher Strip */
             .mobile-top-room-bar {
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
-                background: rgba(255, 255, 255, 0.94);
-                backdrop-filter: blur(16px);
-                border: 1px solid rgba(226, 232, 240, 0.95);
-                border-radius: 18px;
-                padding: 10px 12px;
-                box-shadow: var(--shadow-sm);
+                gap: 6px;
+                background: var(--card-bg);
+                backdrop-filter: var(--glass-blur);
+                -webkit-backdrop-filter: var(--glass-blur);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 6px 8px;
+                box-shadow: var(--shadow-xs);
+                flex-shrink: 0;
             }
 
             .mobile-room-pills {
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 6px;
                 overflow-x: auto;
                 scrollbar-width: none;
                 -ms-overflow-style: none;
-                padding-bottom: 2px;
             }
 
             .mobile-room-pills::-webkit-scrollbar {
@@ -1652,14 +1668,14 @@
             .mobile-room-pill {
                 display: inline-flex;
                 align-items: center;
-                gap: 7px;
-                padding: 9px 15px;
-                border-radius: 14px;
-                border: 1.5px solid var(--border);
-                background: var(--surface-muted);
+                gap: 5px;
+                padding: 6px 11px;
+                border-radius: 999px;
+                border: 1px solid var(--border);
+                background: rgba(118, 118, 128, 0.08);
                 color: var(--text-secondary);
-                font-size: 13.5px;
-                font-weight: 800;
+                font-size: 12px;
+                font-weight: 600;
                 white-space: nowrap;
                 cursor: pointer;
                 flex-shrink: 0;
@@ -1667,20 +1683,20 @@
             }
 
             .mobile-room-pill.active {
-                background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+                background: var(--primary);
                 color: #ffffff;
                 border-color: transparent;
-                box-shadow: 0 6px 16px -3px rgba(37, 99, 235, 0.38);
+                box-shadow: 0 2px 8px rgba(0, 113, 227, 0.3);
             }
 
             .mobile-add-room-pill {
-                padding: 9px 14px;
-                border-radius: 14px;
-                border: 1.5px dashed #93c5fd;
-                background: #eff6ff;
+                padding: 6px 10px;
+                border-radius: 999px;
+                border: 1px dashed var(--primary-border);
+                background: var(--primary-soft);
                 color: var(--primary);
-                font-size: 13px;
-                font-weight: 800;
+                font-size: 11.5px;
+                font-weight: 600;
                 white-space: nowrap;
                 cursor: pointer;
                 flex-shrink: 0;
@@ -1692,19 +1708,23 @@
 
             .cockpit-grid,
             .workspace-col {
+                flex: 1 !important;
+                min-height: 0 !important;
                 display: flex !important;
                 flex-direction: column;
-                gap: 12px;
-                overflow: visible !important;
+                gap: 8px !important;
+                overflow: hidden !important;
             }
 
             .panel-card {
-                overflow: visible !important;
-                border-radius: 22px;
-                padding: 16px 15px;
+                flex: 1;
+                min-height: 0;
+                overflow: hidden !important;
+                border-radius: 18px;
+                padding: 11px 12px;
             }
 
-            /* ====== MOBILE VIEW 1: POCKET REMOTE CONTROL ('control') ====== */
+            /* ====== MOBILE VIEW 1: iOS CONTROL CENTER REMOTE ('control') ====== */
             #dashboard[data-mobile-view="control"] #tabRoomsContent {
                 display: flex !important;
             }
@@ -1715,163 +1735,203 @@
                 display: none !important;
             }
             #dashboard[data-mobile-view="control"] .mobile-only-section {
+                flex: 1 !important;
+                min-height: 0 !important;
                 display: flex !important;
+                flex-direction: column;
+                gap: 8px !important;
+                overflow: hidden !important;
             }
 
+            /* Compact iOS Control Center Platter for Active Room */
             #dashboard[data-mobile-view="control"] #activeRoomCommandCard {
                 display: flex !important;
                 flex-direction: column;
                 align-items: stretch;
-                padding: 22px 18px 20px;
-                border-radius: 24px;
-                text-align: center;
-                gap: 16px;
-                box-shadow: 0 18px 38px -10px rgba(15, 23, 42, 0.32);
+                padding: 12px 13px;
+                border-radius: 18px;
+                gap: 9px;
+                flex-shrink: 0;
+            }
+
+            /* Hide giant orb on mobile so everything fits on one screen without scrolling */
+            .mobile-remote-hero:first-child {
+                display: none !important;
             }
 
             .mobile-remote-hero {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                gap: 8px;
+                gap: 4px;
                 z-index: 1;
-            }
-
-            .mobile-status-orb {
-                width: 76px;
-                height: 76px;
-                border-radius: 26px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 38px;
-                background: rgba(239, 68, 68, 0.22);
-                border: 2px solid rgba(252, 165, 165, 0.55);
-                box-shadow: 0 0 35px rgba(239, 68, 68, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.3);
-                backdrop-filter: blur(10px);
-                transition: var(--transition);
-            }
-
-            .command-center-card.room-open-mode .mobile-status-orb {
-                background: rgba(16, 185, 129, 0.24);
-                border-color: rgba(110, 231, 183, 0.6);
-                box-shadow: 0 0 35px rgba(16, 185, 129, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.3);
             }
 
             .mobile-quick-stats {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 10px;
+                gap: 7px;
                 width: 100%;
-                margin-top: 4px;
             }
 
             .mobile-stat-Tile {
-                background: rgba(255, 255, 255, 0.11);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                backdrop-filter: blur(10px);
-                border-radius: 16px;
-                padding: 11px 12px;
+                background: rgba(255, 255, 255, 0.75);
+                border: 1px solid var(--border);
+                border-radius: 11px;
+                padding: 5px 10px;
                 display: flex;
-                flex-direction: column;
+                flex-direction: row;
                 align-items: center;
-                gap: 3px;
+                justify-content: space-between;
+                gap: 4px;
                 cursor: pointer;
                 transition: var(--transition);
             }
 
             .mobile-stat-Tile:active {
                 transform: scale(0.97);
-                background: rgba(255, 255, 255, 0.2);
+                background: #ffffff;
             }
 
             .mobile-stat-Tile strong {
-                font-size: 16px;
-                font-weight: 800;
-                color: #ffffff;
+                font-size: 13px;
+                font-weight: 700;
+                color: var(--text-main);
             }
 
             .mobile-stat-Tile span {
-                font-size: 11.5px;
-                color: rgba(255, 255, 255, 0.8);
+                font-size: 10.5px;
+                color: var(--text-muted);
                 font-weight: 600;
             }
 
             #dashboard[data-mobile-view="control"] .room-hero-info {
-                align-items: center;
-                gap: 8px;
+                align-items: stretch;
+                gap: 6px;
             }
 
             #dashboard[data-mobile-view="control"] .room-hero-info > div:first-child {
-                justify-content: center;
+                justify-content: space-between;
+            }
+
+            #dashboard[data-mobile-view="control"] #activeRoomTitle {
+                font-size: 14.5px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 62%;
+            }
+
+            #dashboard[data-mobile-view="control"] .room-code-pill {
+                display: none;
             }
 
             #dashboard[data-mobile-view="control"] .master-control-buttons {
-                flex-direction: column;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
                 width: 100%;
-                gap: 10px;
+                gap: 7px;
             }
 
             #dashboard[data-mobile-view="control"] .btn-lock-action {
                 width: 100%;
-                padding: 15px 18px;
-                font-size: 15.5px;
-                border-radius: 16px;
+                padding: 10px 8px;
+                font-size: 12.5px;
+                border-radius: 12px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
-            /* Mobile Quick Sections on Main Control Tab */
+            #dashboard[data-mobile-view="control"] .btn-preview-student {
+                display: none !important;
+            }
+
+            /* Mobile Quick Sections on Main Control Tab (Zero Page Scroll) */
             .mobile-quick-card {
-                background: #ffffff;
-                border-radius: 20px;
+                background: var(--card-bg);
+                backdrop-filter: var(--glass-blur);
+                -webkit-backdrop-filter: var(--glass-blur);
+                border-radius: 16px;
                 border: 1px solid var(--border);
                 box-shadow: var(--shadow-sm);
-                padding: 14px 15px;
+                padding: 9px 11px;
                 display: flex;
                 flex-direction: column;
-                gap: 10px;
+                gap: 7px;
+                flex-shrink: 0;
+            }
+
+            .mobile-quick-card:last-child {
+                flex: 1 !important;
+                min-height: 0 !important;
+                overflow: hidden !important;
             }
 
             .mobile-quick-card-header {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                gap: 8px;
+                gap: 6px;
+                flex-shrink: 0;
             }
 
             .mobile-quick-card-title {
-                font-size: 14px;
-                font-weight: 800;
+                font-size: 12.5px;
+                font-weight: 700;
                 color: var(--text-main);
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 5px;
             }
 
+            /* 2-Column Apple HomeKit Mini Grid inside Quick Control Tab */
             .mobile-mini-pc-list {
-                display: flex;
-                flex-direction: column;
-                gap: 7px;
+                flex: 1;
+                min-height: 0;
+                overflow-y: auto;
+                overscroll-behavior: contain;
+                -webkit-overflow-scrolling: touch;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                align-content: start;
+                gap: 6px;
             }
 
             .mobile-mini-pc-row {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                gap: 8px;
-                padding: 9px 12px;
-                border-radius: 13px;
-                border: 1.5px solid var(--border);
-                background: var(--surface-muted);
+                gap: 4px;
+                padding: 7px 9px;
+                border-radius: 11px;
+                border: 1px solid var(--border);
+                background: rgba(255, 255, 255, 0.85);
+                min-width: 0;
+            }
+
+            .mobile-mini-pc-row .pc-state-pill,
+            .mobile-mini-pc-row .pc-override-tag {
+                display: none;
+            }
+
+            .mobile-mini-pc-row .computer-name {
+                font-size: 12px !important;
+            }
+
+            .mobile-mini-pc-row .btn-pc-toggle {
+                padding: 3px 7px;
+                font-size: 10.5px;
             }
 
             .mobile-mini-pc-row.is-locked {
-                border-color: #fecaca;
-                background: #fff5f5;
+                border-color: rgba(255, 59, 48, 0.22);
+                background: rgba(255, 245, 245, 0.9);
             }
 
             .mobile-mini-pc-row.is-open {
-                border-color: #a7f3d0;
-                background: #f0fdf4;
+                border-color: rgba(52, 199, 89, 0.28);
+                background: rgba(240, 253, 244, 0.9);
             }
 
             /* ====== MOBILE VIEW 2: ALLOWED SITES & PROFILES ('sites') ====== */
@@ -1885,21 +1945,25 @@
                 display: none !important;
             }
             #dashboard[data-mobile-view="sites"] .workspace-split {
+                flex: 1 !important;
+                min-height: 0 !important;
                 display: flex !important;
                 flex-direction: column;
+                overflow: hidden !important;
             }
             #dashboard[data-mobile-view="sites"] #whitelistPanelCard {
+                flex: 1 !important;
+                min-height: 0 !important;
                 display: flex !important;
+                overflow: hidden !important;
             }
 
             .sites-list {
-                max-height: none !important;
-                overflow: visible !important;
-            }
-
-            .site-pill {
-                padding: 8px 13px;
-                border-radius: 13px;
+                flex: 1 !important;
+                min-height: 0 !important;
+                overflow-y: auto !important;
+                overscroll-behavior: contain;
+                -webkit-overflow-scrolling: touch;
             }
 
             /* ====== MOBILE VIEW 3: COMPUTERS & MAINTENANCE ('computers') ====== */
@@ -1913,33 +1977,32 @@
                 display: none !important;
             }
             #dashboard[data-mobile-view="computers"] .workspace-split {
+                flex: 1 !important;
+                min-height: 0 !important;
                 display: flex !important;
                 flex-direction: column;
+                overflow: hidden !important;
             }
             #dashboard[data-mobile-view="computers"] #computersPanelCard {
+                flex: 1 !important;
+                min-height: 0 !important;
                 display: flex !important;
+                overflow: hidden !important;
             }
 
             .computers-grid {
-                grid-template-columns: 1fr !important;
-                max-height: none !important;
-                overflow: visible !important;
-                gap: 9px;
+                flex: 1 !important;
+                min-height: 0 !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                overflow-y: auto !important;
+                overscroll-behavior: contain;
+                -webkit-overflow-scrolling: touch;
+                gap: 7px;
             }
 
             .computer-card {
-                padding: 12px 14px;
-                border-radius: 16px;
-            }
-
-            .computer-name {
-                font-size: 15px;
-            }
-
-            .btn-pc-toggle {
-                padding: 7px 14px;
-                font-size: 13px;
-                border-radius: 10px;
+                padding: 8px 9px;
+                border-radius: 13px;
             }
 
             /* ====== MOBILE VIEW 4: ADMIN ('admin') ====== */
@@ -1948,67 +2011,77 @@
                 display: none !important;
             }
             #dashboard[data-mobile-view="admin"] #tabUsersContent {
+                flex: 1 !important;
+                min-height: 0 !important;
                 display: flex !important;
                 flex-direction: column;
-                gap: 12px;
+                gap: 8px;
+                overflow: hidden !important;
             }
 
             .mobile-admin-subtabs {
                 display: flex;
-                gap: 6px;
-                background: #e2e8f0;
-                padding: 5px;
-                border-radius: 14px;
+                gap: 4px;
+                background: var(--surface-segment);
+                padding: 3px;
+                border-radius: 11px;
+                flex-shrink: 0;
             }
 
             .mobile-admin-subbtn {
                 flex: 1;
-                padding: 9px 12px;
+                padding: 6px 10px;
                 border: none;
-                border-radius: 10px;
+                border-radius: 8px;
                 background: transparent;
-                font-size: 13px;
-                font-weight: 800;
-                color: #475569;
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--text-secondary);
                 cursor: pointer;
             }
 
             .mobile-admin-subbtn.active {
                 background: #ffffff;
-                color: var(--primary);
-                box-shadow: var(--shadow-xs);
+                color: var(--text-main);
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
             }
 
             #dashboard[data-mobile-admin-sub="users"] #institutionsAdminCard {
                 display: none !important;
             }
             #dashboard[data-mobile-admin-sub="users"] #usersAdminCard {
+                flex: 1 !important;
+                min-height: 0 !important;
                 display: flex !important;
+                overflow: hidden !important;
             }
             #dashboard[data-mobile-admin-sub="insts"] #usersAdminCard {
                 display: none !important;
             }
             #dashboard[data-mobile-admin-sub="insts"] #institutionsAdminCard {
+                flex: 1 !important;
+                min-height: 0 !important;
                 display: flex !important;
+                overflow: hidden !important;
             }
 
-            /* ====== FLOATING GLASSMORPHIC BOTTOM DOCK (iOS 18 Style) ====== */
+            /* ====== NATIVE iOS 18 TRANSLUCENT TAB BAR DOCK ====== */
             .mobile-bottom-nav {
                 position: fixed;
-                bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-                left: 12px;
-                right: 12px;
+                bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+                left: 10px;
+                right: 10px;
                 z-index: 500;
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
-                gap: 6px;
-                background: rgba(15, 23, 42, 0.92);
-                backdrop-filter: blur(20px);
-                -webkit-backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.14);
-                border-radius: 22px;
-                padding: 6px;
-                box-shadow: 0 16px 40px -6px rgba(15, 23, 42, 0.45);
+                gap: 4px;
+                background: rgba(255, 255, 255, 0.86);
+                backdrop-filter: saturate(180%) blur(24px);
+                -webkit-backdrop-filter: saturate(180%) blur(24px);
+                border: 1px solid rgba(0, 0, 0, 0.08);
+                border-radius: 20px;
+                padding: 4px;
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
             }
 
             .mobile-bottom-nav.has-admin {
@@ -2018,30 +2091,29 @@
             .mobile-nav-item {
                 border: none;
                 background: transparent;
-                border-radius: 16px;
-                padding: 8px 4px;
+                border-radius: 15px;
+                padding: 6px 4px;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 3px;
-                color: #94a3b8;
-                font-size: 11.5px;
-                font-weight: 700;
+                gap: 2px;
+                color: var(--text-muted);
+                font-size: 10.5px;
+                font-weight: 600;
                 cursor: pointer;
                 transition: var(--transition);
                 position: relative;
             }
 
             .mobile-nav-item .nav-icon {
-                font-size: 18px;
-                line-height: 1.1;
+                font-size: 17px;
+                line-height: 1.05;
             }
 
             .mobile-nav-item.active {
-                background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-                color: #ffffff;
-                box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+                background: rgba(0, 113, 227, 0.12);
+                color: var(--primary);
             }
 
             /* Bottom-Sheet Modals on Mobile */
@@ -2052,14 +2124,14 @@
 
             .modal-box {
                 max-width: 100%;
-                border-radius: 26px 26px 0 0;
-                padding: 22px 18px calc(22px + env(safe-area-inset-bottom, 0px));
+                border-radius: 24px 24px 0 0;
+                padding: 20px 16px calc(20px + env(safe-area-inset-bottom, 0px));
             }
 
             .toast {
-                bottom: calc(88px + env(safe-area-inset-bottom, 0px));
-                font-size: 13px;
-                padding: 11px 18px;
+                bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+                font-size: 12.5px;
+                padding: 9px 16px;
             }
         }
     </style>
@@ -2142,10 +2214,10 @@
 
                 <div class="quick-install-strip">
                     <div>
-                        <div style="font-size: 13px; font-weight: 800; color: #1e3a8a;">📥 התקנה על מחשב תלמיד</div>
-                        <div style="font-size: 11.5px; color: var(--text-secondary);">קוד חדר ברירת מחדל: <code>yeshiva-lab</code></div>
+                        <div style="font-size: 12.5px; font-weight: 700; color: var(--primary);">📥 התקנה על מחשב תלמיד</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">קוד חדר ברירת מחדל: <code>yeshiva-lab</code></div>
                     </div>
-                    <a href="dist/SchoolFilter_Setup.exe?v=3.4.4" download="SchoolFilter_Setup.exe" class="btn btn-outline btn-sm" style="border-color: #93c5fd; color: #1d4ed8; text-decoration: none; font-weight: 800;">
+                    <a href="dist/SchoolFilter_Setup.exe?v=3.4.4" download="SchoolFilter_Setup.exe" class="btn btn-outline btn-sm" style="border-color: var(--primary-border); color: var(--primary); text-decoration: none; font-weight: 600;">
                         הורד תוכנה
                     </a>
                 </div>
@@ -2158,7 +2230,7 @@
 
             <!-- 📱 סרגל החלפת חדרים אופקי מהיר (מוצג בנייד) -->
             <div class="mobile-top-room-bar">
-                <select id="mobileInstitutionSelect" onchange="onMobileInstitutionChange()" style="width: 100%; font-weight: 700; display: none;"></select>
+                <select id="mobileInstitutionSelect" onchange="onMobileInstitutionChange()" style="width: 100%; font-weight: 600; display: none;"></select>
                 <div id="mobileRoomsStrip" class="mobile-room-pills"></div>
             </div>
 
@@ -2172,7 +2244,7 @@
                         <button class="btn btn-primary btn-sm" onclick="openAddRoomModal()">➕ חדר חדש</button>
                     </div>
 
-                    <select id="institutionSelect" onchange="onInstitutionChange()" style="width: 100%; font-weight: 700; margin-bottom: 10px; display: none; flex-shrink: 0;"></select>
+                    <select id="institutionSelect" onchange="onInstitutionChange()" style="width: 100%; font-weight: 600; margin-bottom: 8px; display: none; flex-shrink: 0;"></select>
 
                     <div class="sidebar-kpi-row">
                         <div class="mini-kpi">
@@ -2181,7 +2253,7 @@
                         </div>
                         <div class="mini-kpi">
                             <span class="mini-kpi-label">🔒 נעולים</span>
-                            <span id="kpiLockedRoomsCount" class="mini-kpi-val" style="color: #dc2626;">0</span>
+                            <span id="kpiLockedRoomsCount" class="mini-kpi-val" style="color: var(--danger);">0</span>
                         </div>
                     </div>
 
@@ -2197,14 +2269,14 @@
                         <!-- אלמנט חיווי מרכזי לשלט-רחוק בנייד -->
                         <div class="mobile-remote-hero">
                             <div id="mobileStatusOrb" class="mobile-status-orb">🔒</div>
-                            <div style="font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.78);">שלט-רחוק חכם לכיתה בזמן אמת</div>
+                            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted);">שלט-רחוק חכם לכיתה בזמן אמת</div>
                         </div>
 
                         <div class="room-hero-info">
-                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                 <span id="activeRoomTitle">🖥️ ישיבת נשמת התורה - חדר מחשבים</span>
                                 <span id="filterStateBadge" class="badge badge-offline">🔒 מצב שיעור פעיל (נעול)</span>
-                                <span id="remoteCommandBadge" class="badge" style="display: none; background: #fef3c7; color: #92400e; border: 1px solid #fde68a;"></span>
+                                <span id="remoteCommandBadge" class="badge" style="display: none; background: var(--warning-soft); color: #b25000; border: 1px solid var(--warning-border);"></span>
                             </div>
                             <div class="room-code-pill">
                                 <span>קוד חדר להתקנה:</span>
@@ -2213,7 +2285,7 @@
                             </div>
 
                             <!-- אריחי סטטוס וניווט מהיר בנייד -->
-                            <div class="mobile-remote-hero" style="width: 100%; margin-top: 6px;">
+                            <div class="mobile-remote-hero" style="width: 100%; margin-top: 2px;">
                                 <div class="mobile-quick-stats">
                                     <div class="mobile-stat-Tile" onclick="switchMobileView('computers')">
                                         <strong id="mobileStatComputers">💻 0</strong>
@@ -2241,7 +2313,7 @@
                     </div>
 
                     <!-- 📱 כרטיסי גישה מהירה בנייד במסך הראשי (החלפת פרופיל כיתה + פתיחת מחשב בודד בלחיצה) -->
-                    <div class="mobile-only-section" style="flex-direction: column; gap: 12px;">
+                    <div class="mobile-only-section" style="flex-direction: column; gap: 8px;">
                         <div class="mobile-quick-card">
                             <div class="mobile-quick-card-header">
                                 <div class="mobile-quick-card-title">📁 החלפת פרופיל אתרים מהירה לכיתה</div>
@@ -2287,7 +2359,7 @@
                             <!-- סרגל תחתון קומפקטי לעדכון/הסרה מרחוק -->
                             <div class="remote-footer-bar">
                                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                                    <button class="btn btn-outline btn-sm" style="border-color: #93c5fd; color: #1d4ed8;" onclick="triggerRemoteRoomCommand('update')">
+                                    <button class="btn btn-outline btn-sm" style="border-color: var(--primary-border); color: var(--primary);" onclick="triggerRemoteRoomCommand('update')">
                                         🔄 עדכון תוכנה מרחוק
                                     </button>
                                     <button class="btn btn-danger btn-sm" onclick="triggerRemoteRoomCommand('uninstall')">
@@ -2297,7 +2369,7 @@
                                         ✕ בטל פקודה
                                     </button>
                                 </div>
-                                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">🛡️ שירות SYSTEM מאובטח</span>
+                                <span style="font-size: 10.5px; color: var(--text-muted); font-weight: 500;">🛡️ שירות SYSTEM מאובטח</span>
                             </div>
                         </div>
 
@@ -2307,7 +2379,7 @@
                                 <div class="panel-title">
                                     <span>🌐 רשימה לבנה (<span id="whitelistRoomLabel" style="color: var(--primary);">חדר מחשבים</span>)</span>
                                 </div>
-                                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                                     <button class="btn btn-outline btn-sm" onclick="openWhitelistProfilesModal()" title="ניהול ושמירת פרופילים לרשימה לבנה">
                                         📁 פרופילים
                                     </button>
@@ -2323,7 +2395,7 @@
                             <!-- סרגל פרופילים שמורים לרשימה לבנה (מעבר מהיר בין כיתות/שיעורים) -->
                             <div class="profiles-bar">
                                 <div class="profiles-bar-top">
-                                    <span style="font-size: 12px; font-weight: 800; color: #1e3a8a; white-space: nowrap;">📁 פרופיל כיתה:</span>
+                                    <span style="font-size: 11.5px; font-weight: 700; color: var(--text-main); white-space: nowrap;">📁 פרופיל כיתה:</span>
                                     <select id="whitelistProfileSelect" onchange="onWhitelistProfileSelectChange(this.value)" title="בחר פרופיל שמור להחלה מיידית על החדר"></select>
                                     <button type="button" class="btn btn-primary btn-sm" onclick="saveCurrentWhitelistAsNewProfilePrompt()" title="שמור את רשימת האתרים הנוכחית כפרופיל קבוע">
                                         ➕ שמור כפרופיל
@@ -3133,7 +3205,7 @@
                         </div>
                         <div class="room-tab-footer">
                             <span class="room-tab-code">${escapeHtml(r.roomId)}</span>
-                            <span style="color: #1d4ed8; font-weight: 800;">💻 ${roomComputersCount}</span>
+                            <span style="color: var(--primary); font-weight: 600;">💻 ${roomComputersCount}</span>
                             <span>🌐 ${CountBaseDomains(r.whitelist)} אתרים</span>
                         </div>
                     </div>
@@ -3267,8 +3339,8 @@
             if (roomComputers.length === 0) {
                 if (summaryBar) summaryBar.style.display = 'none';
                 const emptyHtml = `
-                    <div style="grid-column: 1/-1; background: var(--surface-muted); border: 1.5px dashed var(--border-strong); border-radius: 14px; padding: 20px 14px; font-size: 13px; color: var(--text-muted); text-align: center;">
-                        <div style="font-size: 24px; margin-bottom: 6px;">🖥️</div>
+                    <div style="grid-column: 1/-1; background: var(--surface-muted); border: 1px dashed var(--border-strong); border-radius: 13px; padding: 16px 12px; font-size: 12px; color: var(--text-muted); text-align: center;">
+                        <div style="font-size: 20px; margin-bottom: 4px;">🖥️</div>
                         <strong style="color: var(--text-secondary);">אין מחשבים רשומים בחדר זה (<code>${escapeHtml(room.roomId)}</code>)</strong><br>
                         עם התקנת התוכנה במחשב תלמיד עם קוד החדר <code>${escapeHtml(room.roomId)}</code>, שמו יופיע כאן אוטומטית.
                     </div>
@@ -3337,7 +3409,7 @@
             });
 
             const cardsHtml = filteredItems.length === 0
-                ? `<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--text-muted);font-size:13px;background:var(--surface-muted);border-radius:12px;border:1px dashed var(--border-strong);">אין מחשבים התואמים לסינון שנבחר. <button type="button" class="btn btn-outline btn-sm" style="margin-right:8px;" onclick="setComputerFilterMode('all')">הצג הכל</button></div>`
+                ? `<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--text-muted);font-size:12px;background:var(--surface-muted);border-radius:12px;border:1px dashed var(--border-strong);">אין מחשבים התואמים לסינון שנבחר. <button type="button" class="btn btn-outline btn-sm" style="margin-right:8px;" onclick="setComputerFilterMode('all')">הצג הכל</button></div>`
                 : filteredItems.map(item => {
                     const { c, isOnlineNow, isLocked, overrideMode, expectedLocked, isUnsynced, verRaw, isLatestVer } = item;
 
@@ -3362,8 +3434,8 @@
                             : `<span class="pc-state-pill open">🔓 פתוח</span>`);
 
                     const toggleBtnHtml = expectedLocked
-                        ? `<button type="button" class="btn-pc-toggle to-open" onclick="toggleSingleComputerMode('${escapeJsStr(c.computerName)}', false)" title="פתח אינטרנט חופשי רק למחשב ${escapeHtml(c.computerName)}">🔓 פתח מחשב</button>`
-                        : `<button type="button" class="btn-pc-toggle to-lock" onclick="toggleSingleComputerMode('${escapeJsStr(c.computerName)}', true)" title="נעל למצגת/שיעור רק את מחשב ${escapeHtml(c.computerName)}">🔒 נעל מחשב</button>`;
+                        ? `<button type="button" class="btn-pc-toggle to-open" onclick="toggleSingleComputerMode('${escapeJsStr(c.computerName)}', false)" title="פתח אינטרנט חופשי רק למחשב ${escapeHtml(c.computerName)}">🔓 פתח</button>`
+                        : `<button type="button" class="btn-pc-toggle to-lock" onclick="toggleSingleComputerMode('${escapeJsStr(c.computerName)}', true)" title="נעל למצגת/שיעור רק את מחשב ${escapeHtml(c.computerName)}">🔒 נעל</button>`;
 
                     const overrideTagHtml = overrideMode === 'open'
                         ? `<span class="pc-override-tag" title="מחשב זה הוגדר ידנית כפתוח (שונה משאר החדר)">🎯 פתוח אישית</span>`
@@ -3386,7 +3458,7 @@
                                     <span class="pc-led ${ledClass}"></span>
                                     <span class="computer-name">${escapeHtml(c.computerName)}</span>
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+                                <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
                                     ${statePillHtml}
                                     <button class="btn-remove-pc" onclick="removeComputerFromRoom('${escapeJsStr(c.docId)}', '${escapeJsStr(c.computerName)}')" title="הסר מחשב מהרשימה">✕</button>
                                 </div>
@@ -3396,7 +3468,7 @@
                                     ${verBadgeHtml}
                                     ${overrideTagHtml}
                                     ${unsyncBadgeHtml}
-                                    ${c.userName ? `<span style="direction:ltr;display:inline-block;color:#475569;font-weight:700;">👤 ${escapeHtml(c.userName)}</span>` : ''}
+                                    ${c.userName ? `<span style="direction:ltr;display:inline-block;color:var(--text-secondary);font-weight:600;">👤 ${escapeHtml(c.userName)}</span>` : ''}
                                 </div>
                                 ${toggleBtnHtml}
                             </div>
@@ -3430,9 +3502,9 @@
 
                     return `
                         <div class="mobile-mini-pc-row ${rowClass}">
-                            <div style="display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap;">
+                            <div style="display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;">
                                 <span class="pc-led ${ledClass}"></span>
-                                <span class="computer-name" style="font-size:14px;">${escapeHtml(c.computerName)}</span>
+                                <span class="computer-name">${escapeHtml(c.computerName)}</span>
                                 ${statePill}
                                 ${overBadge}
                             </div>
@@ -3445,19 +3517,19 @@
             if (summaryBar) {
                 summaryBar.style.display = 'flex';
                 const syncPill = unsyncedCount > 0
-                    ? `<span style="background:#fef3c7;color:#b45309;border:1px solid #f59e0b;padding:3px 8px;border-radius:7px;">⏳ ${unsyncedCount} מסתנכרנים...</span>`
-                    : `<span style="background:#dcfce7;color:#166534;border:1px solid #86efac;padding:3px 8px;border-radius:7px;">✅ מחוברים: ${onlineCount}</span>`;
+                    ? `<span style="background:var(--warning-soft);color:#b25000;padding:2px 8px;border-radius:999px;">⏳ ${unsyncedCount} מסתנכרנים...</span>`
+                    : `<span style="background:var(--success-soft);color:var(--success-dark);padding:2px 8px;border-radius:999px;">✅ מחוברים: ${onlineCount}</span>`;
 
                 const overrideSummaryPill = overriddenCount > 0
-                    ? `<button type="button" onclick="clearAllComputerOverrides()" style="background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd;padding:3px 9px;border-radius:7px;font-family:inherit;font-size:11.5px;font-weight:800;cursor:pointer;" title="לחץ לאיפוס כל ההחרגות האישיות והחזרת כל המחשבים למצב הכללי של החדר">🎯 ${overriddenCount} במצב אישי (איפוס ↺)</button>`
+                    ? `<button type="button" onclick="clearAllComputerOverrides()" style="background:var(--indigo-soft);color:var(--indigo);border:1px solid rgba(88,86,214,0.25);padding:2px 9px;border-radius:999px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;" title="לחץ לאיפוס כל ההחרגות האישיות והחזרת כל המחשבים למצב הכללי של החדר">🎯 ${overriddenCount} אישי (איפוס ↺)</button>`
                     : '';
 
                 summaryBar.innerHTML = `
-                    <span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:7px;">🔒 נעולים: ${lockedCount}</span>
-                    <span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:7px;">🔓 פתוחים: ${openCount}</span>
+                    <span style="background:var(--danger-soft);color:var(--danger-dark);padding:2px 8px;border-radius:999px;">🔒 נעולים: ${lockedCount}</span>
+                    <span style="background:var(--success-soft);color:var(--success-dark);padding:2px 8px;border-radius:999px;">🔓 פתוחים: ${openCount}</span>
                     ${overrideSummaryPill}
                     ${syncPill}
-                    <span style="background:#dbeafe;color:#1e40af;padding:3px 8px;border-radius:7px;margin-right:auto;">📦 v3.4: ${updatedVerCount}/${roomComputers.length}</span>
+                    <span style="background:var(--primary-soft);color:var(--primary);padding:2px 8px;border-radius:999px;margin-right:auto;">📦 v3.4: ${updatedVerCount}/${roomComputers.length}</span>
                 `;
             }
 
@@ -4285,8 +4357,8 @@
             const rawList = room && room.whitelist ? room.whitelist : coreSites;
             const cleanDomains = [];
             rawList.forEach(item => {
-                let d = cleanDomain((item || '').replace(/^\*\./, ''));
-                if (d && d !== 'accounts.google.com' && !cleanDomains.includes(d)) {
+                const helperDoms = ['accounts.google.com', 'apis.google.com', 'ssl.gstatic.com', 'www.gstatic.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'supabase.co', 'supabase.in', 'r2.dev', 'connector-gateway.lovable.dev', 'api.elevenlabs.io'];
+                if (d && !helperDoms.includes(d) && !cleanDomains.includes(d)) {
                     cleanDomains.push(d);
                 }
             });

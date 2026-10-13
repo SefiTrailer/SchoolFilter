@@ -25,6 +25,13 @@ function FindProxyForURL(url, host) {
     var whitelist = [
         "one-class.co.il",
         "*.one-class.co.il",
+        "*.supabase.co",
+        "supabase.co",
+        "*.supabase.in",
+        "supabase.in",
+        "*.r2.dev",
+        "connector-gateway.lovable.dev",
+        "api.elevenlabs.io",
         "gemini.google.com",
         "*.gemini.google.com",
         "copilot.microsoft.com",
@@ -36,7 +43,12 @@ function FindProxyForURL(url, host) {
         "classroom.google.com",
         "docs.google.com",
         "drive.google.com",
-        "accounts.google.com"
+        "accounts.google.com",
+        "apis.google.com",
+        "fonts.googleapis.com",
+        "fonts.gstatic.com",
+        "ssl.gstatic.com",
+        "www.gstatic.com"
     ];
 
     for (var i = 0; i < whitelist.length; i++) {
