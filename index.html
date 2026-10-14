@@ -1091,6 +1091,19 @@
             font-weight: 600;
         }
 
+        .pc-last-seen {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            padding: 1px 5px;
+            border-radius: 5px;
+            font-size: 9.5px;
+            font-weight: 500;
+            background: rgba(148, 163, 184, 0.12);
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
         .computer-meta {
             font-size: 10px;
             color: var(--text-muted);
@@ -2345,6 +2358,7 @@
                                     <div class="pc-filter-pills">
                                         <button type="button" id="pcFilterAll" class="pc-filter-btn active" onclick="setComputerFilterMode('all')">הכל</button>
                                         <button type="button" id="pcFilterOnline" class="pc-filter-btn" onclick="setComputerFilterMode('online')">🟢 דלוקים</button>
+                                        <button type="button" id="pcFilterOffline" class="pc-filter-btn" onclick="setComputerFilterMode('offline')">⚪ כבויים</button>
                                         <button type="button" id="pcFilterCustom" class="pc-filter-btn" onclick="setComputerFilterMode('custom')">🎯 אישי</button>
                                     </div>
                                     <button class="btn btn-outline btn-sm" onclick="refreshRoomComputers()" title="רענן רשימת מחשבים">
@@ -2898,6 +2912,42 @@
             return raw || id;
         }
 
+        function formatLastSeenTime(c) {
+            if (!c) return { rel: 'לא ידוע', exact: 'לא ידוע' };
+            const rawMs = (typeof c.lastSeenMs === 'number' && c.lastSeenMs > 0)
+                ? c.lastSeenMs
+                : (c.lastSeen ? Date.parse(c.lastSeen) : 0);
+            if (!rawMs || isNaN(rawMs)) return { rel: 'מעולם לא נצפה', exact: 'אין נתוני דיווח קודמים' };
+
+            const diffMs = Math.max(0, Date.now() - rawMs);
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHours = Math.floor(diffMin / 60);
+            const diffDays = Math.floor(diffHours / 24);
+
+            const d = new Date(rawMs);
+            const timeStr = d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' });
+            const exact = `${dateStr} בשעה ${timeStr}`;
+
+            let rel = '';
+            if (diffSec < 90) {
+                rel = 'לפני רגע';
+            } else if (diffMin < 60) {
+                rel = `לפני ${diffMin} דק'`;
+            } else if (diffHours < 24) {
+                rel = `לפני ${diffHours} שע'`;
+            } else if (diffDays === 1) {
+                rel = `אתמול ב-${timeStr}`;
+            } else if (diffDays < 7) {
+                rel = `לפני ${diffDays} ימים`;
+            } else {
+                rel = dateStr;
+            }
+
+            return { rel, exact };
+        }
+
         function getRoomSortPriority(room) {
             const id = (room && room.roomId ? room.roomId : '').toLowerCase();
             const name = (room && room.name ? room.name : '');
@@ -3241,8 +3291,14 @@
 
         function setComputerFilterMode(mode) {
             currentComputerFilterMode = mode || 'all';
-            ['all', 'online', 'custom'].forEach(m => {
-                const btn = document.getElementById(m === 'all' ? 'pcFilterAll' : (m === 'online' ? 'pcFilterOnline' : 'pcFilterCustom'));
+            const filterMap = {
+                all: 'pcFilterAll',
+                online: 'pcFilterOnline',
+                offline: 'pcFilterOffline',
+                custom: 'pcFilterCustom'
+            };
+            Object.entries(filterMap).forEach(([m, id]) => {
+                const btn = document.getElementById(id);
                 if (btn) btn.classList.toggle('active', m === currentComputerFilterMode);
             });
             const room = getCurrentRoom();
@@ -3404,6 +3460,7 @@
             // Filter for main computers grid
             const filteredItems = enriched.filter(item => {
                 if (currentComputerFilterMode === 'online') return item.isOnlineNow;
+                if (currentComputerFilterMode === 'offline') return !item.isOnlineNow;
                 if (currentComputerFilterMode === 'custom') return item.overrideMode === 'open' || item.overrideMode === 'locked';
                 return true;
             });
@@ -3412,6 +3469,7 @@
                 ? `<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--text-muted);font-size:12px;background:var(--surface-muted);border-radius:12px;border:1px dashed var(--border-strong);">אין מחשבים התואמים לסינון שנבחר. <button type="button" class="btn btn-outline btn-sm" style="margin-right:8px;" onclick="setComputerFilterMode('all')">הצג הכל</button></div>`
                 : filteredItems.map(item => {
                     const { c, isOnlineNow, isLocked, overrideMode, expectedLocked, isUnsynced, verRaw, isLatestVer } = item;
+                    const lastSeenInfo = formatLastSeenTime(c);
 
                     let cardStateClass = 'is-offline';
                     if (isOnlineNow) {
@@ -3428,7 +3486,7 @@
                         : (isUnsynced ? 'online-sync' : (isLocked ? 'online-locked' : 'online-open'));
 
                     const statePillHtml = !isOnlineNow
-                        ? `<span class="pc-state-pill offline">⚪ כבוי</span>`
+                        ? `<span class="pc-state-pill offline" title="נראה לאחרונה: ${escapeHtml(lastSeenInfo.exact)}">⚪ כבוי</span>`
                         : (isLocked
                             ? `<span class="pc-state-pill locked">🔒 נעול</span>`
                             : `<span class="pc-state-pill open">🔓 פתוח</span>`);
@@ -3468,6 +3526,7 @@
                                     ${verBadgeHtml}
                                     ${overrideTagHtml}
                                     ${unsyncBadgeHtml}
+                                    ${!isOnlineNow ? `<span class="pc-last-seen" title="נראה לאחרונה: ${escapeHtml(lastSeenInfo.exact)}">🕒 ${escapeHtml(lastSeenInfo.rel)}</span>` : ''}
                                     ${c.userName ? `<span style="direction:ltr;display:inline-block;color:var(--text-secondary);font-weight:600;">👤 ${escapeHtml(c.userName)}</span>` : ''}
                                 </div>
                                 ${toggleBtnHtml}
@@ -3488,10 +3547,11 @@
 
                 mobileQuickList.innerHTML = sortedForQuick.map(item => {
                     const { c, isOnlineNow, isLocked, overrideMode, expectedLocked } = item;
+                    const lastSeenInfo = formatLastSeenTime(c);
                     const ledClass = !isOnlineNow ? 'offline' : (isLocked ? 'online-locked' : 'online-open');
                     const rowClass = !isOnlineNow ? '' : (isLocked ? 'is-locked' : 'is-open');
                     const statePill = !isOnlineNow
-                        ? `<span class="pc-state-pill offline">⚪ כבוי</span>`
+                        ? `<span class="pc-state-pill offline" title="נראה לאחרונה: ${escapeHtml(lastSeenInfo.exact)}">⚪ כבוי</span>`
                         : (isLocked ? `<span class="pc-state-pill locked">🔒 נעול</span>` : `<span class="pc-state-pill open">🔓 פתוח</span>`);
                     const overBadge = overrideMode === 'open'
                         ? `<span class="pc-override-tag">🎯 פתוח אישית</span>`
@@ -3516,6 +3576,7 @@
 
             if (summaryBar) {
                 summaryBar.style.display = 'flex';
+                const offlineCount = Math.max(0, roomComputers.length - onlineCount);
                 const syncPill = unsyncedCount > 0
                     ? `<span style="background:var(--warning-soft);color:#b25000;padding:2px 8px;border-radius:999px;">⏳ ${unsyncedCount} מסתנכרנים...</span>`
                     : `<span style="background:var(--success-soft);color:var(--success-dark);padding:2px 8px;border-radius:999px;">✅ מחוברים: ${onlineCount}</span>`;
@@ -3527,6 +3588,7 @@
                 summaryBar.innerHTML = `
                     <span style="background:var(--danger-soft);color:var(--danger-dark);padding:2px 8px;border-radius:999px;">🔒 נעולים: ${lockedCount}</span>
                     <span style="background:var(--success-soft);color:var(--success-dark);padding:2px 8px;border-radius:999px;">🔓 פתוחים: ${openCount}</span>
+                    ${offlineCount > 0 ? `<span style="background:var(--surface-muted);color:var(--text-muted);padding:2px 8px;border-radius:999px;">⚪ כבויים: ${offlineCount}</span>` : ''}
                     ${overrideSummaryPill}
                     ${syncPill}
                     <span style="background:var(--primary-soft);color:var(--primary);padding:2px 8px;border-radius:999px;margin-right:auto;">📦 v3.4: ${updatedVerCount}/${roomComputers.length}</span>
