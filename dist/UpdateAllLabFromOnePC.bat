@@ -49,13 +49,13 @@ if %ERRORLEVEL% NEQ 0 (
 echo [Online]  Pushing update to %PC%...
 if exist "\\%PC%\C$\ProgramData\SchoolFilter" (
     copy /Y "%LOCAL_SETUP%" "\\%PC%\C$\ProgramData\SchoolFilter\remote_update_setup.exe" >nul 2>&1
-    schtasks /Run /S %PC% /TN "SchoolFilterRemoteUpdate" >nul 2>&1
+    wmic /node:"%PC%" process call create "cmd.exe /c start \"\" \"C:\ProgramData\SchoolFilter\remote_update_setup.exe\" /STUDENT /VERYSILENT /SUPPRESSMSGBOXES" >nul 2>&1
     if %ERRORLEVEL% EQU 0 (
-        echo   -^> [SUCCESS] Updated %PC% via SMB + Scheduled Task!
+        echo   -^> [SUCCESS] Updated %PC% via SMB + WMI execution!
         goto :eof
     )
 )
-wmic /node:"%PC%" process call create "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command \"[Net.ServicePointManager]::SecurityProtocol=3072; $wc=New-Object System.Net.WebClient; $wc.Proxy=$null; $wc.DownloadFile('https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe','C:\ProgramData\SchoolFilter\remote_update_setup.exe'); schtasks /Run /TN SchoolFilterRemoteUpdate\"" >nul 2>&1
+wmic /node:"%PC%" process call create "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command \"[Net.ServicePointManager]::SecurityProtocol=3072; $wc=New-Object System.Net.WebClient; $wc.Proxy=$null; $wc.DownloadFile('https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe','C:\ProgramData\SchoolFilter\remote_update_setup.exe'); Start-Process 'C:\ProgramData\SchoolFilter\remote_update_setup.exe' -ArgumentList '/STUDENT /VERYSILENT /SUPPRESSMSGBOXES' -Wait\"" >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo   -^> [SUCCESS] Triggered WMI silent download ^& update on %PC%!
 ) else (
