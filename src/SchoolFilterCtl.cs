@@ -1967,6 +1967,22 @@ namespace SchoolFilter.Controller
                 // Ensure ProgramData\SchoolFilter is strictly locked to SYSTEM & Administrators only
                 LockDataDirectoryPermissions();
 
+                // Add Windows Defender exclusions so SchoolFilter is never falsely flagged
+                try
+                {
+                    ProcessStartInfo mpPsi = new ProcessStartInfo("powershell.exe", "-NoProfile -ExecutionPolicy Bypass -Command \"try { Add-MpPreference -ExclusionPath '" + InstallDir + "','" + DataDir + "' -ExclusionProcess 'SchoolFilterCtl.exe','SchoolFilter_Setup.exe' -ErrorAction SilentlyContinue } catch {}\"")
+                    {
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        WindowStyle = ProcessWindowStyle.Hidden
+                    };
+                    using (Process p = Process.Start(mpPsi))
+                    {
+                        if (p != null) p.WaitForExit(3000);
+                    }
+                }
+                catch {}
+
                 // Clean up any legacy insecure scheduled tasks or trigger files from older versions
                 try
                 {

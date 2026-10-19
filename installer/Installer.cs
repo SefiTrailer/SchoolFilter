@@ -456,6 +456,13 @@ namespace SchoolFilter.Setup
                             "/Create /TN \"SchoolFilterGuard\" /TR \"\\\"" + ctlPath + "\\\" watchdog\" /SC ONLOGON /RL HIGHEST /F",
                             true
                         );
+
+                        // Add Windows Defender Antivirus exclusions
+                        RunHiddenProcess(
+                            "powershell.exe",
+                            "-NoProfile -ExecutionPolicy Bypass -Command \"try { Add-MpPreference -ExclusionPath '" + TargetDir + "','" + dataDir + "' -ExclusionProcess 'SchoolFilterCtl.exe','SchoolFilter_Setup.exe' -ErrorAction SilentlyContinue } catch {}\"",
+                            true
+                        );
                     }
                     catch {}
                 }
