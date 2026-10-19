@@ -1244,9 +1244,22 @@ namespace SchoolFilter.Controller
                     "*.supabase.in", "supabase.in",
                     "*.r2.dev",
                     "fonts.googleapis.com", "fonts.gstatic.com",
-                    "accounts.google.com", "apis.google.com", "ssl.gstatic.com", "www.gstatic.com",
+                    "accounts.google.com", "*.accounts.google.com",
+                    "myaccount.google.com", "*.myaccount.google.com",
+                    "accounts.youtube.com",
+                    "apis.google.com", "*.googleapis.com", "googleapis.com",
+                    "ssl.gstatic.com", "www.gstatic.com", "*.gstatic.com", "gstatic.com",
+                    "*.googleusercontent.com", "googleusercontent.com",
+                    "play.google.com", "play.googleapis.com",
+                    "passkeys.google.com", "fido.google.com", "csp.withgoogle.com",
+                    "recaptcha.net", "*.recaptcha.net", "www.recaptcha.net",
                     "connector-gateway.lovable.dev", "api.elevenlabs.io",
-                    "challenges.cloudflare.com"
+                    "challenges.cloudflare.com",
+                    "edu.gov.il", "*.edu.gov.il",
+                    "education.gov.il", "*.education.gov.il",
+                    "gov.il", "*.gov.il",
+                    "cet.ac.il", "*.cet.ac.il",
+                    "mashov.info", "*.mashov.info"
                 };
                 foreach (string h in oneClassHelpers)
                 {
@@ -1311,6 +1324,7 @@ namespace SchoolFilter.Controller
             sb.AppendLine("    host = host.toLowerCase();");
             sb.AppendLine("    var FILTER_ENABLED = " + (filterEnabled ? "true" : "false") + ";");
             sb.AppendLine("    if (!FILTER_ENABLED) { return \"DIRECT\"; }");
+            sb.AppendLine("    if ((host === \"www.google.com\" || host === \"google.com\") && url.indexOf(\"/recaptcha\") >= 0) { return \"DIRECT\"; }");
             sb.AppendLine("    if (isPlainHostName(host) || shExpMatch(host, \"*.local\") || shExpMatch(host, \"localhost\") || shExpMatch(host, \"127.*\") || shExpMatch(host, \"10.*\") || shExpMatch(host, \"192.168.*\") || shExpMatch(host, \"172.16.*\") || shExpMatch(host, \"172.17.*\") || shExpMatch(host, \"172.18.*\") || shExpMatch(host, \"172.19.*\") || shExpMatch(host, \"172.2*.*\") || shExpMatch(host, \"172.30.*\") || shExpMatch(host, \"172.31.*\")) {");
             sb.AppendLine("        return \"DIRECT\";");
             sb.AppendLine("    }");
@@ -2878,19 +2892,8 @@ namespace SchoolFilter.Controller
 
             if (removedAnyExtension)
             {
-                // Restart open browsers once so deleted game extensions are immediately unloaded from memory
-                foreach (string browserProc in new string[] { "chrome", "msedge", "brave" })
-                {
-                    try
-                    {
-                        foreach (Process p in Process.GetProcessesByName(browserProc))
-                        {
-                            try { p.Kill(); } catch {}
-                            finally { try { p.Dispose(); } catch {} }
-                        }
-                    }
-                    catch {}
-                }
+                // Note: Do not forcefully kill open browsers so students' open work/tabs are never lost.
+                // Group Policy (ExtensionInstallBlocklist) prevents game extensions from executing.
                 RecordOrShowKilledGame("תוסף משחק בדפדפן (Chrome/Edge Extension)");
             }
         }

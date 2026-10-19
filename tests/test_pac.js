@@ -67,8 +67,12 @@ const testCases = [
     // Ministry of Education & Government SSO
     { url: 'https://edu.gov.il', host: 'edu.gov.il', expected: 'DIRECT', desc: 'Ministry of Education' },
     { url: 'https://students.edu.gov.il', host: 'students.edu.gov.il', expected: 'DIRECT', desc: 'Student Portal (Subdomain)' },
+    { url: 'https://my.edu.gov.il/idp/profile/SAML2/Redirect/SSO', host: 'my.edu.gov.il', expected: 'DIRECT', desc: 'EduLogin Identity Provider' },
     { url: 'https://education.gov.il', host: 'education.gov.il', expected: 'DIRECT', desc: 'Education Gov' },
-    { url: 'https://login.gov.il', host: 'login.gov.il', expected: 'DIRECT', desc: 'National Government SSO Login' },
+    { url: 'https://login.gov.il/nidp/saml2/sso', host: 'login.gov.il', expected: 'DIRECT', desc: 'National Government SSO Login' },
+    { url: 'https://sso.cet.ac.il/as/authorization.oauth2', host: 'sso.cet.ac.il', expected: 'DIRECT', desc: 'CET SSO OAuth2' },
+    { url: 'https://web.mashov.info/students/login', host: 'web.mashov.info', expected: 'DIRECT', desc: 'Mashov Students Login' },
+    { url: 'https://www.google.com/recaptcha/api.js', host: 'www.google.com', expected: 'DIRECT', desc: 'Google reCAPTCHA Script on Google.com' },
 
     // Veyon & Local LAN (Must NEVER be blocked)
     { url: 'http://localhost:11100', host: 'localhost', expected: 'DIRECT', desc: 'Localhost / Veyon' },

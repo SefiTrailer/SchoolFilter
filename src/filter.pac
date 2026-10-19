@@ -22,6 +22,11 @@ function FindProxyForURL(url, host) {
         return "DIRECT";
     }
 
+    // Allow reCAPTCHA script even on google.com without allowing Google search
+    if ((host === "www.google.com" || host === "google.com") && url.indexOf("/recaptcha") >= 0) {
+        return "DIRECT";
+    }
+
     var whitelist = [
         "one-class.co.il",
         "*.one-class.co.il",
@@ -99,7 +104,9 @@ function FindProxyForURL(url, host) {
         "gov.il",
         "*.gov.il",
         "cet.ac.il",
-        "*.cet.ac.il"
+        "*.cet.ac.il",
+        "mashov.info",
+        "*.mashov.info"
     ];
 
     for (var i = 0; i < whitelist.length; i++) {
