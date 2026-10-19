@@ -2177,7 +2177,7 @@
             </div>
 
             <div class="header-toolbar">
-                <a href="dist/SchoolFilter_Setup.exe?v=3.4.4" download="SchoolFilter_Setup.exe" class="btn-download-header">
+                <a href="dist/SchoolFilter_Setup.exe?v=3.5.0" download="SchoolFilter_Setup.exe" class="btn-download-header">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     <span>הורד תוכנת התקנה</span>
                 </a>
@@ -2230,7 +2230,7 @@
                         <div style="font-size: 12.5px; font-weight: 700; color: var(--primary);">📥 התקנה על מחשב תלמיד</div>
                         <div style="font-size: 11px; color: var(--text-secondary);">קוד חדר ברירת מחדל: <code>yeshiva-lab</code></div>
                     </div>
-                    <a href="dist/SchoolFilter_Setup.exe?v=3.4.4" download="SchoolFilter_Setup.exe" class="btn btn-outline btn-sm" style="border-color: var(--primary-border); color: var(--primary); text-decoration: none; font-weight: 600;">
+                    <a href="dist/SchoolFilter_Setup.exe?v=3.5.0" download="SchoolFilter_Setup.exe" class="btn btn-outline btn-sm" style="border-color: var(--primary-border); color: var(--primary); text-decoration: none; font-weight: 600;">
                         הורד תוכנה
                     </a>
                 </div>
@@ -3434,8 +3434,8 @@
                     : (overrideMode === 'locked' ? true : Boolean(room.filterEnabled));
 
                 const isUnsynced = isOnlineNow && (isLocked !== expectedLocked);
-                const verRaw = (c.version || '3.4').trim();
-                const isLatestVer = verRaw === '3.4' || verRaw.startsWith('3.4');
+                const verRaw = (c.version || '').trim();
+                const isLatestVer = verRaw === '3.5' || verRaw.startsWith('3.5');
 
                 if (isLatestVer) updatedVerCount++;
                 if (isOnlineNow) {
@@ -3502,8 +3502,8 @@
                             : '');
 
                     const verBadgeHtml = isLatestVer
-                        ? `<span class="pc-ver-badge ver-ok" title="מותקנת גרסה 3.4 המוקשחת">v${escapeHtml(verRaw)} ✓</span>`
-                        : `<span class="pc-ver-badge ver-old" title="מותקנת גרסה ישנה (לפני 3.4) — מומלץ לעדכן">${verRaw ? 'v' + escapeHtml(verRaw) : 'v3.1'}</span>`;
+                        ? `<span class="pc-ver-badge ver-ok" title="מותקנת גרסה 3.5 המעודכנת">v${escapeHtml(verRaw)} ✓</span>`
+                        : `<span class="pc-ver-badge ver-old" title="מותקנת גרסה ישנה (${verRaw ? 'v' + escapeHtml(verRaw) : 'v3.4 ומטה'}) — מומלץ לעדכן">${verRaw ? 'v' + escapeHtml(verRaw) : 'v3.4'}</span>`;
 
                     const unsyncBadgeHtml = isUnsynced
                         ? `<span class="pc-unsync-tag" title="המחשב מתעדכן מול השרת כעת">⏳ מסתנכרן</span>`
@@ -3591,7 +3591,7 @@
                     ${offlineCount > 0 ? `<span style="background:var(--surface-muted);color:var(--text-muted);padding:2px 8px;border-radius:999px;">⚪ כבויים: ${offlineCount}</span>` : ''}
                     ${overrideSummaryPill}
                     ${syncPill}
-                    <span style="background:var(--primary-soft);color:var(--primary);padding:2px 8px;border-radius:999px;margin-right:auto;">📦 v3.4: ${updatedVerCount}/${roomComputers.length}</span>
+                    <span style="background:var(--primary-soft);color:var(--primary);padding:2px 8px;border-radius:999px;margin-right:auto;">📦 v3.5: ${updatedVerCount}/${roomComputers.length}</span>
                 `;
             }
 

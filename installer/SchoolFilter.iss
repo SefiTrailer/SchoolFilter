@@ -7,7 +7,7 @@
 ; =====================================================================
 
 #define MyAppName "SchoolFilter"
-#define MyAppVersion "2.0.0"
+#define MyAppVersion "3.5.0"
 #define MyAppPublisher "School IT Administration"
 #define MyAppExeName "SchoolFilterCtl.exe"
 

@@ -1,5 +1,5 @@
 @echo off
-title SchoolFilter - Silent Auto-Update to v3.4
+title SchoolFilter - Silent Auto-Update to v3.5
 set "DATA_DIR=%ProgramData%\SchoolFilter"
 set "PAYLOAD=%DATA_DIR%\remote_update_setup.exe"
 set "TEMP_PAYLOAD=%TEMP%\SchoolFilter_Setup.exe"
@@ -17,8 +17,9 @@ if exist "%~dp0SchoolFilter_Setup.exe" (
 :: 2. If legacy SchoolFilterRemoteUpdate task exists (v3.2/v3.3), trigger it as SYSTEM (zero UAC prompt)
 if exist "%PAYLOAD%" (
     schtasks /Run /TN "SchoolFilterRemoteUpdate" >nul 2>&1
+    schtasks /Run /TN "SchoolFilterSystemAgent" >nul 2>&1
     if %ERRORLEVEL% EQU 0 (
-        echo [OK] Update to v3.4 triggered silently via SYSTEM task on %COMPUTERNAME%.
+        echo [OK] Update to v3.5 triggered silently via SYSTEM task on %COMPUTERNAME%.
         timeout /t 2 >nul
         exit /b 0
     )
@@ -27,5 +28,5 @@ if exist "%PAYLOAD%" (
 :: 3. Direct silent execution (when run as Admin / Veyon, or elevates via UAC on v3.1)
 if exist "%TEMP_PAYLOAD%" (
     start "" /wait "%TEMP_PAYLOAD%" /STUDENT /VERYSILENT /SUPPRESSMSGBOXES
-    echo [OK] Update to v3.4 completed on %COMPUTERNAME%.
+    echo [OK] Update to v3.5 completed on %COMPUTERNAME%.
 )

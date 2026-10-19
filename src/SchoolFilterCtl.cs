@@ -26,8 +26,8 @@ namespace SchoolFilter.Controller
         private const string DefaultRoomId = "yeshiva-lab";
         private const int SinkholePort = 9999;
         private static volatile int ActiveSinkholePort = 9999;
-        private const string SystemAgentMutexName = "Global\\SchoolFilterSystemAgentMutex_v344";
-        private const string SinkholeMutexName = "Local\\SchoolFilterSinkholeMutex_v344";
+        private const string SystemAgentMutexName = "Global\\SchoolFilterSystemAgentMutex_v350";
+        private const string SinkholeMutexName = "Local\\SchoolFilterSinkholeMutex_v350";
 
         private static readonly string InstallDir = ResolveInstallDir();
 
@@ -621,7 +621,7 @@ namespace SchoolFilter.Controller
 
         private static bool IsSinkholeRunning()
         {
-            foreach (string mutexName in new string[] { "Global\\SchoolFilterSinkholeMutex_v344", SinkholeMutexName })
+            foreach (string mutexName in new string[] { "Global\\SchoolFilterSinkholeMutex_v350", SinkholeMutexName })
             {
                 try
                 {
@@ -931,7 +931,7 @@ namespace SchoolFilter.Controller
                     "\"roomId\":\"" + EscapeJsonStr(roomId) + "\"," +
                     "\"roomName\":\"" + EscapeJsonStr(roomName) + "\"," +
                     "\"institutionName\":\"" + EscapeJsonStr(instName) + "\"," +
-                    "\"version\":\"3.4\"," +
+                    "\"version\":\"3.5\"," +
                     "\"filterActive\":" + (filterActive ? "true" : "false") + "," +
                     "\"lastSeen\":\"" + nowIso + "\"," +
                     "\"lastSeenMs\":{\".sv\":\"timestamp\"}" +
@@ -1765,7 +1765,7 @@ namespace SchoolFilter.Controller
                     HttpWebRequest req = (HttpWebRequest)WebRequest.Create(shaUrl);
                     req.Proxy = null;
                     req.Timeout = 5000;
-                    req.UserAgent = "SchoolFilter-Updater/3.4";
+                    req.UserAgent = "SchoolFilter-Updater/3.5";
                     using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                     using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
                     {
@@ -1857,7 +1857,7 @@ namespace SchoolFilter.Controller
                         HttpWebRequest req = (HttpWebRequest)WebRequest.Create(bustUrl);
                         req.Proxy = null;
                         req.Timeout = 15000;
-                        req.UserAgent = "SchoolFilter-Updater/3.4";
+                        req.UserAgent = "SchoolFilter-Updater/3.5";
                         using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                         using (Stream s = resp.GetResponseStream())
                         using (FileStream fs = new FileStream(securePayloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -1942,7 +1942,7 @@ namespace SchoolFilter.Controller
                     return;
                 }
 
-                // If no _v344 sinkhole is running yet, any other SchoolFilterCtl process is a legacy pre-v343 process holding port 9999; terminate it
+                // If no _v350 sinkhole is running yet, any other SchoolFilterCtl process is a legacy process holding port 9999; terminate it
                 if (!IsSinkholeRunning())
                 {
                     try
@@ -2004,7 +2004,7 @@ namespace SchoolFilter.Controller
                     {
                         string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                         string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                        string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-SystemAgent/3.4");
+                        string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-SystemAgent/3.5");
                         bool cloudFilterEnabled;
                         List<string> whitelist;
                         string roomLabel;
@@ -2137,7 +2137,7 @@ namespace SchoolFilter.Controller
             Mutex globalMutex = null;
             if (IsAdministrator())
             {
-                globalMutex = CreateScopedMutex("Global\\SchoolFilterSinkholeMutex_v344", out createdGlobalNew, true);
+                globalMutex = CreateScopedMutex("Global\\SchoolFilterSinkholeMutex_v350", out createdGlobalNew, true);
                 if (globalMutex != null && !createdGlobalNew)
                 {
                     try { globalMutex.Close(); } catch {}
@@ -2153,7 +2153,7 @@ namespace SchoolFilter.Controller
                     return;
                 }
 
-                // If running elevated and no _v344 SystemAgent is active yet, clean up any legacy pre-v343 SchoolFilterCtl process holding port 9999
+                // If running elevated and no _v350 SystemAgent is active yet, clean up any legacy pre-v350 SchoolFilterCtl process holding port 9999
                 if (IsAdministrator() && !IsSystemAgentRunning())
                 {
                     try
@@ -2222,7 +2222,7 @@ namespace SchoolFilter.Controller
                                 {
                                     string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                                     string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                                    string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-RoomDaemon/3.4");
+                                    string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-RoomDaemon/3.5");
                                     bool cloudFilterEnabled;
                                     List<string> whitelist;
                                     string roomLabel;

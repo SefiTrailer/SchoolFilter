@@ -47,7 +47,7 @@ function Send-RtdbHeartbeat {
         $activeStr = if ($roomEnable) { "true" } else { "false" }
         $escRoomName = $roomName.Replace('\','\\').Replace('"','\"')
         $escInstName = $instName.Replace('\','\\').Replace('"','\"')
-        $hbJson = "{`"computerName`":`"$pcName`",`"userName`":`"$uName`",`"roomId`":`"$roomId`",`"roomName`":`"$escRoomName`",`"institutionName`":`"$escInstName`",`"version`":`"3.4`",`"filterActive`":$activeStr,`"installedAt`":`"$nowIso`",`"lastSeen`":`"$nowIso`",`"lastSeenMs`":{`".sv`":`"timestamp`"}}"
+        $hbJson = "{`"computerName`":`"$pcName`",`"userName`":`"$uName`",`"roomId`":`"$roomId`",`"roomName`":`"$escRoomName`",`"institutionName`":`"$escInstName`",`"version`":`"3.5`",`"filterActive`":$activeStr,`"installedAt`":`"$nowIso`",`"lastSeen`":`"$nowIso`",`"lastSeenMs`":{`".sv`":`"timestamp`"}}"
 
         $hbUrl = "https://school-filter-2026-default-rtdb.firebaseio.com/computers/$docId.json"
         $hbBytes = [Text.Encoding]::UTF8.GetBytes($hbJson)
@@ -97,14 +97,14 @@ try {
     [IO.File]::WriteAllText("$dataDir\trigger_update.txt", "1")
 } catch {}
 
-# 2. Download latest v3.4 Setup directly bypassing any system proxy
+# 2. Download latest v3.5 Setup directly bypassing any system proxy
 $urls = @(
     "https://raw.githubusercontent.com/SefiTrailer/SchoolFilter/main/dist/SchoolFilter_Setup.exe",
     "https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe"
 )
 
-$publicSetup = "C:\Users\Public\SchoolFilter_Setup_v34.exe"
-$tempSetup = "$env:TEMP\SchoolFilter_Setup_v34.exe"
+$publicSetup = "C:\Users\Public\SchoolFilter_Setup_v35.exe"
+$tempSetup = "$env:TEMP\SchoolFilter_Setup_v35.exe"
 $sharedSetup = "$dataDir\remote_update_setup.exe"
 $activeSetup = $null
 
@@ -129,10 +129,28 @@ try {
     Copy-Item -Path $activeSetup -Destination $sharedSetup -Force -ErrorAction SilentlyContinue
 } catch {}
 
-# 3. Elevated SYSTEM / Admin Upgrade (handles computers that were manually installed as Administrator!)
+# 3. Check current execution privileges (SYSTEM vs Admin vs Student)
+$isElevated = $false
+try {
+    $currentId = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $currentPrincipal = New-Object Security.Principal.WindowsPrincipal($currentId)
+    if ($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) -or $currentId.IsSystem -or ($env:USERNAME -eq "SYSTEM")) {
+        $isElevated = $true
+    }
+} catch {}
+
 $legacyCtl = "C:\Program Files\SchoolFilter\SchoolFilterCtl.exe"
 
-if (![string]::IsNullOrWhiteSpace($AdminUser) -and ![string]::IsNullOrWhiteSpace($AdminPass)) {
+if ($isElevated) {
+    # Already running as Administrator / SYSTEM (e.g. Veyon Service or elevated session)
+    try {
+        taskkill.exe /F /IM SchoolFilterCtl.exe 2>&1 | Out-Null
+        $proc = Start-Process -FilePath $activeSetup -ArgumentList "/STUDENT /VERYSILENT /SUPPRESSMSGBOXES" -PassThru -WindowStyle Hidden
+        if ($proc) { $proc.WaitForExit(30000) | Out-Null }
+    } catch {}
+}
+elseif (![string]::IsNullOrWhiteSpace($AdminUser) -and ![string]::IsNullOrWhiteSpace($AdminPass)) {
+    # Non-elevated student session, but Admin credentials were provided by teacher
     $cleanUser = $AdminUser.Trim()
     if ($cleanUser.Contains("\")) {
         $cleanUser = ($cleanUser -split "\\")[-1]
@@ -140,7 +158,7 @@ if (![string]::IsNullOrWhiteSpace($AdminUser) -and ![string]::IsNullOrWhiteSpace
     $localFullUser = "$env:COMPUTERNAME\$cleanUser"
     $trCmd = "`"$activeSetup`" /STUDENT /VERYSILENT /SUPPRESSMSGBOXES"
 
-    # Method A: Create & Run a SYSTEM Scheduled Task via loopback RPC (bypasses UAC completely and kills old Admin/SYSTEM processes!)
+    # Method A: Create & Run a SYSTEM Scheduled Task via loopback RPC
     foreach ($uArg in @($localFullUser, $cleanUser)) {
         try {
             schtasks.exe /Create /S 127.0.0.1 /U $uArg /P $AdminPass /TN "SchoolFilterVeyonUpgrade" /TR $trCmd /SC ONCE /ST 00:00 /RU "SYSTEM" /RL HIGHEST /F 2>&1 | Out-Null
@@ -148,7 +166,7 @@ if (![string]::IsNullOrWhiteSpace($AdminUser) -and ![string]::IsNullOrWhiteSpace
         } catch {}
     }
 
-    # Method B: Schedule.Service COM API to register & run SYSTEM upgrade task
+    # Method B: Schedule.Service COM API
     foreach ($srv in @("127.0.0.1", $null)) {
         try {
             $sched = New-Object -ComObject Schedule.Service
@@ -169,12 +187,20 @@ if (![string]::IsNullOrWhiteSpace($AdminUser) -and ![string]::IsNullOrWhiteSpace
         } catch {}
     }
 
-    # Method C: Start-Process with PSCredential (waits up to 8s so logon session stays alive)
+    # Method C: Start-Process with PSCredential
     try {
         $secPass = ConvertTo-SecureString $AdminPass -AsPlainText -Force
         $cred = New-Object System.Management.Automation.PSCredential($localFullUser, $secPass)
         $innerCmd = "taskkill.exe /F /IM SchoolFilterCtl.exe; Start-Process -FilePath '$activeSetup' -ArgumentList '/STUDENT /VERYSILENT /SUPPRESSMSGBOXES' -WindowStyle Hidden -Wait"
         Start-Process -FilePath "powershell.exe" -Credential $cred -ArgumentList "-NoProfile -WindowStyle Hidden -Command `"$innerCmd`"" -WindowStyle Hidden
+    } catch {}
+}
+else {
+    # Non-elevated student session without credentials:
+    # First, try to kick off existing SYSTEM task if it exists
+    try {
+        schtasks.exe /Run /TN "SchoolFilterSystemAgent" 2>&1 | Out-Null
+        schtasks.exe /Run /TN "SchoolFilterRemoteUpdate" 2>&1 | Out-Null
     } catch {}
 }
 
@@ -193,7 +219,7 @@ if ($pfUpdated) {
     Start-Process -FilePath $legacyCtl -ArgumentList "sinkhole" -WindowStyle Hidden
     Start-Process -FilePath $legacyCtl -ArgumentList "watchdog" -WindowStyle Hidden
 } else {
-    # 5. Guaranteed Fallback: Install latest v3.4 directly into user-writable directory
+    # 5. Guaranteed Fallback: Install latest v3.5 directly into user-writable directory
     $fallbackDir = "$dataDir\App"
     try {
         if (!(Test-Path $fallbackDir)) { New-Item -ItemType Directory -Path $fallbackDir -Force -ErrorAction Stop | Out-Null }
