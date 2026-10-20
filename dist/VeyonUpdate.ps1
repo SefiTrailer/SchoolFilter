@@ -112,11 +112,11 @@ $tempSetup = "$env:TEMP\SchoolFilter_Setup_v35.exe"
 $sharedSetup = "$dataDir\remote_update_setup.exe"
 $activeSetup = $null
 
-foreach ($u in $urls) {
+foreach ($dlUrl in $urls) {
     foreach ($dest in @($publicSetup, $tempSetup)) {
         try {
             if (Test-Path $dest) { Remove-Item $dest -Force -ErrorAction SilentlyContinue }
-            $bustUrl = $u + "?t=" + [DateTime]::UtcNow.Ticks
+            $bustUrl = $dlUrl + "?t=" + [DateTime]::UtcNow.Ticks
             $wc.DownloadFile($bustUrl, $dest)
             if ((Test-Path $dest) -and ((Get-Item $dest).Length -gt 50000)) {
                 $activeSetup = $dest
@@ -162,7 +162,21 @@ elseif (![string]::IsNullOrWhiteSpace($AdminUser) -and ![string]::IsNullOrWhiteS
     $localFullUser = "$env:COMPUTERNAME\$cleanUser"
     $trCmd = "`"$activeSetup`" /STUDENT /VERYSILENT /SUPPRESSMSGBOXES"
 
-    # Method A: Create & Run a SYSTEM Scheduled Task via loopback RPC
+    # Method 0: Trigger existing SYSTEM agent (runs update immediately as SYSTEM)
+    try {
+        schtasks.exe /Run /TN "SchoolFilterSystemAgent" 2>&1 | Out-Null
+        schtasks.exe /Run /TN "SchoolFilterRemoteUpdate" 2>&1 | Out-Null
+    } catch {}
+
+    # Method A: Try local schtasks with user credentials (no loopback RPC)
+    foreach ($uArg in @($localFullUser, ".\$cleanUser", $cleanUser)) {
+        try {
+            schtasks.exe /Create /TN "SchoolFilterVeyonUpgrade" /TR $trCmd /SC ONCE /ST 00:00 /RU $uArg /RP $AdminPass /RL HIGHEST /F 2>&1 | Out-Null
+            schtasks.exe /Run /TN "SchoolFilterVeyonUpgrade" 2>&1 | Out-Null
+        } catch {}
+    }
+
+    # Method B: Create & Run a SYSTEM Scheduled Task via loopback RPC
     foreach ($uArg in @($localFullUser, $cleanUser)) {
         try {
             schtasks.exe /Create /S 127.0.0.1 /U $uArg /P $AdminPass /TN "SchoolFilterVeyonUpgrade" /TR $trCmd /SC ONCE /ST 00:00 /RU "SYSTEM" /RL HIGHEST /F 2>&1 | Out-Null
