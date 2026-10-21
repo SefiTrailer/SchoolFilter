@@ -51,7 +51,7 @@ function Send-RtdbHeartbeat {
         $activeStr = if ($roomEnable) { "true" } else { "false" }
         $escRoomName = $roomName.Replace('\','\\').Replace('"','\"')
         $escInstName = $instName.Replace('\','\\').Replace('"','\"')
-        $hbJson = "{`"computerName`":`"$pcName`",`"userName`":`"$uName`",`"roomId`":`"$roomId`",`"roomName`":`"$escRoomName`",`"institutionName`":`"$escInstName`",`"version`":`"3.5`",`"filterActive`":$activeStr,`"installedAt`":`"$nowIso`",`"lastSeen`":`"$nowIso`",`"lastSeenMs`":{`".sv`":`"timestamp`"}}"
+        $hbJson = "{`"computerName`":`"$pcName`",`"userName`":`"$uName`",`"roomId`":`"$roomId`",`"roomName`":`"$escRoomName`",`"institutionName`":`"$escInstName`",`"version`":`"3.6`",`"filterActive`":$activeStr,`"installedAt`":`"$nowIso`",`"lastSeen`":`"$nowIso`",`"lastSeenMs`":{`".sv`":`"timestamp`"}}"
 
         $hbUrl = "https://school-filter-2026-default-rtdb.firebaseio.com/computers/$docId.json"
         $hbBytes = [Text.Encoding]::UTF8.GetBytes($hbJson)

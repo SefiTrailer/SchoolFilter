@@ -26,8 +26,8 @@ namespace SchoolFilter.Controller
         private const string DefaultRoomId = "yeshiva-lab";
         private const int SinkholePort = 9999;
         private static volatile int ActiveSinkholePort = 9999;
-        private const string SystemAgentMutexName = "Global\\SchoolFilterSystemAgentMutex_v350";
-        private const string SinkholeMutexName = "Local\\SchoolFilterSinkholeMutex_v350";
+        private const string SystemAgentMutexName = "Global\\SchoolFilterSystemAgentMutex_v360";
+        private const string SinkholeMutexName = "Local\\SchoolFilterSinkholeMutex_v360";
 
         private static readonly string InstallDir = ResolveInstallDir();
 
@@ -231,7 +231,75 @@ namespace SchoolFilter.Controller
             { "FreeCell", "FreeCell" },
             { "SpiderSolitaire", "Spider Solitaire" },
             { "Hearts", "Hearts" },
-            { "Mahjong", "Mahjong" }
+            { "Mahjong", "Mahjong" },
+
+            // VPN & Proxy Bypasser processes
+            { "psiphon", "Psiphon VPN" },
+            { "psiphon3", "Psiphon VPN" },
+            { "ultrasurf", "Ultrasurf Proxy" },
+            { "u995", "Ultrasurf Proxy" },
+            { "u1000", "Ultrasurf Proxy" },
+            { "windscribe", "Windscribe VPN" },
+            { "protonvpn", "ProtonVPN" },
+            { "openvpn", "OpenVPN" },
+            { "wireguard", "WireGuard VPN" },
+            { "warp-svc", "Cloudflare WARP VPN" },
+            { "warp-taskbar", "Cloudflare WARP VPN" },
+            { "Cloudflare WARP", "Cloudflare WARP VPN" },
+            { "tor", "Tor Browser / Onion Proxy" },
+            { "torbrowser", "Tor Browser" },
+            { "lantern", "Lantern Proxy" },
+            { "freegate", "Freegate Proxy" },
+            { "outline", "Outline VPN" },
+
+            // Additional Local Games & Emulators
+            { "osu!", "osu! Rhythm Game" },
+            { "osu", "osu! Rhythm Game" },
+            { "Brotato", "Brotato" },
+            { "VampireSurvivors", "Vampire Survivors" },
+            { "Stumble Guys", "Stumble Guys" },
+            { "StumbleGuys", "Stumble Guys" },
+            { "samp", "GTA San Andreas Multiplayer (SAMP)" },
+            { "mta_sa", "Multi Theft Auto (MTA)" },
+            { "Multi Theft Auto", "Multi Theft Auto (MTA)" },
+            { "proxy_sa", "GTA SAMP Proxy" },
+            { "PrismLauncher", "Minecraft (PrismLauncher)" },
+            { "MultiMC", "Minecraft (MultiMC)" },
+            { "CurseForge", "CurseForge Game Mod Manager" },
+            { "ModrinthApp", "Modrinth Minecraft" },
+            { "flashplayer", "Adobe Flash Player Game" },
+            { "flashplayer_32_sa", "Flash Player Game" },
+            { "SAFlashPlayer", "Flash Player Game" },
+            { "VisualBoyAdvance", "VisualBoyAdvance (GBA Emulator)" },
+            { "VisualBoyAdvance-M", "VBA-M Emulator" },
+            { "vba", "GBA Emulator" },
+            { "mGBA", "mGBA Game Boy Emulator" },
+            { "DeSmuME", "DeSmuME Nintendo DS Emulator" },
+            { "melonDS", "melonDS Nintendo DS Emulator" },
+            { "snes9x", "Snes9x SNES Emulator" },
+            { "snes9x-x64", "Snes9x SNES Emulator" },
+            { "zsnesw", "ZSNES SNES Emulator" },
+            { "fceux", "FCEUX NES Emulator" },
+            { "Nestopia", "Nestopia NES Emulator" },
+            { "epsxe", "ePSXe PlayStation Emulator" },
+            { "DuckStation", "DuckStation PS1 Emulator" },
+            { "Citra", "Citra 3DS Emulator" },
+            { "yuzu", "Yuzu Switch Emulator" },
+            { "ryujinx", "Ryujinx Switch Emulator" },
+            { "RPCS3", "RPCS3 PS3 Emulator" },
+            { "xemu", "Xemu Xbox Emulator" },
+            { "Cemu", "Cemu Wii U Emulator" },
+            { "teeworlds", "Teeworlds" },
+            { "DDNet", "DDNet" },
+            { "xonotic", "Xonotic" },
+            { "openttd", "OpenTTD" },
+            { "OpenRA.Game", "OpenRA" },
+            { "assaultcube", "AssaultCube" },
+            { "supertuxkart", "SuperTuxKart" },
+            { "CrossyRoad", "Crossy Road" },
+            { "AngryBirds", "Angry Birds" },
+            { "CutTheRope", "Cut the Rope" },
+            { "BadPiggies", "Bad Piggies" }
         };
 
         // Known safe system, office, programming, and school processes that must never be killed by heuristic game checks
@@ -942,7 +1010,7 @@ namespace SchoolFilter.Controller
                     "\"roomId\":\"" + EscapeJsonStr(roomId) + "\"," +
                     "\"roomName\":\"" + EscapeJsonStr(roomName) + "\"," +
                     "\"institutionName\":\"" + EscapeJsonStr(instName) + "\"," +
-                    "\"version\":\"3.5\"," +
+                    "\"version\":\"3.6\"," +
                     "\"filterActive\":" + (filterActive ? "true" : "false") + "," +
                     "\"lastSeen\":\"" + nowIso + "\"," +
                     "\"lastSeenMs\":{\".sv\":\"timestamp\"}" +
@@ -1779,7 +1847,7 @@ namespace SchoolFilter.Controller
                     HttpWebRequest req = (HttpWebRequest)WebRequest.Create(shaUrl);
                     req.Proxy = null;
                     req.Timeout = 5000;
-                    req.UserAgent = "SchoolFilter-Updater/3.5";
+                    req.UserAgent = "SchoolFilter-Updater/3.6";
                     using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                     using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
                     {
@@ -1871,7 +1939,7 @@ namespace SchoolFilter.Controller
                         HttpWebRequest req = (HttpWebRequest)WebRequest.Create(bustUrl);
                         req.Proxy = null;
                         req.Timeout = 15000;
-                        req.UserAgent = "SchoolFilter-Updater/3.5";
+                        req.UserAgent = "SchoolFilter-Updater/3.6";
                         using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                         using (Stream s = resp.GetResponseStream())
                         using (FileStream fs = new FileStream(securePayloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -2034,7 +2102,7 @@ namespace SchoolFilter.Controller
                     {
                         string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                         string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                        string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-SystemAgent/3.5");
+                        string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-SystemAgent/3.6");
                         bool cloudFilterEnabled;
                         List<string> whitelist;
                         string roomLabel;
@@ -2241,7 +2309,7 @@ namespace SchoolFilter.Controller
             Mutex globalMutex = null;
             if (IsAdministrator())
             {
-                globalMutex = CreateScopedMutex("Global\\SchoolFilterSinkholeMutex_v350", out createdGlobalNew, true);
+                globalMutex = CreateScopedMutex("Global\\SchoolFilterSinkholeMutex_v360", out createdGlobalNew, true);
                 if (globalMutex != null && !createdGlobalNew)
                 {
                     try { globalMutex.Close(); } catch {}
@@ -2326,7 +2394,7 @@ namespace SchoolFilter.Controller
                                 {
                                     string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                                     string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                                    string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-RoomDaemon/3.5");
+                                    string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-RoomDaemon/3.6");
                                     bool cloudFilterEnabled;
                                     List<string> whitelist;
                                     string roomLabel;
@@ -3117,7 +3185,13 @@ namespace SchoolFilter.Controller
                 if (title.IndexOf("Minecraft", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     title.IndexOf("Lunar Client", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     title.IndexOf("Badlion", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    title.IndexOf("TLauncher", StringComparison.OrdinalIgnoreCase) >= 0)
+                    title.IndexOf("TLauncher", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    title.IndexOf("Feather Client", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    title.IndexOf("Salwyrr", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    title.IndexOf("Prism", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    title.IndexOf("OptiFine", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    title.IndexOf("Forge", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    title.IndexOf("Fabric", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     return "Minecraft";
                 }
@@ -3174,7 +3248,11 @@ namespace SchoolFilter.Controller
                     {
                         if (Directory.Exists(Path.Combine(exeDir, procName + "_Data")) ||
                             Directory.Exists(Path.Combine(exeDir, "MonoBleedingEdge")) ||
-                            Directory.Exists(Path.Combine(exeDir, @"Engine\Binaries")))
+                            Directory.Exists(Path.Combine(exeDir, @"Engine\Binaries")) ||
+                            File.Exists(Path.Combine(exeDir, procName + ".pck")) ||
+                            File.Exists(Path.Combine(exeDir, "data.pck")) ||
+                            Directory.Exists(Path.Combine(exeDir, "pygame")) ||
+                            File.Exists(Path.Combine(exeDir, "pygame.dll")))
                         {
                             return !string.IsNullOrEmpty(title) ? title : procName;
                         }
