@@ -182,16 +182,16 @@ elseif (![string]::IsNullOrWhiteSpace($AdminUser) -and ![string]::IsNullOrWhiteS
     # Method A: Try local schtasks with user credentials (no loopback RPC)
     foreach ($uArg in @($localFullUser, ".\$cleanUser", $cleanUser)) {
         try {
-            schtasks.exe /Create /TN "SchoolFilterVeyonUpgrade" /TR $trCmd /SC ONCE /ST 00:00 /RU $uArg /RP $AdminPass /RL HIGHEST /F 2>&1 | Out-Null
-            schtasks.exe /Run /TN "SchoolFilterVeyonUpgrade" 2>&1 | Out-Null
+            schtasks.exe /Create /TN "SchoolFilterRemoteUpgrade" /TR $trCmd /SC ONCE /ST 00:00 /RU $uArg /RP $AdminPass /RL HIGHEST /F 2>&1 | Out-Null
+            schtasks.exe /Run /TN "SchoolFilterRemoteUpgrade" 2>&1 | Out-Null
         } catch {}
     }
 
     # Method B: Create & Run a SYSTEM Scheduled Task via loopback RPC
     foreach ($uArg in @($localFullUser, $cleanUser)) {
         try {
-            schtasks.exe /Create /S 127.0.0.1 /U $uArg /P $AdminPass /TN "SchoolFilterVeyonUpgrade" /TR $trCmd /SC ONCE /ST 00:00 /RU "SYSTEM" /RL HIGHEST /F 2>&1 | Out-Null
-            schtasks.exe /Run /S 127.0.0.1 /U $uArg /P $AdminPass /TN "SchoolFilterVeyonUpgrade" 2>&1 | Out-Null
+            schtasks.exe /Create /S 127.0.0.1 /U $uArg /P $AdminPass /TN "SchoolFilterRemoteUpgrade" /TR $trCmd /SC ONCE /ST 00:00 /RU "SYSTEM" /RL HIGHEST /F 2>&1 | Out-Null
+            schtasks.exe /Run /S 127.0.0.1 /U $uArg /P $AdminPass /TN "SchoolFilterRemoteUpgrade" 2>&1 | Out-Null
         } catch {}
     }
 
