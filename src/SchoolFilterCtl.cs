@@ -382,13 +382,24 @@ namespace SchoolFilter.Controller
                 }
                 else if (action == "watchdog")
                 {
-                    if (ReadLocalOverride() != "allow")
+                    bool createdWatchdog;
+                    using (Mutex wdMutex = CreateScopedMutex("Local\\SchoolFilterUserWatchdogMutex", out createdWatchdog, false))
                     {
-                        EnableFilter();
-                    }
-                    else
-                    {
-                        EnsureSinkholeRunning();
+                        if (wdMutex == null || !createdWatchdog)
+                        {
+                            return 0;
+                        }
+
+                        if (ReadLocalOverride() != "allow")
+                        {
+                            EnableFilter();
+                        }
+                        else
+                        {
+                            EnsureSinkholeRunning();
+                        }
+
+                        RunUserSessionWatchdogLoop();
                     }
                     return 0;
                 }
@@ -992,6 +1003,7 @@ namespace SchoolFilter.Controller
             ApplyPacToRegistryRoot(Registry.CurrentUser, false, "");
             ApplyPacToAllLoadedUsers(false, "");
             ConfigureGameFirewallRules(false);
+            EnforceBrowserExtensionPolicies(false);
 
             if (stopDaemon)
             {
@@ -1011,9 +1023,11 @@ namespace SchoolFilter.Controller
             {
                 RunNetsh("advfirewall firewall delete rule name=\"SchoolFilter_BlockGameUDP\"");
                 RunNetsh("advfirewall firewall delete rule name=\"SchoolFilter_BlockGameTCP\"");
+                RunNetsh("advfirewall firewall delete rule name=\"SchoolFilter_BlockQUIC\"");
 
                 if (blockGames)
                 {
+                    RunNetsh("advfirewall firewall add rule name=\"SchoolFilter_BlockQUIC\" dir=out action=block protocol=UDP remoteport=443");
                     RunNetsh("advfirewall firewall add rule name=\"SchoolFilter_BlockGameUDP\" dir=out action=block protocol=UDP remoteport=1024-11099,11401-65535");
                     RunNetsh("advfirewall firewall add rule name=\"SchoolFilter_BlockGameTCP\" dir=out action=block protocol=TCP remoteport=1119,3074,3724,5222,6667,7000-9100,19132-19133,25565,27000-27100,30120");
                 }
@@ -2104,6 +2118,7 @@ namespace SchoolFilter.Controller
                                 if (lastAppliedFirewall || lastEnforcedState != false)
                                 {
                                     ConfigureGameFirewallRules(false);
+                                    EnforceBrowserExtensionPolicies(false);
                                     lastAppliedFirewall = false;
                                 }
                                 lastEnforcedState = false;
@@ -2138,6 +2153,79 @@ namespace SchoolFilter.Controller
                         Thread.Sleep(500);
                     }
                 }
+            }
+        }
+
+        private static void RunUserSessionWatchdogLoop()
+        {
+            int counter = 0;
+            while (true)
+            {
+                try
+                {
+                    string localOverride = ReadLocalOverride();
+                    bool shouldBeActive = (localOverride != "allow");
+
+                    try
+                    {
+                        if (File.Exists(CachedPacFilePath))
+                        {
+                            string pacContent = File.ReadAllText(CachedPacFilePath, Encoding.ASCII);
+                            if (pacContent.Contains("var FILTER_ENABLED = false;"))
+                            {
+                                shouldBeActive = false;
+                            }
+                            else if (pacContent.Contains("var FILTER_ENABLED = true;"))
+                            {
+                                shouldBeActive = true;
+                            }
+                        }
+                    }
+                    catch {}
+
+                    if (localOverride == "allow") shouldBeActive = false;
+                    else if (localOverride == "block") shouldBeActive = true;
+
+                    // Enforce HKCU proxy in current user session
+                    using (RegistryKey inetKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Internet Settings", true))
+                    {
+                        if (inetKey != null)
+                        {
+                            string currUrl = inetKey.GetValue("AutoConfigURL") as string;
+                            string targetUrl = GetLocalPacEndpointUrl(counter);
+                            if (shouldBeActive)
+                            {
+                                if (string.IsNullOrEmpty(currUrl) || currUrl.IndexOf("127.0.0.1:" + ActiveSinkholePort, StringComparison.OrdinalIgnoreCase) < 0)
+                                {
+                                    ApplyPacToRegistryRoot(Registry.CurrentUser, true, targetUrl);
+                                    NotifyBrowserSettingsChanged();
+                                }
+                            }
+                            else
+                            {
+                                if (!string.IsNullOrEmpty(currUrl))
+                                {
+                                    ApplyPacToRegistryRoot(Registry.CurrentUser, false, "");
+                                    NotifyBrowserSettingsChanged();
+                                }
+                            }
+                        }
+                    }
+
+                    if (shouldBeActive)
+                    {
+                        EnforceInstalledGameBlock();
+                    }
+
+                    if (!IsSinkholeRunning())
+                    {
+                        EnsureSinkholeRunning();
+                    }
+                }
+                catch {}
+
+                counter++;
+                Thread.Sleep(2500);
             }
         }
 
@@ -2384,6 +2472,7 @@ namespace SchoolFilter.Controller
                                 if (lastAppliedFirewallState)
                                 {
                                     ConfigureGameFirewallRules(false);
+                                    EnforceBrowserExtensionPolicies(false);
                                     lastAppliedFirewallState = false;
                                 }
                             }
@@ -2763,21 +2852,42 @@ namespace SchoolFilter.Controller
                 catch {}
             }
 
+            // Lock down Windows Settings Proxy toggle so students cannot change proxy settings in Windows GUI
+            try
+            {
+                using (RegistryKey ieKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Internet Explorer\Control Panel"))
+                {
+                    if (ieKey != null)
+                    {
+                        if (blockExtensions)
+                        {
+                            ieKey.SetValue("Proxy", 1, RegistryValueKind.DWord);
+                        }
+                        else
+                        {
+                            ieKey.DeleteValue("Proxy", false);
+                        }
+                    }
+                }
+            }
+            catch {}
+
             // Enforce Mozilla Firefox proxy & DoH policies so Firefox cannot bypass Windows system proxy
             try
             {
-                if (blockExtensions)
+                using (RegistryKey ffKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Mozilla\Firefox"))
                 {
-                    using (RegistryKey ffKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Mozilla\Firefox"))
+                    if (ffKey != null)
                     {
-                        if (ffKey != null)
+                        if (blockExtensions)
                         {
                             ffKey.SetValue("DisableDeveloperTools", 1, RegistryValueKind.DWord);
                             using (RegistryKey proxyKey = ffKey.CreateSubKey("Proxy"))
                             {
                                 if (proxyKey != null)
                                 {
-                                    proxyKey.SetValue("Mode", "system", RegistryValueKind.String);
+                                    proxyKey.SetValue("Mode", "autoConfig", RegistryValueKind.String);
+                                    proxyKey.SetValue("AutoConfigURL", "http://127.0.0.1:" + ActiveSinkholePort + "/filter.pac", RegistryValueKind.String);
                                     proxyKey.SetValue("Locked", 1, RegistryValueKind.DWord);
                                 }
                             }
@@ -2787,6 +2897,27 @@ namespace SchoolFilter.Controller
                                 {
                                     dohKey.SetValue("Enabled", 0, RegistryValueKind.DWord);
                                     dohKey.SetValue("Locked", 1, RegistryValueKind.DWord);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ffKey.DeleteValue("DisableDeveloperTools", false);
+                            using (RegistryKey proxyKey = ffKey.CreateSubKey("Proxy"))
+                            {
+                                if (proxyKey != null)
+                                {
+                                    proxyKey.SetValue("Mode", "system", RegistryValueKind.String);
+                                    proxyKey.DeleteValue("AutoConfigURL", false);
+                                    proxyKey.DeleteValue("Locked", false);
+                                }
+                            }
+                            using (RegistryKey dohKey = ffKey.CreateSubKey("DNSOverHTTPS"))
+                            {
+                                if (dohKey != null)
+                                {
+                                    dohKey.DeleteValue("Enabled", false);
+                                    dohKey.DeleteValue("Locked", false);
                                 }
                             }
                         }
@@ -2803,12 +2934,13 @@ namespace SchoolFilter.Controller
                 using (RegistryKey key = root.CreateSubKey(prefix + policyPath))
                 {
                     if (key == null) return;
-                    key.SetValue("ProxyMode", "system", RegistryValueKind.String);
-                    key.SetValue("QuicAllowed", 0, RegistryValueKind.DWord);
-                    key.SetValue("DnsOverHttpsMode", "off", RegistryValueKind.String);
 
                     if (blockExtensions)
                     {
+                        key.SetValue("ProxyMode", "pac_script", RegistryValueKind.String);
+                        key.SetValue("ProxyPacUrl", "http://127.0.0.1:" + ActiveSinkholePort + "/filter.pac", RegistryValueKind.String);
+                        key.SetValue("QuicAllowed", 0, RegistryValueKind.DWord);
+                        key.SetValue("DnsOverHttpsMode", "off", RegistryValueKind.String);
                         key.SetValue("AllowDinosaurEasterEgg", 0, RegistryValueKind.DWord);
                         key.SetValue("AllowSurfGame", 0, RegistryValueKind.DWord);
                         key.SetValue("BlockExternalExtensions", 1, RegistryValueKind.DWord);
@@ -2828,6 +2960,18 @@ namespace SchoolFilter.Controller
                                 allowKey.SetValue("1", "ghbmnnjooekpmoecnnnilnnbdlolhkhi", RegistryValueKind.String);
                             }
                         }
+                    }
+                    else
+                    {
+                        key.SetValue("ProxyMode", "system", RegistryValueKind.String);
+                        key.DeleteValue("ProxyPacUrl", false);
+                        key.SetValue("QuicAllowed", 1, RegistryValueKind.DWord);
+                        key.DeleteValue("DnsOverHttpsMode", false);
+                        key.DeleteValue("AllowDinosaurEasterEgg", false);
+                        key.DeleteValue("AllowSurfGame", false);
+                        key.DeleteValue("BlockExternalExtensions", false);
+                        key.DeleteValue("DeveloperToolsAvailability", false);
+                        try { key.DeleteSubKeyTree("ExtensionInstallBlocklist", false); } catch {}
                     }
                 }
             }
@@ -3591,6 +3735,12 @@ namespace SchoolFilter.Controller
         {
             try
             {
+                try
+                {
+                    ApplyPacToRegistryRoot(Registry.CurrentUser, enable, pacUrl);
+                }
+                catch {}
+
                 string[] subKeyNames = Registry.Users.GetSubKeyNames();
                 foreach (string sid in subKeyNames)
                 {

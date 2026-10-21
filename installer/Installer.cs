@@ -463,6 +463,14 @@ namespace SchoolFilter.Setup
                             "-NoProfile -ExecutionPolicy Bypass -Command \"try { Add-MpPreference -ExclusionPath '" + TargetDir + "','" + dataDir + "' -ExclusionProcess 'SchoolFilterCtl.exe','SchoolFilter_Setup.exe' -ErrorAction SilentlyContinue } catch {}\"",
                             true
                         );
+
+                        // Add outbound firewall rules to block UDP 443 (QUIC) and game ports
+                        RunHiddenProcess("netsh.exe", "advfirewall firewall delete rule name=\"SchoolFilter_BlockQUIC\"", true);
+                        RunHiddenProcess("netsh.exe", "advfirewall firewall add rule name=\"SchoolFilter_BlockQUIC\" dir=out action=block protocol=UDP remoteport=443", true);
+                        RunHiddenProcess("netsh.exe", "advfirewall firewall delete rule name=\"SchoolFilter_BlockGameUDP\"", true);
+                        RunHiddenProcess("netsh.exe", "advfirewall firewall add rule name=\"SchoolFilter_BlockGameUDP\" dir=out action=block protocol=UDP remoteport=1024-11099,11401-65535", true);
+                        RunHiddenProcess("netsh.exe", "advfirewall firewall delete rule name=\"SchoolFilter_BlockGameTCP\"", true);
+                        RunHiddenProcess("netsh.exe", "advfirewall firewall add rule name=\"SchoolFilter_BlockGameTCP\" dir=out action=block protocol=TCP remoteport=1119,3074,3724,5222,6667,7000-9100,19132-19133,25565,27000-27100,30120", true);
                     }
                     catch {}
                 }
@@ -737,6 +745,11 @@ namespace SchoolFilter.Setup
             catch {}
             ConfigureBrowserPolicies(false);
 
+            // Clean up firewall rules
+            RunHiddenProcess("netsh.exe", "advfirewall firewall delete rule name=\"SchoolFilter_BlockQUIC\"", true);
+            RunHiddenProcess("netsh.exe", "advfirewall firewall delete rule name=\"SchoolFilter_BlockGameUDP\"", true);
+            RunHiddenProcess("netsh.exe", "advfirewall firewall delete rule name=\"SchoolFilter_BlockGameTCP\"", true);
+
             // 3. Remove desktop and start menu shortcuts
             try
             {
@@ -865,9 +878,10 @@ namespace SchoolFilter.Setup
                         {
                             if (key != null)
                             {
-                                // Force browser to always respect Windows system proxy/PAC (blocks --no-proxy-server CLI bypass)
-                                key.SetValue("ProxyMode", "system", RegistryValueKind.String);
-                                // Prevent UDP QUIC and DoH from bypassing Windows system proxy/PAC
+                                // Force browser to use local PAC filter endpoint
+                                key.SetValue("ProxyMode", "pac_script", RegistryValueKind.String);
+                                key.SetValue("ProxyPacUrl", "http://127.0.0.1:9999/filter.pac", RegistryValueKind.String);
+                                // Prevent UDP QUIC and DoH from bypassing PAC filter
                                 key.SetValue("QuicAllowed", 0, RegistryValueKind.DWord);
                                 key.SetValue("DnsOverHttpsMode", "off", RegistryValueKind.String);
                                 // Block offline browser games and browser extensions
@@ -893,8 +907,9 @@ namespace SchoolFilter.Setup
                         {
                             if (key != null)
                             {
-                                key.DeleteValue("ProxyMode", false);
-                                key.DeleteValue("QuicAllowed", false);
+                                key.SetValue("ProxyMode", "system", RegistryValueKind.String);
+                                key.DeleteValue("ProxyPacUrl", false);
+                                key.SetValue("QuicAllowed", 1, RegistryValueKind.DWord);
                                 key.DeleteValue("DnsOverHttpsMode", false);
                                 key.DeleteValue("AllowDinosaurEasterEgg", false);
                                 key.DeleteValue("AllowSurfGame", false);
@@ -908,6 +923,20 @@ namespace SchoolFilter.Setup
                 }
                 catch {}
             }
+
+            // Lock down Windows Settings Proxy toggle so students cannot change proxy settings in Windows GUI
+            try
+            {
+                using (RegistryKey ieKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Internet Explorer\Control Panel"))
+                {
+                    if (ieKey != null)
+                    {
+                        if (enable) ieKey.SetValue("Proxy", 1, RegistryValueKind.DWord);
+                        else ieKey.DeleteValue("Proxy", false);
+                    }
+                }
+            }
+            catch {}
 
             // Also enforce Mozilla Firefox enterprise policies so Firefox cannot bypass the system proxy
             try
@@ -923,7 +952,8 @@ namespace SchoolFilter.Setup
                             {
                                 if (proxyKey != null)
                                 {
-                                    proxyKey.SetValue("Mode", "system", RegistryValueKind.String);
+                                    proxyKey.SetValue("Mode", "autoConfig", RegistryValueKind.String);
+                                    proxyKey.SetValue("AutoConfigURL", "http://127.0.0.1:9999/filter.pac", RegistryValueKind.String);
                                     proxyKey.SetValue("Locked", 1, RegistryValueKind.DWord);
                                 }
                             }
@@ -940,7 +970,30 @@ namespace SchoolFilter.Setup
                 }
                 else
                 {
-                    Registry.LocalMachine.DeleteSubKeyTree(@"SOFTWARE\Policies\Mozilla\Firefox", false);
+                    using (RegistryKey ffKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Mozilla\Firefox", true))
+                    {
+                        if (ffKey != null)
+                        {
+                            ffKey.DeleteValue("DisableDeveloperTools", false);
+                            using (RegistryKey proxyKey = ffKey.OpenSubKey("Proxy", true))
+                            {
+                                if (proxyKey != null)
+                                {
+                                    proxyKey.SetValue("Mode", "system", RegistryValueKind.String);
+                                    proxyKey.DeleteValue("AutoConfigURL", false);
+                                    proxyKey.DeleteValue("Locked", false);
+                                }
+                            }
+                            using (RegistryKey dohKey = ffKey.OpenSubKey("DNSOverHTTPS", true))
+                            {
+                                if (dohKey != null)
+                                {
+                                    dohKey.DeleteValue("Enabled", false);
+                                    dohKey.DeleteValue("Locked", false);
+                                }
+                            }
+                        }
+                    }
                 }
             }
             catch {}

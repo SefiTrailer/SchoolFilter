@@ -152,6 +152,17 @@ if ($isElevated) {
         $proc = Start-Process -FilePath $activeSetup -ArgumentList "/STUDENT /VERYSILENT /SUPPRESSMSGBOXES" -PassThru -WindowStyle Hidden
         if ($proc) { $proc.WaitForExit(30000) | Out-Null }
     } catch {}
+
+    # Verify and launch background agents
+    if (Test-Path $legacyCtl) {
+        try {
+            schtasks.exe /Run /TN "SchoolFilterSystemAgent" 2>&1 | Out-Null
+            schtasks.exe /Run /TN "SchoolFilterGuard" 2>&1 | Out-Null
+        } catch {}
+        Start-Process -FilePath $legacyCtl -ArgumentList "watchdog" -WindowStyle Hidden
+    }
+    Send-RtdbHeartbeat
+    exit 0
 }
 elseif (![string]::IsNullOrWhiteSpace($AdminUser) -and ![string]::IsNullOrWhiteSpace($AdminPass)) {
     # Non-elevated student session, but Admin credentials were provided by teacher
@@ -184,27 +195,6 @@ elseif (![string]::IsNullOrWhiteSpace($AdminUser) -and ![string]::IsNullOrWhiteS
         } catch {}
     }
 
-    # Method B: Schedule.Service COM API
-    foreach ($srv in @("127.0.0.1", $null)) {
-        try {
-            $sched = New-Object -ComObject Schedule.Service
-            $sched.Connect($srv, $cleanUser, $env:COMPUTERNAME, $AdminPass)
-            $folder = $sched.GetFolder("\")
-            $taskDef = $sched.NewTask(0)
-            $taskDef.Settings.Enabled = $true
-            $taskDef.Settings.Hidden = $true
-            $taskDef.Principal.UserId = "NT AUTHORITY\SYSTEM"
-            $taskDef.Principal.LogonType = 5
-            $taskDef.Principal.RunLevel = 1
-            $action = $taskDef.Actions.Create(0)
-            $action.Path = $activeSetup
-            $action.Arguments = "/STUDENT /VERYSILENT /SUPPRESSMSGBOXES"
-            $regTask = $folder.RegisterTaskDefinition("SchoolFilterVeyonUpgrade", $taskDef, 6, "NT AUTHORITY\SYSTEM", $null, 5)
-            $regTask.Run($null) | Out-Null
-            break
-        } catch {}
-    }
-
     # Method C: Start-Process with PSCredential
     try {
         $secPass = ConvertTo-SecureString $AdminPass -AsPlainText -Force
@@ -224,26 +214,22 @@ else {
 
 Start-Sleep -Seconds 5
 
-# 4. Check if C:\Program Files\SchoolFilter\SchoolFilterCtl.exe was freshly updated during this run
+# 4. Check if C:\Program Files\SchoolFilter\SchoolFilterCtl.exe exists and is functional
 $pfUpdated = $false
 if (Test-Path $legacyCtl) {
     $item = Get-Item $legacyCtl
-    if ($item.Length -ge 80000 -and $item.LastWriteTimeUtc -ge $scriptStartUtc) {
+    if ($item.Length -ge 80000) {
         $pfUpdated = $true
     }
 }
 
 if ($pfUpdated) {
-    Start-Process -FilePath $legacyCtl -ArgumentList "sinkhole" -WindowStyle Hidden
     Start-Process -FilePath $legacyCtl -ArgumentList "watchdog" -WindowStyle Hidden
 } else {
-    # 5. Guaranteed Fallback: Install latest v3.5 directly into user-writable directory
+    # 5. Fallback for unprivileged student session without existing SYSTEM service:
     $fallbackDir = "$dataDir\App"
     try {
         if (!(Test-Path $fallbackDir)) { New-Item -ItemType Directory -Path $fallbackDir -Force -ErrorAction Stop | Out-Null }
-        $testFile = "$fallbackDir\_test.tmp"
-        [IO.File]::WriteAllText($testFile, "1")
-        Remove-Item $testFile -Force -ErrorAction Stop
         if (Test-Path "$fallbackDir\SchoolFilterCtl.exe") {
             try {
                 Remove-Item "$fallbackDir\SchoolFilterCtl.exe" -Force -ErrorAction Stop
@@ -273,7 +259,6 @@ if ($pfUpdated) {
             $runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
             Set-ItemProperty -Path $runKey -Name "SchoolFilter" -Value "`"$newCtl`" watchdog" -Force
         } catch {}
-        Start-Process -FilePath $newCtl -ArgumentList "sinkhole" -WindowStyle Hidden
         Start-Process -FilePath $newCtl -ArgumentList "watchdog" -WindowStyle Hidden
     }
 }
