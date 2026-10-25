@@ -906,6 +906,27 @@
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
         }
 
+        .pc-version-select {
+            border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
+            background: var(--surface-segment, rgba(118, 118, 128, 0.08));
+            color: var(--text-main, #1c1c1e);
+            padding: 3.5px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+        .pc-version-select:hover {
+            border-color: var(--primary, #007aff);
+        }
+        .pc-version-select:focus {
+            border-color: var(--primary, #007aff);
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+        }
+
         .computers-summary-strip {
             display: flex;
             align-items: center;
@@ -2361,6 +2382,11 @@
                                         <button type="button" id="pcFilterOffline" class="pc-filter-btn" onclick="setComputerFilterMode('offline')">⚪ כבויים</button>
                                         <button type="button" id="pcFilterCustom" class="pc-filter-btn" onclick="setComputerFilterMode('custom')">🎯 אישי</button>
                                     </div>
+                                    <select id="pcFilterVersion" class="pc-version-select" onchange="setComputerVersionFilter(this.value)" title="סנן לפי גרסת תוכנה">
+                                        <option value="all">📦 כל הגרסאות</option>
+                                        <option value="latest">⭐ מעודכן (v3.6+)</option>
+                                        <option value="outdated">⚠️ דורש עדכון</option>
+                                    </select>
                                     <button class="btn btn-outline btn-sm" onclick="refreshRoomComputers()" title="רענן רשימת מחשבים">
                                         🔄 רענן
                                     </button>
@@ -3288,6 +3314,7 @@
         }
 
         let currentComputerFilterMode = 'all';
+        let currentComputerVersionFilter = 'all';
 
         function setComputerFilterMode(mode) {
             currentComputerFilterMode = mode || 'all';
@@ -3301,6 +3328,18 @@
                 const btn = document.getElementById(id);
                 if (btn) btn.classList.toggle('active', m === currentComputerFilterMode);
             });
+            const room = getCurrentRoom();
+            if (room) renderRoomComputersList(room);
+        }
+
+        function setComputerVersionFilter(ver) {
+            currentComputerVersionFilter = ver || 'all';
+            const select = document.getElementById('pcFilterVersion');
+            if (select && select.value !== currentComputerVersionFilter) {
+                if (Array.from(select.options).some(o => o.value === currentComputerVersionFilter)) {
+                    select.value = currentComputerVersionFilter;
+                }
+            }
             const room = getCurrentRoom();
             if (room) renderRoomComputersList(room);
         }
@@ -3457,16 +3496,56 @@
                 };
             });
 
+            // Dynamically populate version filter select options
+            const vSelect = document.getElementById('pcFilterVersion');
+            if (vSelect) {
+                const prevVal = currentComputerVersionFilter;
+                const distinctVersions = [...new Set(roomComputers.map(c => (c.version || '').trim()).filter(Boolean))].sort().reverse();
+                let opts = `
+                    <option value="all">📦 כל הגרסאות (${roomComputers.length})</option>
+                    <option value="latest">⭐ מעודכן v3.6+ (${updatedVerCount})</option>
+                `;
+                const outdatedCount = roomComputers.length - updatedVerCount;
+                if (outdatedCount > 0) {
+                    opts += `<option value="outdated">⚠️ דורש עדכון (${outdatedCount})</option>`;
+                }
+                if (distinctVersions.length > 1) {
+                    opts += `<optgroup label="גרסה ספציפית">`;
+                    distinctVersions.forEach(v => {
+                        const cnt = roomComputers.filter(c => (c.version || '').trim() === v).length;
+                        opts += `<option value="ver:${escapeHtml(v)}">גרסה v${escapeHtml(v)} (${cnt})</option>`;
+                    });
+                    opts += `</optgroup>`;
+                }
+                vSelect.innerHTML = opts;
+                if (Array.from(vSelect.options).some(o => o.value === prevVal)) {
+                    vSelect.value = prevVal;
+                } else {
+                    currentComputerVersionFilter = 'all';
+                    vSelect.value = 'all';
+                }
+            }
+
             // Filter for main computers grid
             const filteredItems = enriched.filter(item => {
-                if (currentComputerFilterMode === 'online') return item.isOnlineNow;
-                if (currentComputerFilterMode === 'offline') return !item.isOnlineNow;
-                if (currentComputerFilterMode === 'custom') return item.overrideMode === 'open' || item.overrideMode === 'locked';
+                // Status Filter
+                if (currentComputerFilterMode === 'online' && !item.isOnlineNow) return false;
+                if (currentComputerFilterMode === 'offline' && item.isOnlineNow) return false;
+                if (currentComputerFilterMode === 'custom' && !(item.overrideMode === 'open' || item.overrideMode === 'locked')) return false;
+
+                // Version Filter
+                if (currentComputerVersionFilter === 'latest' && !item.isLatestVer) return false;
+                if (currentComputerVersionFilter === 'outdated' && item.isLatestVer) return false;
+                if (currentComputerVersionFilter.startsWith('ver:')) {
+                    const targetVer = currentComputerVersionFilter.substring(4);
+                    if (item.verRaw !== targetVer) return false;
+                }
+
                 return true;
             });
 
             const cardsHtml = filteredItems.length === 0
-                ? `<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--text-muted);font-size:12px;background:var(--surface-muted);border-radius:12px;border:1px dashed var(--border-strong);">אין מחשבים התואמים לסינון שנבחר. <button type="button" class="btn btn-outline btn-sm" style="margin-right:8px;" onclick="setComputerFilterMode('all')">הצג הכל</button></div>`
+                ? `<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--text-muted);font-size:12px;background:var(--surface-muted);border-radius:12px;border:1px dashed var(--border-strong);">אין מחשבים התואמים לסינון שנבחר. <button type="button" class="btn btn-outline btn-sm" style="margin-right:8px;" onclick="setComputerFilterMode('all'); setComputerVersionFilter('all');">הצג הכל</button></div>`
                 : filteredItems.map(item => {
                     const { c, isOnlineNow, isLocked, overrideMode, expectedLocked, isUnsynced, verRaw, isLatestVer } = item;
                     const lastSeenInfo = formatLastSeenTime(c);
@@ -3502,8 +3581,8 @@
                             : '');
 
                     const verBadgeHtml = isLatestVer
-                        ? `<span class="pc-ver-badge ver-ok" title="מותקנת גרסה 3.6 המעודכנת">v${escapeHtml(verRaw)} ✓</span>`
-                        : `<span class="pc-ver-badge ver-old" title="מותקנת גרסה ישנה (${verRaw ? 'v' + escapeHtml(verRaw) : 'v3.5 ומטה'}) — מומלץ לעדכן">${verRaw ? 'v' + escapeHtml(verRaw) : 'v3.5'}</span>`;
+                        ? `<span class="pc-ver-badge ver-ok" onclick="setComputerVersionFilter('ver:${escapeJsStr(verRaw)}')" style="cursor:pointer;" title="לחץ לסינון מחשבים בעלי גרסה v${escapeHtml(verRaw)}">v${escapeHtml(verRaw)} ✓</span>`
+                        : `<span class="pc-ver-badge ver-old" onclick="setComputerVersionFilter('ver:${escapeJsStr(verRaw || '3.5')}')" style="cursor:pointer;" title="לחץ לסינון מחשבים בעלי גרסה ישנה (${verRaw ? 'v' + escapeHtml(verRaw) : 'v3.5 ומטה'})">${verRaw ? 'v' + escapeHtml(verRaw) : 'v3.5'}</span>`;
 
                     const unsyncBadgeHtml = isUnsynced
                         ? `<span class="pc-unsync-tag" title="המחשב מתעדכן מול השרת כעת">⏳ מסתנכרן</span>`
@@ -3591,7 +3670,9 @@
                     ${offlineCount > 0 ? `<span style="background:var(--surface-muted);color:var(--text-muted);padding:2px 8px;border-radius:999px;">⚪ כבויים: ${offlineCount}</span>` : ''}
                     ${overrideSummaryPill}
                     ${syncPill}
-                    <span style="background:var(--primary-soft);color:var(--primary);padding:2px 8px;border-radius:999px;margin-right:auto;">📦 v3.6: ${updatedVerCount}/${roomComputers.length}</span>
+                    <button type="button" onclick="setComputerVersionFilter('${updatedVerCount < roomComputers.length ? 'outdated' : 'all'}')" style="background:var(--primary-soft);color:var(--primary);border:1px solid rgba(0,122,255,0.25);padding:2px 9px;border-radius:999px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;margin-right:auto;" title="לחץ לסינון מחשבים לפי גרסה">
+                        📦 v3.6+: ${updatedVerCount}/${roomComputers.length} ${updatedVerCount < roomComputers.length ? `(${roomComputers.length - updatedVerCount} לעדכון ⚠️)` : '✓'}
+                    </button>
                 `;
             }
 
