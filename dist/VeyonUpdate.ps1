@@ -46,12 +46,14 @@ function Send-RtdbHeartbeat {
 
         $pcName = $env:COMPUTERNAME
         $uName = $env:USERNAME
-        $docId = ($roomId -replace '[^a-zA-Z0-9_-]', '_') + "__" + ($pcName -replace '[^a-zA-Z0-9_-]', '_')
+        $cleanRoom = $roomId -replace '[^\p{L}\p{Nd}_-]', '_'
+        $cleanPc = $pcName -replace '[^\p{L}\p{Nd}_-]', '_'
+        $docId = $cleanRoom + "__" + $cleanPc
         $nowIso = [DateTime]::UtcNow.ToString("o")
         $activeStr = if ($roomEnable) { "true" } else { "false" }
         $escRoomName = $roomName.Replace('\','\\').Replace('"','\"')
         $escInstName = $instName.Replace('\','\\').Replace('"','\"')
-        $hbJson = "{`"computerName`":`"$pcName`",`"userName`":`"$uName`",`"roomId`":`"$roomId`",`"roomName`":`"$escRoomName`",`"institutionName`":`"$escInstName`",`"version`":`"3.6`",`"filterActive`":$activeStr,`"installedAt`":`"$nowIso`",`"lastSeen`":`"$nowIso`",`"lastSeenMs`":{`".sv`":`"timestamp`"}}"
+        $hbJson = "{`"computerName`":`"$pcName`",`"userName`":`"$uName`",`"roomId`":`"$roomId`",`"roomName`":`"$escRoomName`",`"institutionName`":`"$escInstName`",`"version`":`"3.6.1`",`"filterActive`":$activeStr,`"installedAt`":`"$nowIso`",`"lastSeen`":`"$nowIso`",`"lastSeenMs`":{`".sv`":`"timestamp`"}}"
 
         $hbUrl = "https://school-filter-2026-default-rtdb.firebaseio.com/computers/$docId.json"
         $hbBytes = [Text.Encoding]::UTF8.GetBytes($hbJson)
@@ -101,14 +103,14 @@ try {
     [IO.File]::WriteAllText("$dataDir\trigger_update.txt", "1")
 } catch {}
 
-# 2. Download latest v3.5 Setup directly bypassing any system proxy
+# 2. Download latest Setup directly bypassing any system proxy
 $urls = @(
     "https://raw.githubusercontent.com/SefiTrailer/SchoolFilter/main/dist/SchoolFilter_Setup.exe",
     "https://sefitrailer.github.io/SchoolFilter/dist/SchoolFilter_Setup.exe"
 )
 
-$publicSetup = "C:\Users\Public\SchoolFilter_Setup_v35.exe"
-$tempSetup = "$env:TEMP\SchoolFilter_Setup_v35.exe"
+$publicSetup = "C:\Users\Public\SchoolFilter_Setup.exe"
+$tempSetup = "$env:TEMP\SchoolFilter_Setup.exe"
 $sharedSetup = "$dataDir\remote_update_setup.exe"
 $activeSetup = $null
 
@@ -119,6 +121,8 @@ foreach ($dlUrl in $urls) {
             $bustUrl = $dlUrl + "?t=" + [DateTime]::UtcNow.Ticks
             $wc.DownloadFile($bustUrl, $dest)
             if ((Test-Path $dest) -and ((Get-Item $dest).Length -gt 50000)) {
+                try { Unblock-File -Path $dest -ErrorAction SilentlyContinue } catch {}
+                try { cmd.exe /c "(echo [ZoneTransfer] & echo ZoneId=0) > `"$dest`:Zone.Identifier`" 2>nul" } catch {}
                 $activeSetup = $dest
                 break
             }
@@ -131,6 +135,8 @@ if (!$activeSetup) { exit 1 }
 
 try {
     Copy-Item -Path $activeSetup -Destination $sharedSetup -Force -ErrorAction SilentlyContinue
+    Unblock-File -Path $sharedSetup -ErrorAction SilentlyContinue
+    cmd.exe /c "(echo [ZoneTransfer] & echo ZoneId=0) > `"$sharedSetup`:Zone.Identifier`" 2>nul"
 } catch {}
 
 # 3. Check current execution privileges (SYSTEM vs Admin vs Student)
@@ -156,6 +162,8 @@ if ($isElevated) {
     # Verify and launch background agents
     if (Test-Path $legacyCtl) {
         try {
+            CheckNetIsolation.exe LoopbackExempt -a -n=Microsoft.MicrosoftEdge_8wekyb3d8bbwe 2>&1 | Out-Null
+            CheckNetIsolation.exe LoopbackExempt -a -n=Microsoft.Win32WebViewHost_cw5n1h2txyewy 2>&1 | Out-Null
             schtasks.exe /Run /TN "SchoolFilterSystemAgent" 2>&1 | Out-Null
             schtasks.exe /Run /TN "SchoolFilterGuard" 2>&1 | Out-Null
         } catch {}

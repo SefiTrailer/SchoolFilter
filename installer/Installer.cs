@@ -39,7 +39,7 @@ namespace SchoolFilter.Setup
     internal static class Program
     {
         private const string AppName = "SchoolFilter";
-        private const string AppVersion = "3.6.0";
+        private const string AppVersion = "3.6.1";
         private const string Publisher = "School IT Administration";
         private const string TeacherPortalUrl = "https://sefitrailer.github.io/SchoolFilter/";
         private const string FirebaseProjectId = "school-filter-2026";
@@ -471,6 +471,10 @@ namespace SchoolFilter.Setup
                         RunHiddenProcess("netsh.exe", "advfirewall firewall add rule name=\"SchoolFilter_BlockGameUDP\" dir=out action=block protocol=UDP remoteport=1024-11099,11401-65535", true);
                         RunHiddenProcess("netsh.exe", "advfirewall firewall delete rule name=\"SchoolFilter_BlockGameTCP\"", true);
                         RunHiddenProcess("netsh.exe", "advfirewall firewall add rule name=\"SchoolFilter_BlockGameTCP\" dir=out action=block protocol=TCP remoteport=1119,3074,3724,5222,6667,7000-9100,19132-19133,25565,27000-27100,30120", true);
+
+                        // Windows 11 / Edge AppContainer Loopback Exemption
+                        RunHiddenProcess("CheckNetIsolation.exe", "LoopbackExempt -a -n=Microsoft.MicrosoftEdge_8wekyb3d8bbwe", true);
+                        RunHiddenProcess("CheckNetIsolation.exe", "LoopbackExempt -a -n=Microsoft.Win32WebViewHost_cw5n1h2txyewy", true);
                     }
                     catch {}
                 }
@@ -611,7 +615,7 @@ namespace SchoolFilter.Setup
                     "\"roomId\":\"" + EscapeJsonStr(roomId) + "\"," +
                     "\"roomName\":\"" + EscapeJsonStr(roomName) + "\"," +
                     "\"institutionName\":\"" + EscapeJsonStr(institutionName) + "\"," +
-                    "\"version\":\"3.6\"," +
+                    "\"version\":\"3.6.1\"," +
                     "\"filterActive\":true," +
                     "\"installedAt\":\"" + nowIso + "\"," +
                     "\"lastSeen\":\"" + nowIso + "\"," +

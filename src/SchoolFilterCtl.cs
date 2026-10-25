@@ -26,8 +26,8 @@ namespace SchoolFilter.Controller
         private const string DefaultRoomId = "yeshiva-lab";
         private const int SinkholePort = 9999;
         private static volatile int ActiveSinkholePort = 9999;
-        private const string SystemAgentMutexName = "Global\\SchoolFilterSystemAgentMutex_v360";
-        private const string SinkholeMutexName = "Local\\SchoolFilterSinkholeMutex_v360";
+        private const string SystemAgentMutexName = "Global\\SchoolFilterSystemAgentMutex_v361";
+        private const string SinkholeMutexName = "Global\\SchoolFilterSinkholeMutex_v361";
 
         private static readonly string InstallDir = ResolveInstallDir();
 
@@ -404,6 +404,9 @@ namespace SchoolFilter.Controller
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CloseHandle(IntPtr hObject);
 
+        [DllImport("dnsapi.dll", EntryPoint = "DnsFlushResolverCache")]
+        private static extern int DnsFlushResolverCache();
+
         private static volatile bool IsFilterCurrentlyEnforced = true;
         private static DateTime LastNotificationTime = DateTime.MinValue;
         private static string LastNotifiedTarget = "";
@@ -568,6 +571,13 @@ namespace SchoolFilter.Controller
                     AccessControlType.Allow
                 ));
 
+                // Always grant BuiltinUsers Synchronize and ReadPermissions across sessions so any session can check status
+                security.AddAccessRule(new MutexAccessRule(
+                    new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null),
+                    MutexRights.Synchronize | MutexRights.ReadPermissions,
+                    AccessControlType.Allow
+                ));
+
                 if (!systemAndAdminsOnly)
                 {
                     SecurityIdentifier currentSid = WindowsIdentity.GetCurrent().User;
@@ -579,15 +589,6 @@ namespace SchoolFilter.Controller
                             AccessControlType.Allow
                         ));
                     }
-                }
-                else
-                {
-                    // Allow standard users only Synchronize/ReadPermissions so IsSystemAgentRunning() can check existence without squatting/modifying
-                    security.AddAccessRule(new MutexAccessRule(
-                        new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null),
-                        MutexRights.Synchronize | MutexRights.ReadPermissions,
-                        AccessControlType.Allow
-                    ));
                 }
 
                 return new Mutex(true, name, out createdNew, security);
@@ -700,7 +701,13 @@ namespace SchoolFilter.Controller
 
         private static bool IsSinkholeRunning()
         {
-            foreach (string mutexName in new string[] { "Global\\SchoolFilterSinkholeMutex_v350", SinkholeMutexName })
+            foreach (string mutexName in new string[] {
+                "Global\\SchoolFilterSinkholeMutex_v361",
+                "Global\\SchoolFilterSinkholeMutex_v360",
+                "Global\\SchoolFilterSinkholeMutex_v350",
+                "Local\\SchoolFilterSinkholeMutex_v360",
+                SinkholeMutexName
+            })
             {
                 try
                 {
@@ -902,6 +909,7 @@ namespace SchoolFilter.Controller
         {
             try
             {
+                try { DnsFlushResolverCache(); } catch {}
                 InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
                 InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
                 IntPtr result;
@@ -1010,7 +1018,7 @@ namespace SchoolFilter.Controller
                     "\"roomId\":\"" + EscapeJsonStr(roomId) + "\"," +
                     "\"roomName\":\"" + EscapeJsonStr(roomName) + "\"," +
                     "\"institutionName\":\"" + EscapeJsonStr(instName) + "\"," +
-                    "\"version\":\"3.6\"," +
+                    "\"version\":\"3.6.1\"," +
                     "\"filterActive\":" + (filterActive ? "true" : "false") + "," +
                     "\"lastSeen\":\"" + nowIso + "\"," +
                     "\"lastSeenMs\":{\".sv\":\"timestamp\"}" +
@@ -1085,6 +1093,35 @@ namespace SchoolFilter.Controller
             NotifyBrowserSettingsChanged();
         }
 
+        private static void EnsureAppContainerLoopbackExemption()
+        {
+            if (!IsAdministrator()) return;
+            try
+            {
+                ProcessStartInfo psi1 = new ProcessStartInfo("CheckNetIsolation.exe", "LoopbackExempt -a -n=Microsoft.MicrosoftEdge_8wekyb3d8bbwe")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+                using (Process p = Process.Start(psi1))
+                {
+                    if (p != null) p.WaitForExit(1000);
+                }
+                ProcessStartInfo psi2 = new ProcessStartInfo("CheckNetIsolation.exe", "LoopbackExempt -a -n=Microsoft.Win32WebViewHost_cw5n1h2txyewy")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+                using (Process p = Process.Start(psi2))
+                {
+                    if (p != null) p.WaitForExit(1000);
+                }
+            }
+            catch {}
+        }
+
         private static void ConfigureGameFirewallRules(bool blockGames)
         {
             try
@@ -1095,6 +1132,7 @@ namespace SchoolFilter.Controller
 
                 if (blockGames)
                 {
+                    EnsureAppContainerLoopbackExemption();
                     RunNetsh("advfirewall firewall add rule name=\"SchoolFilter_BlockQUIC\" dir=out action=block protocol=UDP remoteport=443");
                     RunNetsh("advfirewall firewall add rule name=\"SchoolFilter_BlockGameUDP\" dir=out action=block protocol=UDP remoteport=1024-11099,11401-65535");
                     RunNetsh("advfirewall firewall add rule name=\"SchoolFilter_BlockGameTCP\" dir=out action=block protocol=TCP remoteport=1119,3074,3724,5222,6667,7000-9100,19132-19133,25565,27000-27100,30120");
@@ -1847,7 +1885,7 @@ namespace SchoolFilter.Controller
                     HttpWebRequest req = (HttpWebRequest)WebRequest.Create(shaUrl);
                     req.Proxy = null;
                     req.Timeout = 5000;
-                    req.UserAgent = "SchoolFilter-Updater/3.6";
+                    req.UserAgent = "SchoolFilter-Updater/3.6.1";
                     using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                     using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
                     {
@@ -1939,7 +1977,7 @@ namespace SchoolFilter.Controller
                         HttpWebRequest req = (HttpWebRequest)WebRequest.Create(bustUrl);
                         req.Proxy = null;
                         req.Timeout = 15000;
-                        req.UserAgent = "SchoolFilter-Updater/3.6";
+                        req.UserAgent = "SchoolFilter-Updater/3.6.1";
                         using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                         using (Stream s = resp.GetResponseStream())
                         using (FileStream fs = new FileStream(securePayloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -2102,7 +2140,7 @@ namespace SchoolFilter.Controller
                     {
                         string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                         string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                        string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-SystemAgent/3.6");
+                        string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-SystemAgent/3.6.1");
                         bool cloudFilterEnabled;
                         List<string> whitelist;
                         string roomLabel;
@@ -2304,23 +2342,10 @@ namespace SchoolFilter.Controller
                 return;
             }
 
-            bool createdLocalNew;
-            bool createdGlobalNew = false;
-            Mutex globalMutex = null;
-            if (IsAdministrator())
+            bool createdNew;
+            using (Mutex mutex = CreateScopedMutex(SinkholeMutexName, out createdNew, IsAdministrator()))
             {
-                globalMutex = CreateScopedMutex("Global\\SchoolFilterSinkholeMutex_v360", out createdGlobalNew, true);
-                if (globalMutex != null && !createdGlobalNew)
-                {
-                    try { globalMutex.Close(); } catch {}
-                    return;
-                }
-            }
-
-            using (globalMutex)
-            using (Mutex mutex = CreateScopedMutex(SinkholeMutexName, out createdLocalNew, false))
-            {
-                if (mutex == null || !createdLocalNew)
+                if (mutex == null || !createdNew)
                 {
                     return;
                 }
@@ -2394,7 +2419,7 @@ namespace SchoolFilter.Controller
                                 {
                                     string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                                     string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                                    string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-RoomDaemon/3.6");
+                                    string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-RoomDaemon/3.6.1");
                                     bool cloudFilterEnabled;
                                     List<string> whitelist;
                                     string roomLabel;

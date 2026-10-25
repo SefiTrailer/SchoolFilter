@@ -49,9 +49,16 @@ if %ERRORLEVEL% NEQ 0 (
 echo [Online]  Pushing update to %PC%...
 if exist "\\%PC%\C$\ProgramData\SchoolFilter" (
     copy /Y "%LOCAL_SETUP%" "\\%PC%\C$\ProgramData\SchoolFilter\remote_update_setup.exe" >nul 2>&1
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Unblock-File -Path '\\%PC%\C$\ProgramData\SchoolFilter\remote_update_setup.exe' -ErrorAction SilentlyContinue } catch {}" >nul 2>&1
     wmic /node:"%PC%" process call create "cmd.exe /c start \"\" \"C:\ProgramData\SchoolFilter\remote_update_setup.exe\" /STUDENT /VERYSILENT /SUPPRESSMSGBOXES" >nul 2>&1
     if %ERRORLEVEL% EQU 0 (
         echo   -^> [SUCCESS] Updated %PC% via SMB + WMI execution!
+        goto :eof
+    )
+    :: Fallback for Windows 11 (where wmic.exe is deprecated/removed)
+    powershell -NoProfile -Command "try { $c = [wmiclass]\"\\%PC%\root\cimv2:Win32_Process\"; $r = $c.Create('cmd.exe /c start \"\" \"C:\ProgramData\SchoolFilter\remote_update_setup.exe\" /STUDENT /VERYSILENT /SUPPRESSMSGBOXES'); if ($r.ReturnValue -eq 0) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+    if %ERRORLEVEL% EQU 0 (
+        echo   -^> [SUCCESS] Updated %PC% via PowerShell CIM/WMI execution!
         goto :eof
     )
 )
