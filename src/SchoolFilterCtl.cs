@@ -27,7 +27,7 @@ namespace SchoolFilter.Controller
         private const int SinkholePort = 9999;
         private static volatile int ActiveSinkholePort = 9999;
         private const string SystemAgentMutexName = "Global\\SchoolFilterSystemAgentMutex_v361";
-        private const string SinkholeMutexName = "Global\\SchoolFilterSinkholeMutex_v361";
+        private const string SinkholeMutexName = "Global\\SchoolFilterSinkholeMutex_v362";
 
         private static readonly string InstallDir = ResolveInstallDir();
 
@@ -299,7 +299,61 @@ namespace SchoolFilter.Controller
             { "CrossyRoad", "Crossy Road" },
             { "AngryBirds", "Angry Birds" },
             { "CutTheRope", "Cut the Rope" },
-            { "BadPiggies", "Bad Piggies" }
+            { "BadPiggies", "Bad Piggies" },
+
+            // Microsoft Store & Windows Gaming Platform
+            { "WinStore.App", "חנות האפליקציות של מייקרוסופט (Microsoft Store)" },
+            { "XboxApp", "Xbox Gaming App" },
+            { "XboxPcApp", "Xbox Gaming App" },
+            { "XboxGameBar", "Xbox Game Bar" },
+            { "GameBar", "Xbox Game Bar" },
+            { "GameBarFT", "Xbox Game Bar" },
+            { "GameBarPresenceWriter", "Xbox Game Bar" },
+
+            // Asphalt & Gameloft Windows Store Games
+            { "Asphalt9_w10_x64_rtl", "Asphalt 9: Legends" },
+            { "Asphalt9_w8", "Asphalt 9: Legends" },
+            { "Asphalt9", "Asphalt 9: Legends" },
+            { "Asphalt8_w8", "Asphalt 8: Airborne" },
+            { "Asphalt8", "Asphalt 8: Airborne" },
+            { "AsphaltLegends", "Asphalt Legends Unite" },
+            { "AsphaltLegendsUnite", "Asphalt Legends Unite" },
+            { "Asphalt_w10", "Asphalt" },
+            { "Asphalt", "Asphalt" },
+            { "A9", "Asphalt 9" },
+            { "ModernCombat5", "Modern Combat 5" },
+            { "MC5", "Modern Combat 5" },
+            { "SniperFury", "Sniper Fury" },
+            { "MinionRush", "Minion Rush" },
+            { "DragonManiaLegends", "Dragon Mania Legends" },
+            { "DML", "Dragon Mania Legends" },
+
+            // Additional popular Microsoft Store Games
+            { "HillClimbRacing", "Hill Climb Racing" },
+            { "HillClimbRacing2", "Hill Climb Racing 2" },
+            { "SubwaySurfers", "Subway Surfers" },
+            { "SubwaySurfers_uwp", "Subway Surfers" },
+            { "CandyCrushSaga", "Candy Crush Saga" },
+            { "CandyCrushSodaSaga", "Candy Crush Soda" },
+            { "CandyCrushFriends", "Candy Crush Friends" },
+            { "FarmHeroesSaga", "Farm Heroes Saga" },
+            { "AngryBirds2", "Angry Birds 2" },
+            { "AngryBirdsClassic", "Angry Birds" },
+            { "FruitNinja", "Fruit Ninja" },
+            { "TempleRun", "Temple Run" },
+            { "TempleRun2", "Temple Run 2" },
+            { "SonicDash", "Sonic Dash" },
+            { "ForzaHorizon4", "Forza Horizon 4" },
+            { "ForzaHorizon5", "Forza Horizon 5" },
+            { "ForzaMotorsport", "Forza Motorsport" },
+            { "wotblitz", "World of Tanks Blitz" },
+            { "MagicTiles3", "Magic Tiles 3" },
+            { "PixelGun3D", "Pixel Gun 3D" },
+            { "MicrosoftSolitaireCollection", "Solitaire Collection" },
+            { "MicrosoftMinesweeper", "Microsoft Minesweeper" },
+            { "MicrosoftMahjong", "Microsoft Mahjong" },
+            { "RobloxPlayer", "Roblox" },
+            { "Roblox", "Roblox" }
         };
 
         // Known safe system, office, programming, and school processes that must never be killed by heuristic game checks
@@ -321,7 +375,7 @@ namespace SchoolFilter.Controller
             "veyon-service", "veyon-server", "veyon-worker", "veyon-master", "veyon-configurator", "veyon-cli",
             "AnyDesk", "TeamViewer", "TeamViewer_Service", "Zoom", "vlc", "wmplayer", "mspaint",
             "calc", "CalculatorApp", "SnippingTool", "ScreenSketch", "SecurityHealthService",
-            "SecurityHealthSystray", "MsMpEng", "NisSrv", "OneDrive", " BarIlan", "Responsa",
+            "SecurityHealthSystray", "MsMpEng", "NisSrv", "OneDrive", "BarIlan", "Responsa",
             "Otzar", "OtzarHaHochma", "ToratEmet", "Tag", "InDesign", "Photoshop", "Illustrator"
         };
 
@@ -702,6 +756,7 @@ namespace SchoolFilter.Controller
         private static bool IsSinkholeRunning()
         {
             foreach (string mutexName in new string[] {
+                "Global\\SchoolFilterSinkholeMutex_v362",
                 "Global\\SchoolFilterSinkholeMutex_v361",
                 "Global\\SchoolFilterSinkholeMutex_v360",
                 "Global\\SchoolFilterSinkholeMutex_v350",
@@ -1018,7 +1073,7 @@ namespace SchoolFilter.Controller
                     "\"roomId\":\"" + EscapeJsonStr(roomId) + "\"," +
                     "\"roomName\":\"" + EscapeJsonStr(roomName) + "\"," +
                     "\"institutionName\":\"" + EscapeJsonStr(instName) + "\"," +
-                    "\"version\":\"3.6.1\"," +
+                    "\"version\":\"3.6.2\"," +
                     "\"filterActive\":" + (filterActive ? "true" : "false") + "," +
                     "\"lastSeen\":\"" + nowIso + "\"," +
                     "\"lastSeenMs\":{\".sv\":\"timestamp\"}" +
@@ -1791,6 +1846,18 @@ namespace SchoolFilter.Controller
 
             try
             {
+                using (RegistryKey storeKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\WindowsStore", true))
+                {
+                    if (storeKey != null)
+                    {
+                        storeKey.DeleteValue("RemoveWindowsStore", false);
+                    }
+                }
+            }
+            catch {}
+
+            try
+            {
                 string desktopLnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "SchoolFilter - ממשק ניהול למורה.url");
                 if (File.Exists(desktopLnk)) File.Delete(desktopLnk);
 
@@ -1885,7 +1952,7 @@ namespace SchoolFilter.Controller
                     HttpWebRequest req = (HttpWebRequest)WebRequest.Create(shaUrl);
                     req.Proxy = null;
                     req.Timeout = 5000;
-                    req.UserAgent = "SchoolFilter-Updater/3.6.1";
+                    req.UserAgent = "SchoolFilter-Updater/3.6.2";
                     using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                     using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
                     {
@@ -1977,7 +2044,7 @@ namespace SchoolFilter.Controller
                         HttpWebRequest req = (HttpWebRequest)WebRequest.Create(bustUrl);
                         req.Proxy = null;
                         req.Timeout = 15000;
-                        req.UserAgent = "SchoolFilter-Updater/3.6.1";
+                        req.UserAgent = "SchoolFilter-Updater/3.6.2";
                         using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                         using (Stream s = resp.GetResponseStream())
                         using (FileStream fs = new FileStream(securePayloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -2140,7 +2207,7 @@ namespace SchoolFilter.Controller
                     {
                         string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                         string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                        string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-SystemAgent/3.6.1");
+                        string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-SystemAgent/3.6.2");
                         bool cloudFilterEnabled;
                         List<string> whitelist;
                         string roomLabel;
@@ -2419,7 +2486,7 @@ namespace SchoolFilter.Controller
                                 {
                                     string projectId = GetConfigValue("FirebaseProjectId", DefaultFirebaseProjectId);
                                     string roomId = GetConfigValue("RoomId", DefaultRoomId);
-                                    string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-RoomDaemon/3.6.1");
+                                    string json = FetchCloudRoomJson(projectId, roomId, "SchoolFilter-RoomDaemon/3.6.2");
                                     bool cloudFilterEnabled;
                                     List<string> whitelist;
                                     string roomLabel;
@@ -2897,13 +2964,29 @@ namespace SchoolFilter.Controller
             "fireboy", "watergirl", "friday night funkin", "five nights at freddy"
         };
 
+        private static readonly string[] GameWindowTitleKeywords = new string[]
+        {
+            "asphalt", "legends unite", "gameloft",
+            "hill climb", "subway surfers", "candy crush", "geometry dash",
+            "stumble guys", "brawl stars", "brawlhalla", "clash royale", "clash of clans",
+            "fruit ninja", "temple run", "angry birds", "sonic dash",
+            "forza horizon", "forza motorsport", "modern combat", "sniper fury",
+            "minion rush", "dragon mania", "roblox", "minecraft", "fortnite",
+            "counter-strike", "half-life", "valorant", "league of legends",
+            "overwatch", "hearthstone", "genshin impact", "honkai: star rail",
+            "grand theft auto", "fivem", "need for speed", "euro truck",
+            "call of duty", "battlefield", "rocket league", "fall guys", "among us",
+            "terraria", "solitaire collection", "minesweeper", "purble place"
+        };
+
         private static readonly string[] GameFolderKeywords = new string[]
         {
             "\\games\\", "\\game\\", "\\משחקים\\", "\\משחק\\", "\\steamapps\\", "\\epic games\\",
             "\\gog games\\", "\\riot games\\", "\\origin games\\", "\\ubisoft\\", "\\xboxgames\\",
             "\\plarium\\", "\\tlauncher\\", "\\.minecraft\\", "\\roblox\\", "\\bluestacks\\",
             "\\ldplayer\\", "\\nox\\", "\\memu\\", "\\retroarch\\", "\\dosbox\\",
-            "\\microsoft.microsoftsolitairecollection", "\\microsoft.msminesweeper"
+            "\\microsoft.microsoftsolitairecollection", "\\microsoft.msminesweeper",
+            "\\gameloft\\", "\\asphalt\\", "\\a278ab0d."
         };
 
         private static readonly string[] GameSignatureFiles = new string[]
@@ -2959,6 +3042,26 @@ namespace SchoolFilter.Controller
                         else
                         {
                             ieKey.DeleteValue("Proxy", false);
+                        }
+                    }
+                }
+            }
+            catch {}
+
+            // Lock down Microsoft Store so students cannot browse or download games during class
+            try
+            {
+                using (RegistryKey storeKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\WindowsStore"))
+                {
+                    if (storeKey != null)
+                    {
+                        if (blockExtensions)
+                        {
+                            storeKey.SetValue("RemoveWindowsStore", 1, RegistryValueKind.DWord);
+                        }
+                        else
+                        {
+                            storeKey.DeleteValue("RemoveWindowsStore", false);
                         }
                     }
                 }
@@ -3223,18 +3326,93 @@ namespace SchoolFilter.Controller
                 return null;
             }
 
+            // Special check for UWP container ApplicationFrameHost (gracefully close store/game frame)
+            if (string.Equals(procName, "ApplicationFrameHost", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.IsNullOrEmpty(title))
+                {
+                    string lowerTitle = title.ToLowerInvariant();
+                    if (lowerTitle.Contains("חנות") || lowerTitle.Contains("microsoft store") ||
+                        lowerTitle.Contains("asphalt") || lowerTitle.Contains("legends unite"))
+                    {
+                        isBrowserWindowOnly = true;
+                        return "חלון חנות/משחק (" + title + ")";
+                    }
+                    foreach (string kw in GameWindowTitleKeywords)
+                    {
+                        if (lowerTitle.Contains(kw))
+                        {
+                            isBrowserWindowOnly = true;
+                            return "חלון משחק (" + title + ")";
+                        }
+                    }
+                }
+                return null;
+            }
+
             string exePath = GetProcessExecutablePath(p);
             if (!string.IsNullOrEmpty(exePath))
             {
                 string lowerPath = exePath.ToLowerInvariant();
                 string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows).ToLowerInvariant();
-                if (!string.IsNullOrEmpty(winDir) && lowerPath.StartsWith(winDir + "\\"))
+                if (!string.IsNullOrEmpty(winDir) && lowerPath.StartsWith(winDir + "\\") && !lowerPath.Contains("\\temp\\"))
                 {
                     return null;
                 }
                 if (lowerPath.StartsWith(InstallDir.ToLowerInvariant()))
                 {
                     return null;
+                }
+
+                // Microsoft Store (UWP / WindowsApps) game packages
+                if (lowerPath.Contains("\\windowsapps\\"))
+                {
+                    // Whitelist safe built-in Windows utilities
+                    if (lowerPath.Contains("\\microsoft.windowscalculator") ||
+                        lowerPath.Contains("\\microsoft.screensketch") ||
+                        lowerPath.Contains("\\microsoft.windowssnippingtool") ||
+                        lowerPath.Contains("\\microsoft.paint") ||
+                        lowerPath.Contains("\\microsoft.photos") ||
+                        lowerPath.Contains("\\microsoft.windowsnotepad") ||
+                        lowerPath.Contains("\\microsoft.windowsterminal") ||
+                        lowerPath.Contains("\\microsoft.windowscamera") ||
+                        lowerPath.Contains("\\microsoft.windowsaudiostudio") ||
+                        lowerPath.Contains("\\microsoft.windows.soundrecorder") ||
+                        lowerPath.Contains("\\microsoft.yourphone") ||
+                        lowerPath.Contains("\\microsoft.ui.xaml") ||
+                        lowerPath.Contains("\\microsoft.vclibs") ||
+                        lowerPath.Contains("\\microsoft.net.native"))
+                    {
+                        return null;
+                    }
+
+                    if (lowerPath.Contains("\\microsoft.windowsstore") || procName.Equals("WinStore.App", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return "חנות האפליקציות של מייקרוסופט (Microsoft Store)";
+                    }
+
+                    if (lowerPath.Contains("asphalt") ||
+                        lowerPath.Contains("gameloft") ||
+                        lowerPath.Contains("a278ab0d") || // Gameloft Store publisher ID
+                        lowerPath.Contains("king.com") ||
+                        lowerPath.Contains("fingersoft") ||
+                        lowerPath.Contains("rovio") ||
+                        lowerPath.Contains("supercell") ||
+                        lowerPath.Contains("playrix") ||
+                        lowerPath.Contains("electronicarts") ||
+                        lowerPath.Contains("subwaysurfers") ||
+                        lowerPath.Contains("hillclimb") ||
+                        lowerPath.Contains("templerun") ||
+                        lowerPath.Contains("fruitninja") ||
+                        lowerPath.Contains(".minecraft") ||
+                        lowerPath.Contains("roblox") ||
+                        lowerPath.Contains("forza") ||
+                        lowerPath.Contains("solitaire") ||
+                        lowerPath.Contains("minesweeper") ||
+                        lowerPath.Contains("xbox"))
+                    {
+                        return !string.IsNullOrEmpty(title) ? title : procName;
+                    }
                 }
 
                 // 3. Check FileVersionInfo OriginalFilename BEFORE SafeNonGameProcesses (catches games renamed to vlc.exe, python.exe, chrome.exe, etc.!)
@@ -3339,6 +3517,19 @@ namespace SchoolFilter.Controller
             if (SafeNonGameProcesses.Contains(procName))
             {
                 return null;
+            }
+
+            // 9. Check window title of any desktop / UWP process against known game titles
+            if (!string.IsNullOrEmpty(title))
+            {
+                string lowerTitle = title.ToLowerInvariant();
+                foreach (string kw in GameWindowTitleKeywords)
+                {
+                    if (lowerTitle.Contains(kw))
+                    {
+                        return "משחק (" + title + ")";
+                    }
+                }
             }
 
             return null;

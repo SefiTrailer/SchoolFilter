@@ -39,7 +39,7 @@ namespace SchoolFilter.Setup
     internal static class Program
     {
         private const string AppName = "SchoolFilter";
-        private const string AppVersion = "3.6.1";
+        private const string AppVersion = "3.6.2";
         private const string Publisher = "School IT Administration";
         private const string TeacherPortalUrl = "https://sefitrailer.github.io/SchoolFilter/";
         private const string FirebaseProjectId = "school-filter-2026";
@@ -615,7 +615,7 @@ namespace SchoolFilter.Setup
                     "\"roomId\":\"" + EscapeJsonStr(roomId) + "\"," +
                     "\"roomName\":\"" + EscapeJsonStr(roomName) + "\"," +
                     "\"institutionName\":\"" + EscapeJsonStr(institutionName) + "\"," +
-                    "\"version\":\"3.6.1\"," +
+                    "\"version\":\"3.6.2\"," +
                     "\"filterActive\":true," +
                     "\"installedAt\":\"" + nowIso + "\"," +
                     "\"lastSeen\":\"" + nowIso + "\"," +
